@@ -1,5 +1,6 @@
 import { createFileRoute, notFound, Link } from "@tanstack/react-router";
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/app/AppShell";
@@ -8,6 +9,7 @@ import { CustomerInfoCard } from "@/components/garage/detail/CustomerInfoCard";
 import { VehicleSpecsCard } from "@/components/garage/detail/VehicleSpecsCard";
 import { ServiceHistorySection } from "@/components/garage/detail/ServiceHistorySection";
 import { VehicleDetailSkeleton } from "@/components/garage/detail/VehicleDetailSkeleton";
+import { AddServiceRecordDialog } from "@/components/garage/detail/AddServiceRecordDialog";
 import { vehicleDetailQuery, serviceHistoryQuery } from "@/lib/queries/vehicles";
 
 export const Route = createFileRoute("/_authenticated/garage/$vehicleId")({
@@ -59,15 +61,21 @@ function VehicleDetailPage() {
   const { vehicleId } = Route.useParams();
   const { data: vehicle } = useSuspenseQuery(vehicleDetailQuery(vehicleId));
   const history = useQuery(serviceHistoryQuery(vehicleId));
+  const [addOpen, setAddOpen] = useState(false);
 
   if (!vehicle) return null;
 
   const placeholder = () => toast.info("Táto funkcia bude doplnená v ďalšom kroku");
+  const openAdd = () => setAddOpen(true);
 
   return (
     <AppShell>
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
-        <VehicleDetailHeader vehicle={vehicle} onAction={placeholder} />
+        <VehicleDetailHeader
+          vehicle={vehicle}
+          onAction={placeholder}
+          onAddRecord={openAdd}
+        />
         <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
           <div className="flex flex-col gap-6">
             <CustomerInfoCard customer={vehicle.customer} />
@@ -76,10 +84,16 @@ function VehicleDetailPage() {
           <ServiceHistorySection
             records={history.data}
             loading={history.isLoading}
-            onAdd={placeholder}
+            onAdd={openAdd}
           />
         </div>
       </div>
+      <AddServiceRecordDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        vehicleId={vehicleId}
+        currentMileage={vehicle.current_mileage}
+      />
     </AppShell>
   );
 }
