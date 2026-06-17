@@ -19,14 +19,20 @@ type NavItem = {
   key: string;
   label: string;
   icon: typeof Car;
-  to?: "/garage" | "/plan";
+  to?: "/garage" | "/plan" | "/service-history";
   match?: string;
 };
 
 const NAV_ITEMS: NavItem[] = [
   { key: "vehicles", label: "Vozidlá", icon: Car, to: "/garage", match: "/garage" },
   { key: "today", label: "Dnešný plán", icon: CalendarDays, to: "/plan", match: "/plan" },
-  { key: "history", label: "História servisu", icon: History },
+  {
+    key: "history",
+    label: "História servisu",
+    icon: History,
+    to: "/service-history",
+    match: "/service-history",
+  },
   { key: "alerts", label: "Upozornenia", icon: Bell },
   { key: "settings", label: "Nastavenia", icon: Settings },
 ];
