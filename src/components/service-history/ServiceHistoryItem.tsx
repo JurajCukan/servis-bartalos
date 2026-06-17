@@ -47,9 +47,12 @@ export function ServiceHistoryItem({ item }: { item: Item }) {
           ) : null}
         </div>
         <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
-          {item.price != null ? (
-            <span className="text-sm font-semibold text-white">{formatPrice(item.price)}</span>
-          ) : null}
+          {(() => {
+            const price = formatPrice(item.price);
+            return price ? (
+              <span className="text-sm font-semibold text-white">{price}</span>
+            ) : null;
+          })()}
           {item.vehicle?.id ? (
             <Link
               to="/garage/$vehicleId"
