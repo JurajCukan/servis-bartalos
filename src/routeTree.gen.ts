@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedServiceHistoryRouteImport } from './routes/_authenticated/service-history'
 import { Route as AuthenticatedPlanRouteImport } from './routes/_authenticated/plan'
 import { Route as AuthenticatedGarageRouteImport } from './routes/_authenticated/garage'
 import { Route as AuthenticatedGarageVehicleIdRouteImport } from './routes/_authenticated/garage.$vehicleId'
@@ -24,6 +25,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedServiceHistoryRoute =
+  AuthenticatedServiceHistoryRouteImport.update({
+    id: '/service-history',
+    path: '/service-history',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPlanRoute = AuthenticatedPlanRouteImport.update({
   id: '/plan',
   path: '/plan',
@@ -45,12 +52,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/garage': typeof AuthenticatedGarageRouteWithChildren
   '/plan': typeof AuthenticatedPlanRoute
+  '/service-history': typeof AuthenticatedServiceHistoryRoute
   '/garage/$vehicleId': typeof AuthenticatedGarageVehicleIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/garage': typeof AuthenticatedGarageRouteWithChildren
   '/plan': typeof AuthenticatedPlanRoute
+  '/service-history': typeof AuthenticatedServiceHistoryRoute
   '/garage/$vehicleId': typeof AuthenticatedGarageVehicleIdRoute
 }
 export interface FileRoutesById {
@@ -59,19 +68,26 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_authenticated/garage': typeof AuthenticatedGarageRouteWithChildren
   '/_authenticated/plan': typeof AuthenticatedPlanRoute
+  '/_authenticated/service-history': typeof AuthenticatedServiceHistoryRoute
   '/_authenticated/garage/$vehicleId': typeof AuthenticatedGarageVehicleIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/garage' | '/plan' | '/garage/$vehicleId'
+  fullPaths:
+    | '/'
+    | '/garage'
+    | '/plan'
+    | '/service-history'
+    | '/garage/$vehicleId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/garage' | '/plan' | '/garage/$vehicleId'
+  to: '/' | '/garage' | '/plan' | '/service-history' | '/garage/$vehicleId'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/_authenticated/garage'
     | '/_authenticated/plan'
+    | '/_authenticated/service-history'
     | '/_authenticated/garage/$vehicleId'
   fileRoutesById: FileRoutesById
 }
@@ -95,6 +111,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/service-history': {
+      id: '/_authenticated/service-history'
+      path: '/service-history'
+      fullPath: '/service-history'
+      preLoaderRoute: typeof AuthenticatedServiceHistoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/plan': {
       id: '/_authenticated/plan'
@@ -134,11 +157,13 @@ const AuthenticatedGarageRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedGarageRoute: typeof AuthenticatedGarageRouteWithChildren
   AuthenticatedPlanRoute: typeof AuthenticatedPlanRoute
+  AuthenticatedServiceHistoryRoute: typeof AuthenticatedServiceHistoryRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedGarageRoute: AuthenticatedGarageRouteWithChildren,
   AuthenticatedPlanRoute: AuthenticatedPlanRoute,
+  AuthenticatedServiceHistoryRoute: AuthenticatedServiceHistoryRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
