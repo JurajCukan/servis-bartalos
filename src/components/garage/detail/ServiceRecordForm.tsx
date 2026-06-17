@@ -382,13 +382,14 @@ export function ServiceRecordForm({
             type="number"
             step="0.01"
             min={0}
+            max={MAX_PRICE}
             className={inputCls}
             {...form.register("price")}
           />
         </Field>
 
         <Field label="Technik" error={errors.technician?.message}>
-          <Input className={inputCls} {...form.register("technician")} />
+          <Input className={inputCls} maxLength={MAX_TITLE} {...form.register("technician")} />
         </Field>
       </div>
 
@@ -398,13 +399,15 @@ export function ServiceRecordForm({
             type="number"
             inputMode="numeric"
             min={1}
+            max={MAX_MILEAGE}
+            step={1}
             className={inputCls}
             {...form.register("next_service_km")}
           />
         </Field>
 
         <Field label="Ďalší servis dátum" error={errors.next_service_date?.message}>
-          <Input type="date" className={inputCls} {...form.register("next_service_date")} />
+          <Input type="date" max={MAX_NEXT_DATE} className={inputCls} {...form.register("next_service_date")} />
         </Field>
       </div>
 
