@@ -10,10 +10,12 @@ function formatMileage(km: number) {
 export function VehicleDetailHeader({
   vehicle,
   onAction,
+  onSchedule,
   onAddRecord,
 }: {
   vehicle: VehicleDetail;
   onAction: () => void;
+  onSchedule: () => void;
   onAddRecord: () => void;
 }) {
   const title = [vehicle.year, vehicle.brand, vehicle.model].filter(Boolean).join(" ");
