@@ -18,7 +18,7 @@ const searchSchema = z.object({
   type: fallback(z.string(), "all").default("all"),
 });
 
-export const Route = createFileRoute("/_authenticated/service-history")({
+export const Route = createFileRoute("/service-history")({
   validateSearch: zodValidator(searchSchema),
   head: () => ({ meta: [{ title: "História servisu — Servisná knižka Bartalos" }] }),
   component: ServiceHistoryPage,

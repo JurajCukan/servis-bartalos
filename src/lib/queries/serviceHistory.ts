@@ -1,21 +1,9 @@
 import { queryOptions } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import type { RecordModel } from "pocketbase";
+import pb from "@/lib/pocketbase";
+import { mapServiceRecord, type ServiceRecord } from "./vehicles";
 
-export type ServiceHistoryItem = {
-  id: string;
-  vehicle_id: string;
-  date: string;
-  mileage_at_service: number;
-  service_type: string;
-  title: string;
-  description: string;
-  parts_replaced: string | null;
-  price: number | null;
-  technician: string | null;
-  next_service_km: number | null;
-  next_service_date: string | null;
-  photo_paths: string[];
-  created_at: string;
+export type ServiceHistoryItem = ServiceRecord & {
   vehicle: {
     id: string;
     brand: string;
@@ -28,19 +16,32 @@ export type ServiceHistoryItem = {
 export const serviceHistoryQuery = queryOptions({
   queryKey: ["service-history", "all"],
   queryFn: async (): Promise<ServiceHistoryItem[]> => {
-    const { data, error } = await supabase
-      .from("service_records")
-      .select(
-        "id, vehicle_id, date, mileage_at_service, service_type, title, description, parts_replaced, price, technician, next_service_km, next_service_date, photo_paths, created_at, vehicle:vehicles(id, brand, model, license_plate, customer:customers(first_name, last_name))",
-      )
-      .order("date", { ascending: false })
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    return (data ?? []).map((r) => ({
-      ...(r as object),
-      photo_paths:
-        (r as { photo_paths?: string[] | null }).photo_paths ?? [],
-    })) as unknown as ServiceHistoryItem[];
+    const list = await pb.collection("service_records").getFullList<RecordModel>({
+      expand: "vehicle,vehicle.customer",
+      sort: "-date,-created",
+    });
+    return list.map((r) => {
+      const base = mapServiceRecord(r);
+      const veh = r.expand?.vehicle as RecordModel | undefined;
+      const cust = veh?.expand?.customer as RecordModel | undefined;
+      return {
+        ...base,
+        vehicle: veh
+          ? {
+              id: veh.id,
+              brand: veh.brand ?? "",
+              model: veh.model ?? "",
+              license_plate: veh.license_plate ?? "",
+              customer: cust
+                ? {
+                    first_name: cust.first_name ?? "",
+                    last_name: cust.last_name ?? "",
+                  }
+                : null,
+            }
+          : null,
+      };
+    });
   },
 });
 
