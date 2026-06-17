@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ServiceRecordForm } from "./ServiceRecordForm";
+import { DeleteServiceRecordButton } from "./DeleteServiceRecordButton";
 import type { ServiceRecord } from "@/lib/queries/vehicles";
 
 export function EditServiceRecordDialog({
