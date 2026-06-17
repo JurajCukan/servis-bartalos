@@ -1,5 +1,6 @@
 import { createFileRoute, notFound, Link } from "@tanstack/react-router";
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/app/AppShell";
@@ -8,6 +9,7 @@ import { CustomerInfoCard } from "@/components/garage/detail/CustomerInfoCard";
 import { VehicleSpecsCard } from "@/components/garage/detail/VehicleSpecsCard";
 import { ServiceHistorySection } from "@/components/garage/detail/ServiceHistorySection";
 import { VehicleDetailSkeleton } from "@/components/garage/detail/VehicleDetailSkeleton";
+import { AddServiceRecordDialog } from "@/components/garage/detail/AddServiceRecordDialog";
 import { vehicleDetailQuery, serviceHistoryQuery } from "@/lib/queries/vehicles";
 
 export const Route = createFileRoute("/_authenticated/garage/$vehicleId")({
