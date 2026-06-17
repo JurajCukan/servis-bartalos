@@ -13,6 +13,7 @@ import { ScheduleServiceDialog } from "@/components/garage/detail/ScheduleServic
 import { EditVehicleDialog } from "@/components/garage/edit/EditVehicleDialog";
 import { EditServiceRecordDialog } from "@/components/garage/detail/EditServiceRecordDialog";
 import { vehicleDetailQuery, serviceHistoryQuery, type ServiceRecord } from "@/lib/queries/vehicles";
+import { usePocketBaseRealtime } from "@/hooks/usePocketBaseRealtime";
 
 export const Route = createFileRoute("/garage/$vehicleId")({
   head: () => ({ meta: [{ title: "Detail vozidla — Servisná knižka Bartalos" }] }),
