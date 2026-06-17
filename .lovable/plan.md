@@ -1,36 +1,76 @@
-## Fix vehicle-card navigation: /garage/$vehicleId never renders the detail page
+## Edit vehicle + customer flow
 
-### Root cause
+Replace the placeholder "Upraviť" action on the vehicle detail page with a real edit flow that updates both the customer and the vehicle in one dialog.
 
-Flat file-based routing makes `garage.tsx` the parent of `garage.$vehicleId.tsx` (confirmed in `routeTree.gen.ts`: `AuthenticatedGarageVehicleIdRoute … parentRoute: () => AuthenticatedGarageRoute`). Because `garage.tsx`'s component is the dashboard (no `<Outlet />`), child route matches mount nothing — the parent dashboard always wins.
+### 1. New components
 
-This matches the `tanstack-route-architecture` rule: a parent that has children MUST render `<Outlet />` or move its page body into a `*.index.tsx` sibling.
+- `src/components/garage/edit/EditVehicleDialog.tsx` — `Dialog` on desktop, full-height sheet styling on mobile (via responsive classes, matching `AddVehicleDialog`). Owns react-hook-form + zod, submit handler, error/success toasts. Pre-fills from `vehicle` + `vehicle.customer`.
+- `src/components/garage/edit/CustomerEditFormSection.tsx` — Section 1 "Zákazník": meno*, priezvisko*, telefón*, e-mail, poznámky.
+- `src/components/garage/edit/VehicleEditFormSection.tsx` — Section 2 "Vozidlo": značka*, model*, rok výroby, ŠPZ*, VIN, aktuálny nájazd (km)*, motor, prevodovka, pohon, výkon, objem oleja, rozmer pneu, typ paliva, poznámky.
 
-Confirmed in preview: visiting `/garage/957f...` (direct URL) still rendered the Moja Garáž dashboard, not the detail page. The `VehicleCard` `onClick` → `navigate()` wiring is correct; the failure is downstream in route nesting. (Click ring appears on cards, so handlers fire; the URL change just resolves to the parent component.)
+Sections are rendered inside one `<form>` so it's a single submit flow.
 
-### Fix
+### 2. Wiring
 
-Rename `src/routes/_authenticated/garage.tsx` → `src/routes/_authenticated/garage.index.tsx`. With the rename:
-- `/garage` is served by the new `garage.index.tsx` leaf.
-- `/garage/$vehicleId` becomes a sibling leaf (no shared parent file), so its component renders directly under `_authenticated`'s `<Outlet />`.
+- `src/routes/_authenticated/garage.$vehicleId.tsx`: add `editOpen` state, pass `onAction={() => setEditOpen(true)}` to `VehicleDetailHeader`, mount `<EditVehicleDialog open vehicle ... />`. Remove the `placeholder` toast.
+- No changes to `VehicleDetailHeader` props (it already exposes `onAction`).
 
-No code edits inside the file — just the move. The `createFileRoute("/_authenticated/garage/")` path string used by index routes is the same `/_authenticated/garage` it currently uses; TanStack accepts both for an index file. If `routeTree.gen.ts` rebuilds the union without `"/garage"` literal due to the index suffix, no consumer of `to: "/garage"` breaks (sidebar uses `to: "/garage"` which remains valid for index routes).
+### 3. Validation (zod, Slovak messages)
 
-### Out of scope (explicit non-changes)
+Required: customer first_name, last_name, phone; vehicle brand, model, license_plate, current_mileage.
 
-- No redesign, no new features.
-- `VehicleCard`, `VehicleGrid`, `useNavigate` wiring untouched — they were never broken.
-- Photo upload: still not implemented.
-- Detail page (`garage.$vehicleId.tsx`), add-service-record dialog, schedule dialog, service history: untouched.
+Rules:
+- `current_mileage` positive integer
+- `year` optional, between 1900 and current year + 1
+- `email` optional, must be valid if non-empty
+- `license_plate` → trim + uppercase before save
+- `vin`, text fields → trim
+- empty optional strings sent as `null`
 
-### Verification
+### 4. Duplicate ŠPZ check
 
-1. Click any vehicle card on `/garage` → URL becomes `/garage/<id>` and the detail page renders (header, customer card, specs, service history).
-2. Browser back returns to `/garage` with grid intact.
-3. On detail, click "+ Pridať záznam" → `AddServiceRecordDialog` opens.
-4. Save a record → service history list refreshes (already validated previously).
-5. Sidebar "Vozidlá" still active on `/garage` and on `/garage/$vehicleId`.
+In the submit handler, if the normalized license plate differs from `vehicle.license_plate`, query:
 
-### Files
+```ts
+supabase.from('vehicles').select('id').eq('license_plate', plate).neq('id', vehicleId).maybeSingle()
+```
 
-**Renamed:** `src/routes/_authenticated/garage.tsx` → `src/routes/_authenticated/garage.index.tsx` (no content change).
+If a row is returned → set form error on `license_plate` with "Vozidlo s touto ŠPZ už existuje" and abort save.
+
+### 5. Save
+
+Sequential, both via `supabase` browser client:
+1. `update customers set ... where id = vehicle.customer_id`
+2. `update vehicles set ... where id = vehicleId`
+
+If either errors → throw, dialog stays open, values preserved, toast `"Údaje sa nepodarilo uložiť"`.
+
+On success:
+- toast `"Údaje boli uložené"`
+- close dialog
+- `queryClient.invalidateQueries` for keys: `['vehicle', vehicleId]`, `['vehicles']` (garage list), `['service-history']` (global), and `['customers']` if present.
+
+### 6. Backend
+
+Customers/vehicles already have `anon UPDATE` allowed (see existing policies: `Customers: anon read`/`auth all` — but no explicit anon update). Add a focused migration:
+
+```sql
+CREATE POLICY "Customers: anon update" ON public.customers FOR UPDATE TO anon USING (true) WITH CHECK (true);
+GRANT UPDATE ON public.customers TO anon;
+-- vehicles already has "Vehicles: anon update mileage" with USING/CHECK true, which permits full row updates; verify and only add if missing.
+```
+
+(Verify current grants/policies during build and add only what is missing — narrowest delta.)
+
+### 7. Keep unchanged
+
+- Dark UI, Slovak labels, detail page layout.
+- No edits to service records, no delete, no photo upload, no audit log.
+
+### Deliverable summary the build phase will report
+
+1. Components created: `EditVehicleDialog`, `CustomerEditFormSection`, `VehicleEditFormSection`.
+2. Backend: added missing anon UPDATE policy/grant for `customers` (and for `vehicles` if not already present).
+3. Duplicate ŠPZ: on submit, if plate changed, query `vehicles` for same plate excluding current id; block + inline Slovak error.
+4. Invalidated keys after save: `['vehicle', vehicleId]`, `['vehicles']`, `['service-history']`, `['customers']`.
+5. Yes — customer + vehicle are edited in a single form/submit flow.

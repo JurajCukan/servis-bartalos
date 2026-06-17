@@ -1,7 +1,6 @@
 import { createFileRoute, notFound, Link } from "@tanstack/react-router";
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { AppShell } from "@/components/app/AppShell";
 import { VehicleDetailHeader } from "@/components/garage/detail/VehicleDetailHeader";
@@ -11,6 +10,7 @@ import { ServiceHistorySection } from "@/components/garage/detail/ServiceHistory
 import { VehicleDetailSkeleton } from "@/components/garage/detail/VehicleDetailSkeleton";
 import { AddServiceRecordDialog } from "@/components/garage/detail/AddServiceRecordDialog";
 import { ScheduleServiceDialog } from "@/components/garage/detail/ScheduleServiceDialog";
+import { EditVehicleDialog } from "@/components/garage/edit/EditVehicleDialog";
 import { vehicleDetailQuery, serviceHistoryQuery } from "@/lib/queries/vehicles";
 
 export const Route = createFileRoute("/_authenticated/garage/$vehicleId")({
@@ -64,19 +64,20 @@ function VehicleDetailPage() {
   const history = useQuery(serviceHistoryQuery(vehicleId));
   const [addOpen, setAddOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   if (!vehicle) return null;
 
-  const placeholder = () => toast.info("Táto funkcia bude doplnená v ďalšom kroku");
   const openAdd = () => setAddOpen(true);
   const openSchedule = () => setScheduleOpen(true);
+  const openEdit = () => setEditOpen(true);
 
   return (
     <AppShell>
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
         <VehicleDetailHeader
           vehicle={vehicle}
-          onAction={placeholder}
+          onAction={openEdit}
           onSchedule={openSchedule}
           onAddRecord={openAdd}
         />
@@ -102,6 +103,11 @@ function VehicleDetailPage() {
         open={scheduleOpen}
         onOpenChange={setScheduleOpen}
         vehicleId={vehicleId}
+      />
+      <EditVehicleDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        vehicle={vehicle}
       />
     </AppShell>
   );

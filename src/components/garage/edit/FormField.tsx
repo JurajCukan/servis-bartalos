@@ -1,0 +1,24 @@
+import { Label } from "@/components/ui/label";
+
+export function FormField({
+  label,
+  error,
+  required,
+  children,
+}: {
+  label: string;
+  error?: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-sm text-white/80">
+        {label}
+        {required && <span className="ml-1 text-brand-accent">*</span>}
+      </Label>
+      {children}
+      {error && <p className="text-xs text-red-400">{error}</p>}
+    </div>
+  );
+}
