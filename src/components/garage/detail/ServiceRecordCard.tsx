@@ -1,28 +1,9 @@
 import { useState } from "react";
 import { ChevronDown, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDate, formatKm, formatPrice } from "@/lib/format";
 import { ServiceTypeBadge } from "./ServiceTypeBadge";
 import type { ServiceRecord } from "@/lib/queries/vehicles";
-
-function formatDate(d: string) {
-  try {
-    return new Date(d).toLocaleDateString("sk-SK", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  } catch {
-    return d;
-  }
-}
-
-function formatKm(km: number) {
-  return `${new Intl.NumberFormat("sk-SK").format(km)} km`;
-}
-
-function formatPrice(p: number) {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: "EUR" }).format(p);
-}
 
 export function ServiceRecordCard({
   record,
