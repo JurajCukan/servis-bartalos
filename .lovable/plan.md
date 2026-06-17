@@ -1,61 +1,77 @@
-## Plan: MVP polish & production-readiness pass
+## Goal
+Add safe delete flows for vehicles and individual service records, accessible from the existing edit dialogs, with confirmation dialogs and proper cleanup of related DB rows and storage photos.
 
-Tight, low-risk pass. No new features, no module reshuffles, no redesigns. Each item below is a small, scoped tweak.
+## Part A — Delete service record
 
-### 1. Root-level placeholders & global error pages
-- `src/routes/__root.tsx`:
-  - Replace generic Lovable metadata (`title: "Lovable App"`, English description, `og:*`, `twitter:site`) with Slovak Servisná knižka Bartalos values (title `"Servisná knižka Bartalos"`, sk description, locale `sk_SK`, drop the irrelevant `@Lovable` twitter handle).
-  - Rewrite `NotFoundComponent` and `ErrorComponent` in Slovak and the app's dark surface tokens (`bg-brand-bg`, `text-white`, `brand-accent` button) so a runtime error doesn't fall back to an English light-mode screen. Buttons: "Skúsiť znova" / "Späť na garáž".
-- Keep redirect from `/` → `/garage` unchanged.
+In `EditServiceRecordDialog`:
+- Add a divider + dangerous "Odstrániť záznam" button (destructive variant) at the bottom of the form, separated from Save/Cancel.
+- Clicking opens an `AlertDialog`:
+  - Title: "Odstrániť servisný záznam?"
+  - Body: "Táto akcia sa nedá vrátiť späť."
+  - Actions: "Zrušiť" / "Odstrániť" (destructive).
+- On confirm:
+  1. Best-effort `deletePhotos(record.photo_paths)` from the `service-photos` bucket.
+  2. `DELETE` the `service_records` row by id.
+  3. Close both dialogs, toast `"Servisný záznam bol odstránený"`.
+  4. Invalidate queries: `["vehicle", vehicleId, "service-records"]`, `["vehicle", vehicleId]`, `["service-history"]`, `["vehicles"]`.
+- On failure: keep dialog open, toast `"Servisný záznam sa nepodarilo odstrániť"`.
 
-### 2. Sidebar "coming soon" stubs
-- `AppSidebar`: the `Upozornenia` and `Nastavenia` items currently toast `"Pripravuje sa"`. Two options — pick the cleaner: remove them from `NAV_ITEMS` entirely for the MVP. (Stops users clicking dead links and matches the "remove leftover placeholders" requirement.)
+## Part B — Delete vehicle
 
-### 3. Page headers consistency
-- `ServiceHistoryPageHeader`: bump heading to `text-2xl sm:text-3xl font-semibold tracking-tight` to match `DashboardHeader` / `PlanPageHeader`. Same vertical rhythm (`space-y-1`).
+In `EditVehicleDialog`:
+- Add a divider + dangerous "Odstrániť vozidlo" button at the bottom.
+- Clicking opens an `AlertDialog`:
+  - Title: "Odstrániť vozidlo?"
+  - Body lists what will be removed: vehicle data, servisná história, naplánované úkony, pripojené fotky. Customer is preserved (one short line). Ends with "Táto akcia sa nedá vrátiť späť."
+- On confirm:
+  1. `SELECT id, photo_paths FROM service_records WHERE vehicle_id = ?` to gather all record photo paths.
+  2. Best-effort `deletePhotos([...all record paths])` from `service-photos`.
+  3. Best-effort `deleteVehiclePhoto(vehicle.photo_path)` from `vehicle-photos`.
+  4. `DELETE FROM scheduled_tasks WHERE vehicle_id = ?`.
+  5. `DELETE FROM service_records WHERE vehicle_id = ?`.
+  6. `DELETE FROM vehicles WHERE id = ?`.
+  7. Customer row is intentionally NOT deleted.
+- Storage failures are logged (warn) and do not block DB deletion.
+- On success: close dialogs, `router.navigate({ to: "/garage" })`, toast `"Vozidlo bolo odstránené"`, invalidate `["vehicles"]`, `["service-history"]`, `["scheduled-tasks"]`, `["customers"]`.
+- On DB failure: keep dialog open, toast `"Vozidlo sa nepodarilo odstrániť"`.
 
-### 4. Dialog/sheet surface consistency
-- All form dialogs/sheets currently mix `bg-brand-bg` (add/edit service record, add vehicle, schedule) with `bg-brand-surface` (edit vehicle). Standardize on `bg-brand-surface` for every dialog and sheet (matches card surfaces; inputs already use `bg-brand-bg` for contrast). Files: `AddServiceRecordDialog`, `EditServiceRecordDialog`, `AddVehicleDialog`, `ScheduleServiceDialog`. `EditVehicleDialog` already correct.
+## Backend changes
 
-### 5. Format helper consolidation (low-risk)
-- `PlannedTaskCard` defines its own `formatDate` / `formatMileage`. Replace with imports from `@/lib/format` (`formatDateLong`, `formatKm`) — same `sk-SK` Intl output, removes duplication.
+One migration adding narrow anon DELETE policies (auth role already has ALL):
 
-### 6. Overflow / truncation hardening
-Small `min-w-0` / `break-words` / `truncate` additions where long values can break layout:
-- `VehicleSpecsCard`: add `break-words min-w-0` on `<dd>` so a long Motor / Pneu value can wrap.
-- `CustomerInfoCard`: add `break-words` on the name `<p>`.
-- `PlannedTaskCard`: wrap header inner row with `min-w-0`; add `truncate` on `task_type` text; add `break-all` to the license plate `<span>` to match `ServiceHistoryItem`.
-- `ServiceRecordCard`: add `min-w-0` on the expand button's text container so the title/badges row doesn't push the right-side actions off-screen on narrow widths.
+```sql
+CREATE POLICY "Service records: anon delete" ON public.service_records
+  FOR DELETE TO anon USING (true);
+CREATE POLICY "Scheduled tasks: anon delete" ON public.scheduled_tasks
+  FOR DELETE TO anon USING (true);
+CREATE POLICY "Vehicles: anon delete" ON public.vehicles
+  FOR DELETE TO anon USING (true);
+```
 
-### 7. Mobile button hierarchy & spacing
-- `PlannedTaskCard` action row: on very narrow screens the three buttons can wrap awkwardly. Add `w-full sm:w-auto` to the secondary buttons inside `flex-wrap` rows to keep wrapping clean. Keep the primary "Označiť ako dokončené" as the rightmost emphasized action.
-- `DashboardHeader` "Pridať vozidlo" button: add `w-full sm:w-auto` so on mobile (where it sits below the title block) it spans the row consistently with other primary CTAs.
+Storage delete policies for both buckets already exist for anon — no storage changes needed.
 
-### 8. Form polish
-- `ServiceRecordForm`: remove leftover blank lines after the photo picker; add `autoComplete="off"` on the form. Add `min={1}` guard for `current_mileage` consistency (already in place).
-- All three form `Field` helpers (`ServiceRecordForm`, `VehicleForm`, `ScheduleTaskForm`) render the required-asterisk in `brand-accent` (red on dark). Already consistent — verify no drift.
-- Keep error text style consistent: `text-xs text-red-400`. Spot-check — already uniform.
+No schema changes, no grants beyond existing (anon already has table-level privileges from prior migrations; if a grant is missing the migration will add `GRANT DELETE ON ... TO anon`).
 
-### 9. Toast wording sweep
-Pass over every `toast.*` call in the app for tone & grammar parity. Current state is already close; small fixes only:
-- `toast.success("Údaje boli uložené")` → unchanged.
-- Confirm warnings use `toast.warning(...)` and errors use `toast.error(...)` consistently (spot found OK).
-- Make sure no English string slipped in.
+## Files
 
-### 10. Small bugs
-- `EditVehicleDialog`: when the user opens the edit dialog after a previous unsaved photo selection then closes, the staged `File` object URL needs to be revoked. `VehiclePhotoField` already revokes via `useEffect` cleanup — verify nothing leaks when dialog unmounts mid-edit. If needed, also reset state in the dialog's `onOpenChange(false)` path (currently only resets on `open === true`).
-- `ServiceHistoryItem` photo grid: when an item has photos, the grid currently sits next to the long-description `line-clamp-2` — confirm spacing (`mt-2` / parent `gap-2`) reads cleanly on mobile; adjust to `mt-1` if needed.
+Created:
+- `src/components/garage/detail/DeleteServiceRecordButton.tsx` — destructive button + AlertDialog + mutation. Receives `record`, `vehicleId`, `onDeleted`.
+- `src/components/garage/edit/DeleteVehicleButton.tsx` — destructive button + AlertDialog + mutation. Receives `vehicle`, `onDeleted`.
+- `supabase/migrations/<timestamp>_anon_delete_policies.sql`.
 
-### Out of scope (explicit)
-- No new modules / screens.
-- No analytics, notifications engine, exports, role system, integrations.
-- No table/column changes.
-- No restructure of route tree, no component splits beyond the few imports above.
-- Not implementing the Upozornenia / Nastavenia screens — only hiding the dead nav items.
+Edited:
+- `src/components/garage/detail/EditServiceRecordDialog.tsx` — render `DeleteServiceRecordButton` inside the dialog body footer area; `onDeleted` calls `close()`.
+- `src/components/garage/detail/ServiceRecordForm.tsx` — accept an optional `footerSlot` so the delete button sits inside the form's footer cleanly (alternative: render below the form inside the dialog). Final decision: render below the form inside the dialog with a `<Separator />` and a small "Nebezpečná zóna" label, keeping the form untouched.
+- `src/components/garage/edit/EditVehicleDialog.tsx` — render `DeleteVehicleButton` at the bottom inside a "Nebezpečná zóna" section; on delete success navigate to `/garage` via `useNavigate()` from `@tanstack/react-router`.
 
-### Summary deliverable at end of build
-1. Fixes applied (root metadata, English fallback pages → Slovak/dark, sidebar dead items removed, dialog surfaces unified, header sizing aligned, overflow guards added, mobile button widths).
-2. Components/screens touched (root, AppSidebar, page headers, four dialogs, PlannedTaskCard, ServiceRecordCard, VehicleSpecsCard, CustomerInfoCard, ServiceRecordForm).
-3. Confirmed which placeholders were removed (sidebar items, Lovable metadata, English 404/error).
-4. Confirmed bug fixes (photo preview URL cleanup, mobile wrap on planned task actions).
-5. Confirm no new major features were added.
+No changes to: `ServiceRecordCard`, `VehicleDetailHeader`, route tree, queries, or types.
+
+## UX details
+
+- Use existing `AlertDialog` from `@/components/ui/alert-dialog` (already in project).
+- Destructive button: `variant="destructive"` with `Trash2` icon from lucide-react, full width on mobile.
+- "Nebezpečná zóna" header: small `text-xs uppercase text-brand-muted` label above the button, with `Separator` (or `<div className="h-px bg-brand-border" />` to match existing style).
+- Buttons disabled while mutation is pending; button label switches to "Odstraňujem…".
+
+## Out of scope
+Undo, recycle bin, bulk delete, cascading customer cleanup, redesign of cards, batch UI.

@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ServiceRecordForm } from "./ServiceRecordForm";
+import { DeleteServiceRecordButton } from "./DeleteServiceRecordButton";
 import type { ServiceRecord } from "@/lib/queries/vehicles";
 
 export function EditServiceRecordDialog({
@@ -28,15 +29,18 @@ export function EditServiceRecordDialog({
   if (!record) return null;
 
   const body = (
-    <ServiceRecordForm
-      key={record.id}
-      mode="edit"
-      record={record}
-      vehicleId={vehicleId}
-      currentMileage={currentMileage}
-      onCancel={close}
-      onSuccess={close}
-    />
+    <div className="space-y-6">
+      <ServiceRecordForm
+        key={record.id}
+        mode="edit"
+        record={record}
+        vehicleId={vehicleId}
+        currentMileage={currentMileage}
+        onCancel={close}
+        onSuccess={close}
+      />
+      <DeleteServiceRecordButton record={record} vehicleId={vehicleId} onDeleted={close} />
+    </div>
   );
 
   if (isMobile) {
