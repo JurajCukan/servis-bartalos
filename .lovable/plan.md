@@ -1,36 +1,36 @@
-## Build /service-history
+## Fix vehicle-card navigation: /garage/$vehicleId never renders the detail page
 
-### Route
-- `src/routes/_authenticated/service-history.tsx` — loader primes `serviceHistoryQuery` via `context.queryClient.ensureQueryData`; component uses `useSuspenseQuery`. Reads search params `q`, `type` via `validateSearch` (zod) so filter state lives in the URL and is shareable. `errorComponent` + `notFoundComponent` per route rules.
-- Sidebar: add `to: "/service-history"` to the "História servisu" item and widen the `NavItem.to` literal union to include it.
+### Root cause
 
-### Query
-`src/lib/queries/serviceHistory.ts`:
-- `ServiceHistoryItem` joined shape (record fields + `vehicle: { id, brand, model, license_plate }` + `customer: { first_name, last_name }`).
-- `serviceHistoryQuery = queryOptions({ queryKey: ["service-history","all"], queryFn })` selecting `service_records.* , vehicles!inner(id, brand, model, license_plate, customers!inner(first_name, last_name))`, ordered by `date desc, created_at desc`. RLS already allows anon SELECT on all three tables — no migration needed.
+Flat file-based routing makes `garage.tsx` the parent of `garage.$vehicleId.tsx` (confirmed in `routeTree.gen.ts`: `AuthenticatedGarageVehicleIdRoute … parentRoute: () => AuthenticatedGarageRoute`). Because `garage.tsx`'s component is the dashboard (no `<Outlet />`), child route matches mount nothing — the parent dashboard always wins.
 
-### Components (under `src/components/service-history/`)
-- `ServiceHistoryPageHeader.tsx` — title "História servisu", subtitle "Prehľad všetkých servisných záznamov."
-- `ServiceHistoryFilters.tsx` — search Input (placeholder per spec) + Select for Typ servisu with the 11 listed options + "Všetky typy". Controlled via URL search params (`useNavigate({ search: prev => ... })`).
-- `ServiceHistoryList.tsx` — receives filtered items, renders `ServiceHistoryItem` list; handles "no results" empty state vs "no records at all" empty state via props.
-- `ServiceHistoryItem.tsx` — Card showing title, date (sk locale), `ServiceTypeBadge` (reuse existing), price (if present), brand+model+ŠPZ, customer name, mileage, description preview (line-clamp-2). Right side: "Zobraziť vozidlo" Link → `/garage/$vehicleId`. Compact, no expand/collapse this iteration (kept simple per spec).
-- `ServiceHistorySkeleton.tsx` — 5 skeleton cards.
-- `EmptyServiceHistoryState.tsx` — two variants via `variant: "empty" | "no-results"` with the exact Slovak copy from the spec.
+This matches the `tanstack-route-architecture` rule: a parent that has children MUST render `<Outlet />` or move its page body into a `*.index.tsx` sibling.
 
-### Filtering
-Client-side `useMemo` over the joined dataset:
-- search: lowercase q matched against customer full name, license_plate, brand, model, title, service_type, description.
-- type: exact match on `service_type` unless "all".
+Confirmed in preview: visiting `/garage/957f...` (direct URL) still rendered the Moja Garáž dashboard, not the detail page. The `VehicleCard` `onClick` → `navigate()` wiring is correct; the failure is downstream in route nesting. (Click ring appears on cards, so handlers fire; the URL change just resolves to the parent component.)
 
-### Loading & errors
-Route uses Suspense via `useSuspenseQuery`; wrap list in `<Suspense fallback={<ServiceHistorySkeleton />}>` inside the page so filters stay interactive. `errorComponent` shows simple Slovak error with retry calling `router.invalidate()`.
+### Fix
+
+Rename `src/routes/_authenticated/garage.tsx` → `src/routes/_authenticated/garage.index.tsx`. With the rename:
+- `/garage` is served by the new `garage.index.tsx` leaf.
+- `/garage/$vehicleId` becomes a sibling leaf (no shared parent file), so its component renders directly under `_authenticated`'s `<Outlet />`.
+
+No code edits inside the file — just the move. The `createFileRoute("/_authenticated/garage/")` path string used by index routes is the same `/_authenticated/garage` it currently uses; TanStack accepts both for an index file. If `routeTree.gen.ts` rebuilds the union without `"/garage"` literal due to the index suffix, no consumer of `to: "/garage"` breaks (sidebar uses `to: "/garage"` which remains valid for index routes).
 
 ### Out of scope (explicit non-changes)
-- No edit/delete/export/photo gallery/notifications.
-- Vehicle detail page untouched.
-- No DB migration (existing anon SELECT policies on `service_records`, `vehicles`, `customers` suffice).
-- No visual redesign of existing screens.
+
+- No redesign, no new features.
+- `VehicleCard`, `VehicleGrid`, `useNavigate` wiring untouched — they were never broken.
+- Photo upload: still not implemented.
+- Detail page (`garage.$vehicleId.tsx`), add-service-record dialog, schedule dialog, service history: untouched.
+
+### Verification
+
+1. Click any vehicle card on `/garage` → URL becomes `/garage/<id>` and the detail page renders (header, customer card, specs, service history).
+2. Browser back returns to `/garage` with grid intact.
+3. On detail, click "+ Pridať záznam" → `AddServiceRecordDialog` opens.
+4. Save a record → service history list refreshes (already validated previously).
+5. Sidebar "Vozidlá" still active on `/garage` and on `/garage/$vehicleId`.
 
 ### Files
-**Created:** `src/routes/_authenticated/service-history.tsx`, `src/lib/queries/serviceHistory.ts`, 6 components under `src/components/service-history/`.
-**Edited:** `src/components/app/AppSidebar.tsx` (add route + widen union).
+
+**Renamed:** `src/routes/_authenticated/garage.tsx` → `src/routes/_authenticated/garage.index.tsx` (no content change).
