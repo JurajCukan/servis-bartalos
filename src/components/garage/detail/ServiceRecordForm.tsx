@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { ServiceRecord } from "@/lib/queries/vehicles";
 
 const SERVICE_TYPES = [
   "Kompletný servis",
@@ -68,38 +69,58 @@ function emptyToNull<T>(v: T | "" | undefined | null): T | null {
   return v;
 }
 
+type Mode = "create" | "edit";
+
 export function ServiceRecordForm({
+  mode = "create",
+  record,
   vehicleId,
   currentMileage,
   onCancel,
   onSuccess,
 }: {
+  mode?: Mode;
+  record?: ServiceRecord;
   vehicleId: string;
   currentMileage: number;
   onCancel: () => void;
   onSuccess: () => void;
 }) {
   const queryClient = useQueryClient();
+  const isEdit = mode === "edit" && record != null;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      date: today(),
-      mileage_at_service: "" as unknown as number,
-      service_type: "",
-      title: "",
-      description: "",
-      parts_replaced: "",
-      price: "",
-      technician: "",
-      next_service_km: "",
-      next_service_date: "",
-    },
+    defaultValues: isEdit
+      ? {
+          date: record.date,
+          mileage_at_service: record.mileage_at_service as unknown as number,
+          service_type: record.service_type,
+          title: record.title,
+          description: record.description,
+          parts_replaced: record.parts_replaced ?? "",
+          price: (record.price ?? "") as unknown as number,
+          technician: record.technician ?? "",
+          next_service_km: (record.next_service_km ?? "") as unknown as number,
+          next_service_date: record.next_service_date ?? "",
+        }
+      : {
+          date: today(),
+          mileage_at_service: "" as unknown as number,
+          service_type: "",
+          title: "",
+          description: "",
+          parts_replaced: "",
+          price: "",
+          technician: "",
+          next_service_km: "",
+          next_service_date: "",
+        },
   });
 
   useEffect(() => {
-    form.setFocus("title");
-  }, [form]);
+    if (!isEdit) form.setFocus("title");
+  }, [form, isEdit]);
 
   const mutation = useMutation({
     mutationFn: async (raw: ParsedValues) => {
@@ -107,8 +128,7 @@ export function ServiceRecordForm({
       const nextKm = emptyToNull(raw.next_service_km) as number | null;
       const nextDate = emptyToNull(raw.next_service_date) as string | null;
 
-      const { error: insertError } = await supabase.from("service_records").insert({
-        vehicle_id: vehicleId,
+      const payload = {
         date: raw.date,
         mileage_at_service: newMileage,
         service_type: raw.service_type,
@@ -119,8 +139,20 @@ export function ServiceRecordForm({
         technician: emptyToNull(raw.technician) as string | null,
         next_service_km: nextKm,
         next_service_date: nextDate,
-      });
-      if (insertError) throw insertError;
+      };
+
+      if (isEdit && record) {
+        const { error: updateError } = await supabase
+          .from("service_records")
+          .update(payload)
+          .eq("id", record.id);
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from("service_records")
+          .insert({ vehicle_id: vehicleId, ...payload });
+        if (insertError) throw insertError;
+      }
 
       let mileageUpdated = false;
       if (newMileage > currentMileage) {
@@ -135,7 +167,8 @@ export function ServiceRecordForm({
         }
       }
 
-      if (nextKm != null || nextDate != null) {
+      // Auto-create scheduled task only on create flow
+      if (!isEdit && (nextKm != null || nextDate != null)) {
         const { error: taskErr } = await supabase.from("scheduled_tasks").insert({
           vehicle_id: vehicleId,
           planned_date: nextDate ?? today(),
@@ -155,11 +188,12 @@ export function ServiceRecordForm({
     },
     onSuccess: ({ mileageUpdated }) => {
       queryClient.invalidateQueries({ queryKey: ["vehicle", vehicleId, "service-records"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle", vehicleId] });
+      queryClient.invalidateQueries({ queryKey: ["service-history"] });
       if (mileageUpdated) {
-        queryClient.invalidateQueries({ queryKey: ["vehicle", vehicleId] });
         queryClient.invalidateQueries({ queryKey: ["vehicles", "with-customers"] });
       }
-      toast.success("Servisný záznam bol uložený");
+      toast.success(isEdit ? "Servisný záznam bol upravený" : "Servisný záznam bol uložený");
       onSuccess();
     },
     onError: (err) => {
@@ -283,7 +317,7 @@ export function ServiceRecordForm({
           disabled={isSubmitting}
           className="bg-brand-accent text-white hover:bg-brand-accent-hover"
         >
-          {isSubmitting ? "Ukladám…" : "Uložiť záznam"}
+          {isSubmitting ? "Ukladám…" : isEdit ? "Uložiť zmeny" : "Uložiť záznam"}
         </Button>
       </div>
     </form>
