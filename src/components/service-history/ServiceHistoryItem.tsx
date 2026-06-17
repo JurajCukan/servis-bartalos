@@ -44,10 +44,12 @@ export function ServiceHistoryItem({ item }: { item: Item }) {
             </span>
           </div>
           {item.description ? (
-            <p className="line-clamp-2 text-sm text-white/70">{item.description}</p>
+            <p className="line-clamp-2 break-words text-sm text-white/70">{item.description}</p>
           ) : null}
           {item.photo_paths && item.photo_paths.length > 0 ? (
-            <ServiceRecordPhotoGrid paths={item.photo_paths} />
+            <div className="mt-1">
+              <ServiceRecordPhotoGrid paths={item.photo_paths} />
+            </div>
           ) : null}
         </div>
         <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">

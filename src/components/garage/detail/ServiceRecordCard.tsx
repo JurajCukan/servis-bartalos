@@ -24,11 +24,11 @@ export function ServiceRecordCard({
           onClick={() => setOpen((o) => !o)}
           className="min-w-0 flex-1 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent rounded-md"
         >
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-base font-semibold text-white">{record.title}</h3>
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <h3 className="min-w-0 break-words text-base font-semibold text-white">{record.title}</h3>
             <ServiceTypeBadge type={record.service_type} />
             {record.photo_paths && record.photo_paths.length > 0 && (
-              <span className="inline-flex items-center gap-1 rounded border border-brand-border bg-brand-bg px-1.5 py-0.5 text-[11px] text-white/60">
+              <span className="inline-flex shrink-0 items-center gap-1 rounded border border-brand-border bg-brand-bg px-1.5 py-0.5 text-[11px] text-white/60">
                 <ImageIcon className="h-3 w-3" aria-hidden />
                 {record.photo_paths.length}
               </span>
