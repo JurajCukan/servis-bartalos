@@ -30,6 +30,8 @@ function ServiceHistoryPage() {
   const navigate = useNavigate({ from: "/service-history" });
   const { data, isLoading, error } = useQuery(serviceHistoryQuery);
 
+  usePocketBaseRealtime("service_records", [["service-history", "all"]]);
+
   const filtered = useMemo(() => {
     const items = data ?? [];
     const needle = q.trim().toLowerCase();
