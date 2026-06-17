@@ -26,6 +26,7 @@ import {
 import type { VehicleDetail } from "@/lib/queries/vehicles";
 
 import { CustomerEditFormSection } from "./CustomerEditFormSection";
+import { DeleteVehicleButton } from "./DeleteVehicleButton";
 import { VehicleEditFormSection } from "./VehicleEditFormSection";
 import { VehiclePhotoField, type PhotoAction } from "./VehiclePhotoField";
 import {
