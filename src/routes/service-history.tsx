@@ -12,6 +12,7 @@ import { ServiceHistorySkeleton } from "@/components/service-history/ServiceHist
 import { EmptyServiceHistoryState } from "@/components/service-history/EmptyServiceHistoryState";
 import { EmptyState } from "@/components/garage/EmptyState";
 import { serviceHistoryQuery } from "@/lib/queries/serviceHistory";
+import { usePocketBaseRealtime } from "@/hooks/usePocketBaseRealtime";
 
 const searchSchema = z.object({
   q: fallback(z.string(), "").default(""),
