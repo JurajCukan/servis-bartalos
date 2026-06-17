@@ -86,8 +86,8 @@ function GaragePage() {
 
   const showAddPlaceholder = () =>
     toast.info("Pridanie vozidla bude doplnené v ďalšom kroku");
-  const openVehicle = () =>
-    toast.info("Detail vozidla bude doplnený v ďalšom kroku");
+  const openVehicle = (v: { id: string }) =>
+    navigate({ to: "/garage/$vehicleId", params: { vehicleId: v.id } });
 
   return (
     <AppShell>
