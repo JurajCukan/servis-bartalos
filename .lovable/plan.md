@@ -1,58 +1,44 @@
-## Scope
+## Goal
+Remove all authentication from the app. Open the workshop app directly at `/garage`, no login screen, no session checks. Keep Supabase as the data store; relax RLS so the dashboard works without a signed-in user.
 
-Build the authenticated `/garage` dashboard ("Moja Garáž") with sidebar shell, search/filter/sort controls, and a vehicle card grid powered by the seeded data. Slovak UI, dark brand theme, no new backend changes.
+## Routing changes
+- `src/routes/index.tsx` → simple `beforeLoad` that `redirect({ to: "/garage" })`. No auth check.
+- `src/routes/login.tsx` → delete the file (was the only consumer of `lib/auth.ts`). With the file gone, `/login` falls through to the root 404; if the user prefers a redirect, we can instead keep a tiny stub that redirects to `/garage`. **Default: delete.**
+- `src/routes/_authenticated/route.tsx` → remove the auth gate. Convert to a plain pass-through layout: `component: () => <Outlet />`, no `beforeLoad`, drop `ssr: false`. Keep the folder so the existing `/_authenticated/garage.tsx` route file (URL `/garage`) keeps working without renames.
 
-## Data layer
+## UI cleanup
+- `src/components/app/AppSidebar.tsx`:
+  - Remove `useProfileQuery`, `logout`, `useNavigate`, `LogOut` imports.
+  - Remove the avatar/initials/name/role block and the "Odhlásiť sa" button.
+  - Replace the sidebar footer with a static workshop block:
+    - title: `Autoservis Bartalos`
+    - subtitle: `Interná servisná aplikácia`
+  - Keep nav items unchanged (Vozidlá active, others disabled with "Pripravuje sa" toast).
+- `src/routes/_authenticated/garage.tsx` → no changes needed; it already does not read auth state.
 
-- `src/lib/queries/vehicles.ts` — exports `vehiclesWithCustomersQuery` (TanStack Query `queryOptions`):
-  ```ts
-  supabase.from("vehicles").select("*, customer:customers(first_name,last_name)")
-  ```
-  Returns DTO `VehicleWithCustomer[]`. No service_records aggregation in this iteration (per spec: skip if not easy).
-- `src/lib/queries/profile.ts` — `useProfileQuery()` fetching the row from `profiles` for the current user; used by sidebar footer.
+## Data/auth layer cleanup
+- Delete `src/lib/auth.ts`.
+- Delete `src/lib/queries/profile.ts`.
+- Leave `src/integrations/supabase/client.ts`, `auth-attacher.ts`, `auth-middleware.ts`, `client.server.ts`, `types.ts` untouched (auto-generated; harmless if unused). `attachSupabaseAuth` in `src/start.ts` is a no-op when there is no session, so leave `src/start.ts` alone.
+- No `onAuthStateChange` is currently wired in `__root.tsx`, so nothing to remove there.
 
-## Routing
+## Backend (RLS) — minimum to make queries work anonymously
+The dashboard reads `vehicles` joined with `customers`. Current policies are `TO authenticated` only, so anon requests return empty. Minimum migration:
 
-- Convert `/_authenticated/garage` from a leaf to a layout: keep `_authenticated/route.tsx` as-is (gate). Add `_authenticated/garage.tsx` which renders the new dashboard (no Outlet needed — sibling routes aren't built yet). Stub routes for the other sidebar items go to a single placeholder route `_authenticated/coming-soon.tsx` ("Pripravuje sa") — the sidebar links target that one path with a query/state telling it which feature; simplest: just make those items disabled buttons with a tooltip, no extra routes. **Decision: disabled buttons, no stub routes.** Keeps surface area small.
+1. `GRANT SELECT ON public.vehicles, public.customers TO anon;`
+2. Add `FOR SELECT TO anon USING (true)` policies on `vehicles` and `customers` (read-only public access). Leave write policies authenticated-only for now since this iteration does not add/edit data from the UI.
+3. Leave `profiles`, `service_records`, `scheduled_tasks` policies as-is (not used in this iteration).
 
-## App shell
+Rationale: smallest possible change to unblock the seeded dashboard. No schema changes, no data changes.
 
-- `src/components/app/AppShell.tsx` — wraps content with shadcn `SidebarProvider`. Desktop: `<Sidebar collapsible="icon">` + main column. Mobile: top bar with hamburger that opens the sidebar as a sheet (shadcn sidebar handles both responsively).
-- `src/components/app/AppSidebar.tsx` — nav items (Vozidlá active, others disabled), footer with avatar/initials, name, role badge, "Odhlásiť sa" button. Uses `useProfileQuery` + `supabase.auth.getUser()`.
-- `src/components/app/MobileTopBar.tsx` — title + `SidebarTrigger` (mobile-only via Tailwind responsive classes).
+## Verification
+- `/` redirects straight to `/garage`.
+- `/garage` renders the seeded vehicles with no login screen, search/filter/sort work.
+- Sidebar footer shows the static workshop block, no logout button.
+- No code paths still call `lib/auth.ts` or `useProfileQuery` (grep after edits).
 
-## Dashboard composition
-
-- `src/routes/_authenticated/garage.tsx` — composes:
-  - `DashboardHeader` (title, subtitle, "+ Pridať vozidlo" button → `toast.info("Pridanie vozidla bude doplnené v ďalšom kroku")`).
-  - Controls row: `VehicleSearchBar`, `VehicleFilters` (status + fuel selects), `VehicleSort`.
-  - `VehicleGrid` rendering `VehicleCard`s, with `LoadingSkeleton`, empty state, and no-results state.
-- Local UI state via `useState` (search, status, fuel, sort). Search debounced 300 ms with a small `useDebouncedValue` hook in `src/hooks/use-debounced-value.ts`.
-
-## Components
-
-Under `src/components/garage/`:
-- `DashboardHeader.tsx`
-- `VehicleSearchBar.tsx` (controlled input, Slovak placeholder, Search icon)
-- `VehicleFilters.tsx` (two shadcn `Select`s)
-- `VehicleSort.tsx` (shadcn `Select` with 4 options)
-- `VehicleCard.tsx` (image area 16:10, status badge overlay, brand/model, year + customer, ŠPZ / Nájazd / VIN-short rows; whole card is a `<button>` for keyboard focus — onClick toast "Detail vozidla bude doplnený v ďalšom kroku")
-- `VehicleGrid.tsx` (responsive grid: 1 col mobile, 2 md, 3 xl)
-- `EmptyState.tsx` (reused for both "no vehicles" and "no results" via props)
-- `LoadingSkeleton.tsx` (controls skeleton + 4 card skeletons)
-- `StatusBadge.tsx` (maps status → semantic color)
-
-## Filtering/sorting logic
-
-Pure derived state in the route component:
-1. Filter by status (`!== "all"`).
-2. Filter by fuel (`!== "all"`).
-3. Filter by debounced search: normalize (`trim`, collapse spaces, lowercase), test against concatenated `first_name last_name license_plate vin brand model`.
-4. Sort: default rule (status SERVIS NUTNÝ first, then `created_at` desc) OR one of the explicit sort options.
-
-## Styling tokens
-
-Reuse existing `--color-brand-bg`, `--color-brand-surface`, `--color-brand-border`, `--color-brand-accent`. Add semantic status colors as Tailwind classes inline (`bg-emerald-600`, `bg-red-600`, `bg-blue-600`, `bg-zinc-600`) — these are status indicators, not theme colors, and keeping them inline avoids token bloat for one-off badge palettes. `tabular-nums` utility on mileage.
-
-## Out of scope (next iterations)
-Vehicle detail, add/edit form, service history, scheduling, alerts page, settings page, Excel import, PWA, realtime, last-service-date aggregation, profile editing.
+## Final summary (to be delivered after build)
+1. Removed/changed: `src/routes/login.tsx` (deleted), `src/lib/auth.ts` (deleted), `src/lib/queries/profile.ts` (deleted), `src/routes/index.tsx` (simple redirect), `src/routes/_authenticated/route.tsx` (gate removed), `src/components/app/AppSidebar.tsx` (logout + profile removed, static footer added).
+2. Backend: one migration adding `anon` SELECT grants + policies on `vehicles` and `customers`.
+3. `/garage` works directly without login.
+4. Remaining auth deps: only auto-generated Supabase integration files (`client.ts`, `auth-attacher.ts`, `auth-middleware.ts`, `client.server.ts`) remain on disk but are unused by the app.
