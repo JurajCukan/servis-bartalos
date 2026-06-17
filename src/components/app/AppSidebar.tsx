@@ -17,13 +17,13 @@ import {
 import { logout } from "@/lib/auth";
 import { useProfileQuery } from "@/lib/queries/profile";
 
-const NAV_ITEMS = [
+const NAV_ITEMS: { key: string; label: string; icon: typeof Car; active?: boolean }[] = [
   { key: "vehicles", label: "Vozidlá", icon: Car, active: true },
   { key: "today", label: "Dnešný plán", icon: CalendarDays },
   { key: "history", label: "História servisu", icon: History },
   { key: "alerts", label: "Upozornenia", icon: Bell },
   { key: "settings", label: "Nastavenia", icon: Settings },
-] as const;
+];
 
 function initials(source: string) {
   const parts = source.trim().split(/\s+/).slice(0, 2);
