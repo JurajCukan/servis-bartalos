@@ -9,8 +9,8 @@ export const Route = createFileRoute("/login")({
       { name: "description", content: "Prihlásenie do internej aplikácie autoservisu Bartalos." },
     ],
   }),
-  beforeLoad: () => {
-    if (isAuthenticated()) throw redirect({ to: "/garage" });
+  beforeLoad: async () => {
+    if (await isAuthenticated()) throw redirect({ to: "/garage" });
   },
   component: LoginPage,
 });

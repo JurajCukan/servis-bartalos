@@ -1,44 +1,48 @@
-## Scope (this iteration)
+## Scope
 
-Build **only the login screen** and a stub `/garage` route, wired to a PocketBase backend via the official JS SDK. No collections are created from the app — those are configured directly in the PocketBase Admin UI (see note at the end).
+Replace PocketBase with Lovable Cloud (Supabase). Keep login UI, routes, and brand tokens identical.
 
-## What gets built
+## Steps
 
-### 1. PocketBase client
-- Install `pocketbase` SDK.
-- `src/lib/pocketbase.ts`: single `PocketBase` instance pointing at `http://localhost:8090` (overridable via `VITE_POCKETBASE_URL`). Auth store persists to `localStorage` so sessions survive reloads (PocketBase default tokens last ~30 days).
+### 1. Enable Lovable Cloud
+- Call `supabase--enable` to provision the project and generate `@/integrations/supabase/client`, types, and the managed `_authenticated/route.tsx` gate.
 
-### 2. Auth helper
-- `src/lib/auth.ts`: `login(email, password)`, `logout()`, `isAuthenticated()`, `currentUser()` wrapping `pb.collection('users').authWithPassword(...)`.
+### 2. Remove PocketBase
+- `bun remove pocketbase`.
+- Delete `src/lib/pocketbase.ts`.
+- Replace `src/lib/auth.ts` with a Supabase-backed helper exposing `login`, `logout`, `currentUser`, and `useAuth()` (a React hook returning `{ user, profile, loading }` that listens to `onAuthStateChange`). Profile (with `role`) is fetched once after sign-in and cached in a small Zustand-free React context provider mounted in `__root.tsx`.
+- On successful sign-in, upsert `public.profiles` row for the user if missing (`id = auth.uid()`, `role = 'technik'` default, `name` from `user_metadata.full_name` or email local-part).
 
-### 3. Routes
-- `src/routes/index.tsx` → redirect: if authenticated → `/garage`, else → `/login`.
-- `src/routes/login.tsx` → login screen (details below). If already authed, redirect to `/garage`.
-- `src/routes/_authenticated.tsx` → pathless layout. `beforeLoad` checks `pb.authStore.isValid`; if not, `redirect({ to: '/login' })`. Renders `<Outlet />`.
-- `src/routes/_authenticated.garage.tsx` → placeholder page: "Dashboard — coming soon" + "Odhlásiť sa" button that calls `logout()` and navigates to `/login`.
+### 3. Routing
+- Keep `/login` (top-level, public). It calls `supabase.auth.signInWithPassword`; on success → `/garage`. Error → existing Slovak message.
+- Move `/garage` under the Lovable-managed `src/routes/_authenticated/` subtree (rename `src/routes/_authenticated.garage.tsx` → `src/routes/_authenticated/garage.tsx`). Delete the old hand-authored `src/routes/_authenticated.tsx` — the integration ships its own `_authenticated/route.tsx`.
+- `src/routes/index.tsx` keeps redirect logic but uses Supabase session (`supabase.auth.getSession()` in `beforeLoad`).
+- Logout button calls `supabase.auth.signOut()` then `navigate({ to: '/login' })` with cache teardown per sign-out hygiene.
 
-### 4. Login page UI (Slovak)
-- Full-screen centered card on `#111111` background, white text, red `#CC0000` accent for the submit button and focus ring.
-- H1 "Servisná knižka", subtitle "Autoservis Bartalos".
-- Form fields: "Email" (email input), "Heslo" (password input), both required.
-- Submit button: "Prihlásiť sa". Shows loading state ("Prihlasujem…") while request runs.
-- On error from PocketBase → show "Nesprávny email alebo heslo" below the form.
-- On success → `navigate({ to: '/garage' })`.
+### 4. Database migration (single migration)
+- `public.profiles` (id uuid PK → auth.users, name text, role text check `('technik','manažér')` default `'technik'`, created_at).
+- `public.customers`, `public.vehicles`, `public.service_records`, `public.scheduled_tasks` per spec, all with `gen_random_uuid()` PKs, FKs with `ON DELETE CASCADE` for child rows, `updated_at` maintained by a shared trigger `public.set_updated_at()`.
+- Unique constraint on `vehicles.license_plate`.
+- GRANTs for every new table: `SELECT,INSERT,UPDATE,DELETE TO authenticated` + `ALL TO service_role`. No anon grants (all data is auth-only).
+- Enable RLS on all tables.
+- Policies:
+  - `profiles`: SELECT/UPDATE where `id = auth.uid()`; INSERT where `id = auth.uid()` (so the first-login upsert works).
+  - `customers`, `vehicles`, `service_records`, `scheduled_tasks`: four policies each (SELECT/INSERT/UPDATE/DELETE) `TO authenticated` `USING (true)` / `WITH CHECK (true)` — matches the "authenticated users can do all operations" spec.
+- Trigger `on_auth_user_created` on `auth.users` to auto-insert into `profiles` (belt-and-braces with the client-side upsert).
 
-### 5. Styling
-- Use existing Tailwind v4 setup. Add minimal semantic tokens in `src/styles.css` for the brand palette (`--brand-bg: #111111`, `--brand-accent: #CC0000`) and map under `@theme inline` so we can use `bg-brand-bg`, `bg-brand-accent`. No hardcoded hexes in components.
+### 5. Storage buckets
+- `supabase--storage_create_bucket` for `vehicle-photos` and `service-photos`, public = true.
+- Migration sets `allowed_mime_types = {image/jpeg,image/png,image/webp}` and `file_size_limit = 10485760` on each bucket via `UPDATE storage.buckets`.
+- RLS policies on `storage.objects` for both buckets: SELECT to `public` (bucket is public anyway), and INSERT/UPDATE/DELETE `TO authenticated` scoped to the two bucket ids.
 
-## Out of scope (next iterations)
-- Creating PocketBase collections, the `role` field, customers/vehicles/service_records/scheduled_tasks UIs, photo upload, realtime sync, PWA manifest, dashboard content.
+### 6. Seed data
+- Use the insert tool to add the 4 customers + 4 vehicles exactly as listed (status, ŠPZ, VIN/mileage/fuel where provided). Seed runs after schema migration. Idempotent via `ON CONFLICT (license_plate) DO NOTHING` on vehicles and a name+phone match for customers.
 
-## Important note about PocketBase at `localhost:8090`
+### 7. Untouched
+- Login page JSX, Slovak copy, brand tokens in `src/styles.css`, route paths (`/login`, `/garage`).
 
-The Lovable preview runs in your browser, so `http://localhost:8090` means **the PocketBase running on your own machine**. For login to work end-to-end you need to:
+## Notes / decisions
 
-1. Have `pocketbase serve` running locally on port 8090.
-2. In the PocketBase Admin UI (`http://localhost:8090/_/`) create the `users` auth collection (or use the default one), add a `role` select field (`technik`, `manažér`), and create at least one test user.
-3. Add the Lovable preview origin to PocketBase's allowed CORS origins (PocketBase allows all origins by default, but if you tightened it, re-allow the preview URL).
-
-The collections in your PRD (`customers`, `vehicles`, `service_records`, `scheduled_tasks`) should be created in the PocketBase Admin UI before we build those screens — the app will read/write them, not create them. I'll provide a step-by-step setup checklist when we get to those features.
-
-If you'd rather not depend on a local PocketBase from the hosted preview (it won't work for anyone other than you, on your network), say the word and I'll switch the backend to Lovable Cloud instead — same data model, no local server, accessible from any device.
+- The "users can do all operations" policy is intentionally permissive per the spec; if you later want per-technician scoping (e.g. only your own service records), say the word and I'll tighten to `auth.uid()`-based policies.
+- No new pages are built in this iteration — garage stays the "Dashboard — coming soon" placeholder. Seed data is purely so the upcoming dashboard has rows to show.
+- Email/password is the only auth method enabled (matches the existing login form). Test users must be created via Cloud → Users.

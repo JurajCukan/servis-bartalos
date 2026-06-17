@@ -10,8 +10,8 @@ export const Route = createFileRoute("/_authenticated/garage")({
 
 function GaragePage() {
   const navigate = useNavigate();
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    await logout();
     navigate({ to: "/login" });
   }
   return (
