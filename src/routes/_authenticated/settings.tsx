@@ -30,10 +30,10 @@ function SettingsPage() {
         <ThemeSettingCard />
         <AppInfoCard />
         <DataSafetyCard />
-        <Card className="border-brand-border bg-brand-surface text-white">
+        <Card className="border-brand-border bg-brand-surface text-brand-fg">
           <CardHeader>
-            <CardTitle className="text-white">Rýchle akcie</CardTitle>
-            <CardDescription className="text-white/60">
+            <CardTitle className="text-brand-fg">Rýchle akcie</CardTitle>
+            <CardDescription className="text-brand-fg-muted">
               Pokračujte v práci v aplikácii.
             </CardDescription>
           </CardHeader>

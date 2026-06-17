@@ -228,7 +228,7 @@ export function EditVehicleDialog({
           variant="outline"
           onClick={() => onOpenChange(false)}
           disabled={mutation.isPending}
-          className="border-brand-border bg-transparent text-white hover:bg-brand-surface"
+          className="border-brand-border bg-transparent text-brand-fg hover:bg-brand-surface"
         >
           Zrušiť
         </Button>
@@ -249,10 +249,10 @@ export function EditVehicleDialog({
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
           side="bottom"
-          className="h-[95vh] overflow-y-auto border-brand-border bg-brand-surface text-white"
+          className="h-[95vh] overflow-y-auto border-brand-border bg-brand-surface text-brand-fg"
         >
           <SheetHeader>
-            <SheetTitle className="text-white">Upraviť údaje</SheetTitle>
+            <SheetTitle className="text-brand-fg">Upraviť údaje</SheetTitle>
           </SheetHeader>
           <div className="mt-4">{body}</div>
         </SheetContent>
@@ -262,9 +262,9 @@ export function EditVehicleDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto border-brand-border bg-brand-surface text-white sm:max-w-2xl">
+      <DialogContent className="max-h-[90vh] overflow-y-auto border-brand-border bg-brand-surface text-brand-fg sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="text-white">Upraviť údaje</DialogTitle>
+          <DialogTitle className="text-brand-fg">Upraviť údaje</DialogTitle>
         </DialogHeader>
         {body}
       </DialogContent>

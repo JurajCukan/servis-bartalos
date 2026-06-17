@@ -48,10 +48,10 @@ export function EditServiceRecordDialog({
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
           side="bottom"
-          className="h-[95vh] overflow-y-auto border-brand-border bg-brand-surface text-white"
+          className="h-[95vh] overflow-y-auto border-brand-border bg-brand-surface text-brand-fg"
         >
           <SheetHeader>
-            <SheetTitle className="text-white">Upraviť servisný záznam</SheetTitle>
+            <SheetTitle className="text-brand-fg">Upraviť servisný záznam</SheetTitle>
           </SheetHeader>
           <div className="mt-4">{body}</div>
         </SheetContent>
@@ -61,9 +61,9 @@ export function EditServiceRecordDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto border-brand-border bg-brand-surface text-white">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto border-brand-border bg-brand-surface text-brand-fg">
         <DialogHeader>
-          <DialogTitle className="text-white">Upraviť servisný záznam</DialogTitle>
+          <DialogTitle className="text-brand-fg">Upraviť servisný záznam</DialogTitle>
         </DialogHeader>
         {body}
       </DialogContent>

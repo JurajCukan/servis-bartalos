@@ -13,7 +13,7 @@ export function FormField({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-sm text-white/80">
+      <Label className="text-sm text-brand-fg">
         {label}
         {required && <span className="ml-1 text-brand-accent">*</span>}
       </Label>

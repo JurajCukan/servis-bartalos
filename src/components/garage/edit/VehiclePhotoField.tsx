@@ -75,7 +75,7 @@ export function VehiclePhotoField({
 
   return (
     <section className="space-y-3">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-white/60">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-brand-fg-muted">
         Hlavná fotka vozidla
       </h3>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
@@ -87,18 +87,18 @@ export function VehiclePhotoField({
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-white/40">
+            <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-brand-fg-subtle">
               <Car className="h-8 w-8" aria-hidden />
               <span className="text-xs">Bez fotky</span>
             </div>
           )}
           {action === "replace" && (
-            <span className="absolute left-1 top-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-white">
+            <span className="absolute left-1 top-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-brand-fg">
               Nová
             </span>
           )}
           {showRemoved && (
-            <span className="absolute left-1 top-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-white">
+            <span className="absolute left-1 top-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-brand-fg">
               Odstránená
             </span>
           )}
@@ -110,7 +110,7 @@ export function VehiclePhotoField({
             size="sm"
             disabled={disabled}
             onClick={() => fileRef.current?.click()}
-            className="border-brand-border bg-transparent text-white hover:bg-brand-surface"
+            className="border-brand-border bg-transparent text-brand-fg hover:bg-brand-surface"
           >
             <Upload className="mr-1.5 h-3.5 w-3.5" />
             {hasCurrent || action === "replace" ? "Nahradiť" : "Nahrať fotku"}
@@ -122,7 +122,7 @@ export function VehiclePhotoField({
               size="sm"
               disabled={disabled}
               onClick={() => onChange({ action: "remove", pendingFile: null })}
-              className="border-brand-border bg-transparent text-white hover:bg-brand-surface"
+              className="border-brand-border bg-transparent text-brand-fg hover:bg-brand-surface"
             >
               <X className="mr-1.5 h-3.5 w-3.5" />
               Odstrániť
@@ -135,7 +135,7 @@ export function VehiclePhotoField({
               size="sm"
               disabled={disabled}
               onClick={() => onChange({ action: "keep", pendingFile: null })}
-              className="text-white/70 hover:bg-brand-surface hover:text-white"
+              className="text-brand-fg-muted hover:bg-brand-surface hover:text-brand-fg"
             >
               <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
               Zrušiť zmenu
@@ -153,7 +153,7 @@ export function VehiclePhotoField({
           />
         </div>
       </div>
-      <p className="text-xs text-white/40">
+      <p className="text-xs text-brand-fg-subtle">
         JPG, PNG alebo WEBP, max 10 MB.
       </p>
     </section>

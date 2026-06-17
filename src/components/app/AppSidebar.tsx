@@ -42,14 +42,14 @@ export function AppSidebar() {
     <Sidebar collapsible="offcanvas" className="border-r border-brand-border">
       <SidebarHeader className="border-b border-brand-border bg-brand-bg px-4 py-4">
         <div>
-          <p className="text-base font-semibold text-white">Servisná knižka</p>
-          <p className="text-xs text-white/50">Autoservis Bartalos</p>
+          <p className="text-base font-semibold text-brand-fg">Servisná knižka</p>
+          <p className="text-xs text-brand-fg-muted">Autoservis Bartalos</p>
         </div>
       </SidebarHeader>
 
       <SidebarContent className="bg-brand-bg">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-white/40">Navigácia</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-brand-fg-subtle">Navigácia</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {NAV_ITEMS.map((item) => {
@@ -60,7 +60,7 @@ export function AppSidebar() {
                     <SidebarMenuButton
                       asChild
                       isActive={active}
-                      className="text-white data-[active=true]:bg-brand-accent/15 data-[active=true]:text-white"
+                      className="text-brand-fg data-[active=true]:bg-brand-accent/15 data-[active=true]:text-brand-fg"
                     >
                       <Link to={item.to}>
                         <Icon className="h-4 w-4" />
@@ -77,8 +77,8 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t border-brand-border bg-brand-bg p-4">
         <div>
-          <p className="text-sm font-semibold text-white">Autoservis Bartalos</p>
-          <p className="text-xs text-white/50">Interná servisná aplikácia</p>
+          <p className="text-sm font-semibold text-brand-fg">Autoservis Bartalos</p>
+          <p className="text-xs text-brand-fg-muted">Interná servisná aplikácia</p>
         </div>
       </SidebarFooter>
     </Sidebar>

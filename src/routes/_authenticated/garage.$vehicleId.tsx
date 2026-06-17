@@ -31,8 +31,8 @@ export const Route = createFileRoute("/_authenticated/garage/$vehicleId")({
   errorComponent: ({ error }) => (
     <AppShell>
       <div className="mx-auto max-w-3xl rounded-xl border border-brand-border bg-brand-surface p-8 text-center">
-        <h1 className="text-xl font-semibold text-white">Nepodarilo sa načítať vozidlo</h1>
-        <p className="mt-2 text-sm text-white/60">{error.message}</p>
+        <h1 className="text-xl font-semibold text-brand-fg">Nepodarilo sa načítať vozidlo</h1>
+        <p className="mt-2 text-sm text-brand-fg-muted">{error.message}</p>
         <Link
           to="/garage"
           className="mt-6 inline-block rounded-md bg-brand-accent px-4 py-2 text-sm font-semibold text-white"
@@ -45,8 +45,8 @@ export const Route = createFileRoute("/_authenticated/garage/$vehicleId")({
   notFoundComponent: () => (
     <AppShell>
       <div className="mx-auto max-w-3xl rounded-xl border border-brand-border bg-brand-surface p-8 text-center">
-        <h1 className="text-xl font-semibold text-white">Vozidlo sa nenašlo</h1>
-        <p className="mt-2 text-sm text-white/60">Toto vozidlo neexistuje alebo bolo odstránené.</p>
+        <h1 className="text-xl font-semibold text-brand-fg">Vozidlo sa nenašlo</h1>
+        <p className="mt-2 text-sm text-brand-fg-muted">Toto vozidlo neexistuje alebo bolo odstránené.</p>
         <Link
           to="/garage"
           className="mt-6 inline-block rounded-md bg-brand-accent px-4 py-2 text-sm font-semibold text-white"

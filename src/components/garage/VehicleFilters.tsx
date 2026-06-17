@@ -37,7 +37,7 @@ export function VehicleFilters({
   return (
     <div className="flex flex-col gap-2 sm:flex-row">
       <Select value={status} onValueChange={onStatusChange}>
-        <SelectTrigger className="h-10 w-full sm:w-[180px] border-brand-border bg-brand-surface text-white">
+        <SelectTrigger className="h-10 w-full sm:w-[180px] border-brand-border bg-brand-surface text-brand-fg">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -50,7 +50,7 @@ export function VehicleFilters({
       </Select>
 
       <Select value={fuel} onValueChange={onFuelChange}>
-        <SelectTrigger className="h-10 w-full sm:w-[170px] border-brand-border bg-brand-surface text-white">
+        <SelectTrigger className="h-10 w-full sm:w-[170px] border-brand-border bg-brand-surface text-brand-fg">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

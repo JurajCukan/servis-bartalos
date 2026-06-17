@@ -25,7 +25,7 @@ export function VehicleSort({
 }) {
   return (
     <Select value={value} onValueChange={(v) => onChange(v as SortKey)}>
-      <SelectTrigger className="h-10 w-full sm:w-[200px] border-brand-border bg-brand-surface text-white">
+      <SelectTrigger className="h-10 w-full sm:w-[200px] border-brand-border bg-brand-surface text-brand-fg">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

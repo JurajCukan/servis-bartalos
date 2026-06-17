@@ -22,6 +22,10 @@
   --color-brand-bg: var(--brand-bg);
   --color-brand-surface: var(--brand-surface);
   --color-brand-border: var(--brand-border);
+  --color-brand-fg: var(--brand-fg);
+  --color-brand-fg-muted: var(--brand-fg-muted);
+  --color-brand-fg-subtle: var(--brand-fg-subtle);
+  --color-brand-muted: var(--brand-fg-muted);
   --color-brand-accent: #cc0000;
   --color-brand-accent-hover: #b00000;
   --radius-sm: calc(var(--radius) - 4px);
@@ -71,6 +75,9 @@
   --brand-bg: #f7f7f8;
   --brand-surface: #ffffff;
   --brand-border: #e5e5e7;
+  --brand-fg: #111111;
+  --brand-fg-muted: #5a5a60;
+  --brand-fg-subtle: #8a8a90;
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
@@ -109,6 +116,9 @@
   --brand-bg: #111111;
   --brand-surface: #1a1a1a;
   --brand-border: #2a2a2a;
+  --brand-fg: #ffffff;
+  --brand-fg-muted: rgba(255, 255, 255, 0.62);
+  --brand-fg-subtle: rgba(255, 255, 255, 0.42);
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.208 0.042 265.755);

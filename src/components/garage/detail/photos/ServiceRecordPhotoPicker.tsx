@@ -74,9 +74,9 @@ export function ServiceRecordPhotoPicker({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <div className="text-sm text-white/80">
+        <div className="text-sm text-brand-fg">
           Fotky{" "}
-          <span className="text-xs text-white/40">
+          <span className="text-xs text-brand-fg-subtle">
             ({totalCount}/{MAX_PHOTOS_PER_RECORD})
           </span>
         </div>
@@ -86,7 +86,7 @@ export function ServiceRecordPhotoPicker({
           size="sm"
           disabled={disabled || atLimit}
           onClick={() => fileRef.current?.click()}
-          className="border-brand-border bg-transparent text-white hover:bg-brand-surface"
+          className="border-brand-border bg-transparent text-brand-fg hover:bg-brand-surface"
         >
           <Upload className="mr-1.5 h-3.5 w-3.5" />
           Pridať fotky
@@ -105,7 +105,7 @@ export function ServiceRecordPhotoPicker({
       </div>
 
       {totalCount === 0 ? (
-        <div className="rounded-md border border-dashed border-brand-border bg-brand-bg px-3 py-6 text-center text-sm text-white/40">
+        <div className="rounded-md border border-dashed border-brand-border bg-brand-bg px-3 py-6 text-center text-sm text-brand-fg-subtle">
           Zatiaľ bez fotiek
         </div>
       ) : (
@@ -160,7 +160,7 @@ function Thumb({
         <div className="h-full w-full animate-pulse bg-brand-surface" />
       )}
       {pending && (
-        <div className="absolute bottom-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-white">
+        <div className="absolute bottom-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-brand-fg">
           Nové
         </div>
       )}
@@ -169,7 +169,7 @@ function Thumb({
           type="button"
           onClick={onRemove}
           aria-label="Odstrániť fotku"
-          className="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-white opacity-80 transition hover:bg-black hover:opacity-100"
+          className="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-brand-fg opacity-80 transition hover:bg-black hover:opacity-100"
         >
           <X className="h-3 w-3" />
         </button>

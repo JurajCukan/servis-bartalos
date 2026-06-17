@@ -29,9 +29,9 @@ export function ServiceHistorySection({
   return (
     <section className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-white">Servisná história</h2>
+        <h2 className="text-lg font-semibold text-brand-fg">Servisná história</h2>
         {records && records.length > 0 && (
-          <span className="text-sm text-white/50">{recordsLabel(records.length)}</span>
+          <span className="text-sm text-brand-fg-muted">{recordsLabel(records.length)}</span>
         )}
       </div>
 

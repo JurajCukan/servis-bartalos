@@ -4,10 +4,10 @@ export function DashboardHeader({ onAddVehicle }: { onAddVehicle: () => void }) 
   return (
     <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-brand-fg sm:text-3xl">
           Moja Garáž
         </h1>
-        <p className="text-sm text-white/60">
+        <p className="text-sm text-brand-fg-muted">
           Spravujte a sledujte stav vozidiel v servise.
         </p>
       </div>

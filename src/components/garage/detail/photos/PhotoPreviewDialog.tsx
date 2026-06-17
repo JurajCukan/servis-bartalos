@@ -41,7 +41,7 @@ export function PhotoPreviewDialog({
                 type="button"
                 onClick={prev}
                 aria-label="Predchádzajúca"
-                className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-white transition hover:bg-black/80"
+                className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-brand-fg transition hover:bg-black/80"
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
@@ -49,11 +49,11 @@ export function PhotoPreviewDialog({
                 type="button"
                 onClick={next}
                 aria-label="Ďalšia"
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-white transition hover:bg-black/80"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-brand-fg transition hover:bg-black/80"
               >
                 <ChevronRight className="h-5 w-5" />
               </button>
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-md bg-black/60 px-2 py-0.5 text-xs text-white">
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-md bg-black/60 px-2 py-0.5 text-xs text-brand-fg">
                 {safeIndex + 1} / {urls.length}
               </div>
             </>
@@ -62,7 +62,7 @@ export function PhotoPreviewDialog({
             type="button"
             onClick={() => onOpenChange(false)}
             aria-label="Zavrieť"
-            className="absolute right-2 top-2 rounded-full bg-black/60 p-2 text-white transition hover:bg-black/80"
+            className="absolute right-2 top-2 rounded-full bg-black/60 p-2 text-brand-fg transition hover:bg-black/80"
           >
             <X className="h-4 w-4" />
           </button>

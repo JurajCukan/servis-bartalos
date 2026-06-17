@@ -17,15 +17,15 @@ export function VehicleSpecsCard({ vehicle }: { vehicle: VehicleDetail }) {
 
   return (
     <section className="rounded-xl border border-brand-border bg-brand-surface p-5">
-      <h2 className="text-lg font-semibold text-white">Technické špecifikácie</h2>
+      <h2 className="text-lg font-semibold text-brand-fg">Technické špecifikácie</h2>
       {rows.length === 0 ? (
-        <p className="mt-2 text-sm text-white/50">Žiadne údaje.</p>
+        <p className="mt-2 text-sm text-brand-fg-muted">Žiadne údaje.</p>
       ) : (
         <dl className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-2 text-sm">
           {rows.map((r) => (
             <div key={r.label} className="contents">
-              <dt className="text-white/50">{r.label}</dt>
-              <dd className="min-w-0 break-words text-white">{r.value}</dd>
+              <dt className="text-brand-fg-muted">{r.label}</dt>
+              <dd className="min-w-0 break-words text-brand-fg">{r.value}</dd>
             </div>
           ))}
         </dl>
