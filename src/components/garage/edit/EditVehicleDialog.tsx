@@ -240,6 +240,7 @@ export function EditVehicleDialog({
           {mutation.isPending ? "Ukladám…" : "Uložiť zmeny"}
         </Button>
       </div>
+      <DeleteVehicleButton vehicle={vehicle} onDeleted={() => onOpenChange(false)} />
     </form>
   );
 
