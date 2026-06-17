@@ -194,6 +194,12 @@ export function ServiceRecordForm({
   const queryClient = useQueryClient();
   const isEdit = mode === "edit" && record != null;
 
+  const [existingPaths, setExistingPaths] = useState<string[]>(
+    isEdit ? record.photo_paths ?? [] : [],
+  );
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: isEdit
