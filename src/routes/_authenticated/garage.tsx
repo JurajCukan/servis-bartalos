@@ -92,7 +92,7 @@ function GaragePage() {
   return (
     <AppShell>
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
-        <DashboardHeader onAddVehicle={showAddPlaceholder} />
+        <DashboardHeader onAddVehicle={openAdd} />
 
         {isLoading ? (
           <DashboardLoadingSkeleton />
@@ -123,7 +123,7 @@ function GaragePage() {
                 action={
                   <button
                     type="button"
-                    onClick={showAddPlaceholder}
+                    onClick={openAdd}
                     className="inline-flex items-center gap-2 rounded-md bg-brand-accent px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-accent-hover"
                   >
                     <Plus className="h-4 w-4" />
@@ -142,6 +142,7 @@ function GaragePage() {
           </>
         )}
       </div>
+      <AddVehicleDialog open={addOpen} onOpenChange={setAddOpen} />
     </AppShell>
   );
 }
