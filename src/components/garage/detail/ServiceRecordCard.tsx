@@ -76,26 +76,26 @@ export function ServiceRecordCard({
         </div>
       </div>
 
-      {!open && record.description && (
-        <p className="mt-2 line-clamp-2 text-sm text-white/70">{record.description}</p>
+      {!open && record.description?.trim() && (
+        <p className="mt-2 line-clamp-2 text-sm text-white/70">{record.description.trim()}</p>
       )}
 
       {open && (
         <div className="mt-4 space-y-3 border-t border-brand-border pt-4 text-sm">
-          {record.description && (
-            <p className="whitespace-pre-wrap text-white/80">{record.description}</p>
+          {record.description?.trim() && (
+            <p className="whitespace-pre-wrap text-white/80">{record.description.trim()}</p>
           )}
           <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
-            {record.parts_replaced && (
+            {record.parts_replaced?.trim() && (
               <div>
                 <dt className="text-white/50">Vymenené diely</dt>
-                <dd className="mt-0.5 whitespace-pre-wrap text-white">{record.parts_replaced}</dd>
+                <dd className="mt-0.5 whitespace-pre-wrap text-white">{record.parts_replaced.trim()}</dd>
               </div>
             )}
-            {record.technician && (
+            {record.technician?.trim() && (
               <div>
                 <dt className="text-white/50">Technik</dt>
-                <dd className="mt-0.5 text-white">{record.technician}</dd>
+                <dd className="mt-0.5 text-white">{record.technician.trim()}</dd>
               </div>
             )}
             {record.next_service_km != null && (
