@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import { Car } from "lucide-react";
 import { StatusBadge } from "./StatusBadge";
 import { formatKm as formatMileage } from "@/lib/format";
+import { getVehiclePhotoSignedUrl } from "@/lib/vehiclePhoto";
 import type { VehicleWithCustomer } from "@/lib/queries/vehicles";
 
 
@@ -16,6 +18,23 @@ export function VehicleCard({
     : "—";
   const vinShort = vehicle.vin ? vehicle.vin.slice(-8) : null;
 
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!vehicle.photo_path) {
+      setSignedUrl(null);
+      return;
+    }
+    getVehiclePhotoSignedUrl(vehicle.photo_path).then((u) => {
+      if (!cancelled) setSignedUrl(u);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [vehicle.photo_path]);
+
+  const imageUrl = signedUrl ?? (vehicle.photo_path ? null : vehicle.photo_url);
+
   return (
     <button
       type="button"
@@ -23,9 +42,9 @@ export function VehicleCard({
       className="group flex w-full flex-col overflow-hidden rounded-xl border border-brand-border bg-brand-surface text-left transition hover:border-brand-accent/60 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
     >
       <div className="relative aspect-[16/10] w-full overflow-hidden bg-brand-bg">
-        {vehicle.photo_url ? (
+        {imageUrl ? (
           <img
-            src={vehicle.photo_url}
+            src={imageUrl}
             alt={`${vehicle.brand} ${vehicle.model}`}
             className="h-full w-full object-cover transition group-hover:scale-105"
             loading="lazy"
