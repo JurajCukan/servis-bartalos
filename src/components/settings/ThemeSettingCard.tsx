@@ -49,7 +49,7 @@ export function ThemeSettingCard() {
                 <RadioGroupItem
                   id={`theme-${opt.value}`}
                   value={opt.value}
-                  className="mt-1 border-white/40 text-brand-accent"
+                  className="mt-1 border-brand-border text-brand-accent"
                 />
                 <div className="flex-1 space-y-1">
                   <div className="flex items-center gap-2 text-sm font-medium text-brand-fg">

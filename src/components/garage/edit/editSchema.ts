@@ -59,7 +59,7 @@ export const FUEL_TYPES = [
 ] as const;
 
 export const inputCls =
-  "bg-brand-bg border-brand-border text-white placeholder:text-white/30 focus-visible:ring-brand-accent";
+  "bg-brand-bg border-brand-border text-brand-fg placeholder:text-brand-fg-subtle focus-visible:ring-brand-accent";
 
 export function emptyToNull(s: string | undefined | null): string | null {
   if (!s) return null;
