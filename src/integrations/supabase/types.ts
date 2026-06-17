@@ -194,6 +194,7 @@ export type Database = {
           model: string
           notes: string | null
           oil_volume: string | null
+          photo_path: string | null
           photo_url: string | null
           power: string | null
           status: string
@@ -216,6 +217,7 @@ export type Database = {
           model: string
           notes?: string | null
           oil_volume?: string | null
+          photo_path?: string | null
           photo_url?: string | null
           power?: string | null
           status?: string
@@ -238,6 +240,7 @@ export type Database = {
           model?: string
           notes?: string | null
           oil_volume?: string | null
+          photo_path?: string | null
           photo_url?: string | null
           power?: string | null
           status?: string
