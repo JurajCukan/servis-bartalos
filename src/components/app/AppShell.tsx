@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
+import { ConnectionBanner } from "./ConnectionBanner";
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
@@ -14,6 +15,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               Servisná knižka
             </span>
           </header>
+          <ConnectionBanner />
           <main className="flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8">{children}</main>
         </div>
       </div>
