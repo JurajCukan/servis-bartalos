@@ -189,7 +189,7 @@ export function ScheduleTaskForm({
         <Button
           type="submit"
           disabled={submitting}
-          className="bg-brand-accent text-brand-fg hover:bg-brand-accent-hover"
+          className="bg-brand-accent text-white hover:bg-brand-accent-hover"
         >
           {submitting ? "Ukladám…" : "Uložiť plán"}
         </Button>

@@ -187,7 +187,7 @@ export function VehicleForm({
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="bg-brand-accent text-brand-fg hover:bg-brand-accent-hover"
+          className="bg-brand-accent text-white hover:bg-brand-accent-hover"
         >
           {isSubmitting ? "Ukladám…" : "Uložiť vozidlo"}
         </Button>

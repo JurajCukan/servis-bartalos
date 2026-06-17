@@ -174,7 +174,7 @@ export function CustomerStep({
         <Button
           type="button"
           onClick={handleContinue}
-          className="bg-brand-accent text-brand-fg hover:bg-brand-accent-hover"
+          className="bg-brand-accent text-white hover:bg-brand-accent-hover"
         >
           Pokračovať
         </Button>
@@ -198,7 +198,7 @@ function ToggleBtn({
       onClick={onClick}
       className={`rounded px-3 py-1.5 text-xs font-medium transition ${
         active
-          ? "bg-brand-accent text-brand-fg"
+          ? "bg-brand-accent text-white"
           : "text-brand-fg-muted hover:text-brand-fg"
       }`}
     >

@@ -482,7 +482,7 @@ export function ServiceRecordForm({
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="bg-brand-accent text-brand-fg hover:bg-brand-accent-hover"
+          className="bg-brand-accent text-white hover:bg-brand-accent-hover"
         >
           {isSubmitting ? "Ukladám…" : isEdit ? "Uložiť zmeny" : "Uložiť záznam"}
         </Button>

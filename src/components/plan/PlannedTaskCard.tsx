@@ -126,7 +126,7 @@ export function PlannedTaskCard({ task }: { task: PlannedTask }) {
               type="button"
               onClick={() => updateStatus.mutate("Dokončené")}
               disabled={busy}
-              className="inline-flex items-center justify-center gap-1 rounded-md bg-brand-accent px-3 py-1.5 text-xs font-semibold text-brand-fg transition hover:bg-brand-accent-hover disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-1 rounded-md bg-brand-accent px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-accent-hover disabled:opacity-50"
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
               Označiť ako dokončené

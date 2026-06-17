@@ -4,7 +4,7 @@ export function StepIndicator({ step }: { step: 1 | 2 }) {
       <span
         className={
           step === 1
-            ? "rounded-full bg-brand-accent px-2 py-0.5 font-semibold text-brand-fg"
+            ? "rounded-full bg-brand-accent px-2 py-0.5 font-semibold text-white"
             : "rounded-full bg-brand-surface px-2 py-0.5 text-brand-fg-muted"
         }
       >
@@ -14,7 +14,7 @@ export function StepIndicator({ step }: { step: 1 | 2 }) {
       <span
         className={
           step === 2
-            ? "rounded-full bg-brand-accent px-2 py-0.5 font-semibold text-brand-fg"
+            ? "rounded-full bg-brand-accent px-2 py-0.5 font-semibold text-white"
             : "rounded-full bg-brand-surface px-2 py-0.5 text-brand-fg-muted"
         }
       >

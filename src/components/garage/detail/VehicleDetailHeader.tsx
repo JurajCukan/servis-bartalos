@@ -66,7 +66,7 @@ export function VehicleDetailHeader({
           <button
             type="button"
             onClick={onAddRecord}
-            className="rounded-md bg-brand-accent px-3 py-2 text-sm font-semibold text-brand-fg transition hover:bg-brand-accent-hover"
+            className="rounded-md bg-brand-accent px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-accent-hover"
           >
             + Pridať záznam
           </button>

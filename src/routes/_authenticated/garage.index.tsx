@@ -124,7 +124,7 @@ function GaragePage() {
                   <button
                     type="button"
                     onClick={openAdd}
-                    className="inline-flex items-center gap-2 rounded-md bg-brand-accent px-4 py-2 text-sm font-semibold text-brand-fg transition hover:bg-brand-accent-hover"
+                    className="inline-flex items-center gap-2 rounded-md bg-brand-accent px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-accent-hover"
                   >
                     <Plus className="h-4 w-4" />
                     Pridať vozidlo

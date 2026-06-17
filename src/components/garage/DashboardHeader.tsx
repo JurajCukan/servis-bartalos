@@ -14,7 +14,7 @@ export function DashboardHeader({ onAddVehicle }: { onAddVehicle: () => void }) 
       <button
         type="button"
         onClick={onAddVehicle}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-brand-accent px-4 py-2 text-sm font-semibold text-brand-fg transition hover:bg-brand-accent-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent/60 sm:w-auto sm:self-start"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-brand-accent px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-accent-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent/60 sm:w-auto sm:self-start"
       >
         <Plus className="h-4 w-4" aria-hidden />
         Pridať vozidlo

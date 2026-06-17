@@ -40,7 +40,7 @@ function SettingsPage() {
           <CardContent>
             <Button
               asChild
-              className="w-full bg-brand-accent text-brand-fg hover:bg-brand-accent-hover sm:w-auto"
+              className="w-full bg-brand-accent text-white hover:bg-brand-accent-hover sm:w-auto"
             >
               <Link to="/garage">
                 <Car className="mr-2 h-4 w-4" />

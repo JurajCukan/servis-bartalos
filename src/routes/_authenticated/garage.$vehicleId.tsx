@@ -35,7 +35,7 @@ export const Route = createFileRoute("/_authenticated/garage/$vehicleId")({
         <p className="mt-2 text-sm text-brand-fg-muted">{error.message}</p>
         <Link
           to="/garage"
-          className="mt-6 inline-block rounded-md bg-brand-accent px-4 py-2 text-sm font-semibold text-brand-fg"
+          className="mt-6 inline-block rounded-md bg-brand-accent px-4 py-2 text-sm font-semibold text-white"
         >
           Späť na garáž
         </Link>
@@ -49,7 +49,7 @@ export const Route = createFileRoute("/_authenticated/garage/$vehicleId")({
         <p className="mt-2 text-sm text-brand-fg-muted">Toto vozidlo neexistuje alebo bolo odstránené.</p>
         <Link
           to="/garage"
-          className="mt-6 inline-block rounded-md bg-brand-accent px-4 py-2 text-sm font-semibold text-brand-fg"
+          className="mt-6 inline-block rounded-md bg-brand-accent px-4 py-2 text-sm font-semibold text-white"
         >
           Späť na garáž
         </Link>

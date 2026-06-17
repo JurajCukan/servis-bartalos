@@ -94,7 +94,7 @@ export function DeleteServiceRecordButton({
                 e.preventDefault();
                 mutation.mutate();
               }}
-              className="bg-destructive text-brand-fg hover:bg-destructive/90"
+              className="bg-destructive text-white hover:bg-destructive/90"
             >
               {mutation.isPending ? "Odstraňujem…" : "Odstrániť"}
             </AlertDialogAction>

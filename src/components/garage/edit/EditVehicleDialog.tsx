@@ -235,7 +235,7 @@ export function EditVehicleDialog({
         <Button
           type="submit"
           disabled={mutation.isPending}
-          className="bg-brand-accent text-brand-fg hover:bg-brand-accent-hover"
+          className="bg-brand-accent text-white hover:bg-brand-accent-hover"
         >
           {mutation.isPending ? "Ukladám…" : "Uložiť zmeny"}
         </Button>
