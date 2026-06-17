@@ -1,48 +1,58 @@
 ## Scope
 
-Replace PocketBase with Lovable Cloud (Supabase). Keep login UI, routes, and brand tokens identical.
+Build the authenticated `/garage` dashboard ("Moja Garáž") with sidebar shell, search/filter/sort controls, and a vehicle card grid powered by the seeded data. Slovak UI, dark brand theme, no new backend changes.
 
-## Steps
+## Data layer
 
-### 1. Enable Lovable Cloud
-- Call `supabase--enable` to provision the project and generate `@/integrations/supabase/client`, types, and the managed `_authenticated/route.tsx` gate.
+- `src/lib/queries/vehicles.ts` — exports `vehiclesWithCustomersQuery` (TanStack Query `queryOptions`):
+  ```ts
+  supabase.from("vehicles").select("*, customer:customers(first_name,last_name)")
+  ```
+  Returns DTO `VehicleWithCustomer[]`. No service_records aggregation in this iteration (per spec: skip if not easy).
+- `src/lib/queries/profile.ts` — `useProfileQuery()` fetching the row from `profiles` for the current user; used by sidebar footer.
 
-### 2. Remove PocketBase
-- `bun remove pocketbase`.
-- Delete `src/lib/pocketbase.ts`.
-- Replace `src/lib/auth.ts` with a Supabase-backed helper exposing `login`, `logout`, `currentUser`, and `useAuth()` (a React hook returning `{ user, profile, loading }` that listens to `onAuthStateChange`). Profile (with `role`) is fetched once after sign-in and cached in a small Zustand-free React context provider mounted in `__root.tsx`.
-- On successful sign-in, upsert `public.profiles` row for the user if missing (`id = auth.uid()`, `role = 'technik'` default, `name` from `user_metadata.full_name` or email local-part).
+## Routing
 
-### 3. Routing
-- Keep `/login` (top-level, public). It calls `supabase.auth.signInWithPassword`; on success → `/garage`. Error → existing Slovak message.
-- Move `/garage` under the Lovable-managed `src/routes/_authenticated/` subtree (rename `src/routes/_authenticated.garage.tsx` → `src/routes/_authenticated/garage.tsx`). Delete the old hand-authored `src/routes/_authenticated.tsx` — the integration ships its own `_authenticated/route.tsx`.
-- `src/routes/index.tsx` keeps redirect logic but uses Supabase session (`supabase.auth.getSession()` in `beforeLoad`).
-- Logout button calls `supabase.auth.signOut()` then `navigate({ to: '/login' })` with cache teardown per sign-out hygiene.
+- Convert `/_authenticated/garage` from a leaf to a layout: keep `_authenticated/route.tsx` as-is (gate). Add `_authenticated/garage.tsx` which renders the new dashboard (no Outlet needed — sibling routes aren't built yet). Stub routes for the other sidebar items go to a single placeholder route `_authenticated/coming-soon.tsx` ("Pripravuje sa") — the sidebar links target that one path with a query/state telling it which feature; simplest: just make those items disabled buttons with a tooltip, no extra routes. **Decision: disabled buttons, no stub routes.** Keeps surface area small.
 
-### 4. Database migration (single migration)
-- `public.profiles` (id uuid PK → auth.users, name text, role text check `('technik','manažér')` default `'technik'`, created_at).
-- `public.customers`, `public.vehicles`, `public.service_records`, `public.scheduled_tasks` per spec, all with `gen_random_uuid()` PKs, FKs with `ON DELETE CASCADE` for child rows, `updated_at` maintained by a shared trigger `public.set_updated_at()`.
-- Unique constraint on `vehicles.license_plate`.
-- GRANTs for every new table: `SELECT,INSERT,UPDATE,DELETE TO authenticated` + `ALL TO service_role`. No anon grants (all data is auth-only).
-- Enable RLS on all tables.
-- Policies:
-  - `profiles`: SELECT/UPDATE where `id = auth.uid()`; INSERT where `id = auth.uid()` (so the first-login upsert works).
-  - `customers`, `vehicles`, `service_records`, `scheduled_tasks`: four policies each (SELECT/INSERT/UPDATE/DELETE) `TO authenticated` `USING (true)` / `WITH CHECK (true)` — matches the "authenticated users can do all operations" spec.
-- Trigger `on_auth_user_created` on `auth.users` to auto-insert into `profiles` (belt-and-braces with the client-side upsert).
+## App shell
 
-### 5. Storage buckets
-- `supabase--storage_create_bucket` for `vehicle-photos` and `service-photos`, public = true.
-- Migration sets `allowed_mime_types = {image/jpeg,image/png,image/webp}` and `file_size_limit = 10485760` on each bucket via `UPDATE storage.buckets`.
-- RLS policies on `storage.objects` for both buckets: SELECT to `public` (bucket is public anyway), and INSERT/UPDATE/DELETE `TO authenticated` scoped to the two bucket ids.
+- `src/components/app/AppShell.tsx` — wraps content with shadcn `SidebarProvider`. Desktop: `<Sidebar collapsible="icon">` + main column. Mobile: top bar with hamburger that opens the sidebar as a sheet (shadcn sidebar handles both responsively).
+- `src/components/app/AppSidebar.tsx` — nav items (Vozidlá active, others disabled), footer with avatar/initials, name, role badge, "Odhlásiť sa" button. Uses `useProfileQuery` + `supabase.auth.getUser()`.
+- `src/components/app/MobileTopBar.tsx` — title + `SidebarTrigger` (mobile-only via Tailwind responsive classes).
 
-### 6. Seed data
-- Use the insert tool to add the 4 customers + 4 vehicles exactly as listed (status, ŠPZ, VIN/mileage/fuel where provided). Seed runs after schema migration. Idempotent via `ON CONFLICT (license_plate) DO NOTHING` on vehicles and a name+phone match for customers.
+## Dashboard composition
 
-### 7. Untouched
-- Login page JSX, Slovak copy, brand tokens in `src/styles.css`, route paths (`/login`, `/garage`).
+- `src/routes/_authenticated/garage.tsx` — composes:
+  - `DashboardHeader` (title, subtitle, "+ Pridať vozidlo" button → `toast.info("Pridanie vozidla bude doplnené v ďalšom kroku")`).
+  - Controls row: `VehicleSearchBar`, `VehicleFilters` (status + fuel selects), `VehicleSort`.
+  - `VehicleGrid` rendering `VehicleCard`s, with `LoadingSkeleton`, empty state, and no-results state.
+- Local UI state via `useState` (search, status, fuel, sort). Search debounced 300 ms with a small `useDebouncedValue` hook in `src/hooks/use-debounced-value.ts`.
 
-## Notes / decisions
+## Components
 
-- The "users can do all operations" policy is intentionally permissive per the spec; if you later want per-technician scoping (e.g. only your own service records), say the word and I'll tighten to `auth.uid()`-based policies.
-- No new pages are built in this iteration — garage stays the "Dashboard — coming soon" placeholder. Seed data is purely so the upcoming dashboard has rows to show.
-- Email/password is the only auth method enabled (matches the existing login form). Test users must be created via Cloud → Users.
+Under `src/components/garage/`:
+- `DashboardHeader.tsx`
+- `VehicleSearchBar.tsx` (controlled input, Slovak placeholder, Search icon)
+- `VehicleFilters.tsx` (two shadcn `Select`s)
+- `VehicleSort.tsx` (shadcn `Select` with 4 options)
+- `VehicleCard.tsx` (image area 16:10, status badge overlay, brand/model, year + customer, ŠPZ / Nájazd / VIN-short rows; whole card is a `<button>` for keyboard focus — onClick toast "Detail vozidla bude doplnený v ďalšom kroku")
+- `VehicleGrid.tsx` (responsive grid: 1 col mobile, 2 md, 3 xl)
+- `EmptyState.tsx` (reused for both "no vehicles" and "no results" via props)
+- `LoadingSkeleton.tsx` (controls skeleton + 4 card skeletons)
+- `StatusBadge.tsx` (maps status → semantic color)
+
+## Filtering/sorting logic
+
+Pure derived state in the route component:
+1. Filter by status (`!== "all"`).
+2. Filter by fuel (`!== "all"`).
+3. Filter by debounced search: normalize (`trim`, collapse spaces, lowercase), test against concatenated `first_name last_name license_plate vin brand model`.
+4. Sort: default rule (status SERVIS NUTNÝ first, then `created_at` desc) OR one of the explicit sort options.
+
+## Styling tokens
+
+Reuse existing `--color-brand-bg`, `--color-brand-surface`, `--color-brand-border`, `--color-brand-accent`. Add semantic status colors as Tailwind classes inline (`bg-emerald-600`, `bg-red-600`, `bg-blue-600`, `bg-zinc-600`) — these are status indicators, not theme colors, and keeping them inline avoids token bloat for one-off badge palettes. `tabular-nums` utility on mileage.
+
+## Out of scope (next iterations)
+Vehicle detail, add/edit form, service history, scheduling, alerts page, settings page, Excel import, PWA, realtime, last-service-date aggregation, profile editing.
