@@ -1,4 +1,4 @@
-import { Car, CalendarDays, History } from "lucide-react";
+import { Car, CalendarDays, History, Settings } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
 
 import {
@@ -18,7 +18,7 @@ type NavItem = {
   key: string;
   label: string;
   icon: typeof Car;
-  to: "/garage" | "/plan" | "/service-history";
+  to: "/garage" | "/plan" | "/service-history" | "/settings";
   match: string;
 };
 
@@ -32,6 +32,7 @@ const NAV_ITEMS: NavItem[] = [
     to: "/service-history",
     match: "/service-history",
   },
+  { key: "settings", label: "Nastavenia", icon: Settings, to: "/settings", match: "/settings" },
 ];
 
 export function AppSidebar() {
