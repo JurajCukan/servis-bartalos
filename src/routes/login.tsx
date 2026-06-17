@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { isAuthenticated, login } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Prihlásenie — Servisná knižka Bartalos" },
