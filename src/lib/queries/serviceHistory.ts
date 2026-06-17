@@ -14,6 +14,7 @@ export type ServiceHistoryItem = {
   technician: string | null;
   next_service_km: number | null;
   next_service_date: string | null;
+  photo_paths: string[];
   created_at: string;
   vehicle: {
     id: string;
@@ -30,12 +31,16 @@ export const serviceHistoryQuery = queryOptions({
     const { data, error } = await supabase
       .from("service_records")
       .select(
-        "id, vehicle_id, date, mileage_at_service, service_type, title, description, parts_replaced, price, technician, next_service_km, next_service_date, created_at, vehicle:vehicles(id, brand, model, license_plate, customer:customers(first_name, last_name))",
+        "id, vehicle_id, date, mileage_at_service, service_type, title, description, parts_replaced, price, technician, next_service_km, next_service_date, photo_paths, created_at, vehicle:vehicles(id, brand, model, license_plate, customer:customers(first_name, last_name))",
       )
       .order("date", { ascending: false })
       .order("created_at", { ascending: false });
     if (error) throw error;
-    return (data ?? []) as unknown as ServiceHistoryItem[];
+    return (data ?? []).map((r) => ({
+      ...(r as object),
+      photo_paths:
+        (r as { photo_paths?: string[] | null }).photo_paths ?? [],
+    })) as unknown as ServiceHistoryItem[];
   },
 });
 

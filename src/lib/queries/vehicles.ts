@@ -13,6 +13,7 @@ export type VehicleWithCustomer = {
   current_mileage: number;
   fuel_type: string | null;
   photo_url: string | null;
+  photo_path: string | null;
   status: VehicleStatus;
   created_at: string;
   customer: { first_name: string; last_name: string } | null;
@@ -24,7 +25,7 @@ export const vehiclesWithCustomersQuery = queryOptions({
     const { data, error } = await supabase
       .from("vehicles")
       .select(
-        "id, brand, model, year, vin, license_plate, current_mileage, fuel_type, photo_url, status, created_at, customer:customers(first_name, last_name)",
+        "id, brand, model, year, vin, license_plate, current_mileage, fuel_type, photo_url, photo_path, status, created_at, customer:customers(first_name, last_name)",
       )
       .order("created_at", { ascending: false });
     if (error) throw error;
@@ -51,6 +52,7 @@ export type VehicleDetail = {
   current_mileage: number;
   status: VehicleStatus;
   photo_url: string | null;
+  photo_path: string | null;
   notes: string | null;
   engine: string | null;
   transmission: string | null;
@@ -70,7 +72,7 @@ export const vehicleDetailQuery = (vehicleId: string) =>
       const { data, error } = await supabase
         .from("vehicles")
         .select(
-          "id, brand, model, year, vin, license_plate, current_mileage, status, photo_url, notes, engine, transmission, power, drive, oil_volume, tire_size, fuel_type, created_at, customer:customers(id, first_name, last_name, phone, email, notes)",
+          "id, brand, model, year, vin, license_plate, current_mileage, status, photo_url, photo_path, notes, engine, transmission, power, drive, oil_volume, tire_size, fuel_type, created_at, customer:customers(id, first_name, last_name, phone, email, notes)",
         )
         .eq("id", vehicleId)
         .maybeSingle();
