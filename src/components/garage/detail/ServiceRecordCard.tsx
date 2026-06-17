@@ -1,28 +1,9 @@
 import { useState } from "react";
 import { ChevronDown, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDate, formatKm, formatPrice } from "@/lib/format";
 import { ServiceTypeBadge } from "./ServiceTypeBadge";
 import type { ServiceRecord } from "@/lib/queries/vehicles";
-
-function formatDate(d: string) {
-  try {
-    return new Date(d).toLocaleDateString("sk-SK", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  } catch {
-    return d;
-  }
-}
-
-function formatKm(km: number) {
-  return `${new Intl.NumberFormat("sk-SK").format(km)} km`;
-}
-
-function formatPrice(p: number) {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: "EUR" }).format(p);
-}
 
 export function ServiceRecordCard({
   record,
@@ -55,12 +36,15 @@ export function ServiceRecordCard({
               <span className="text-white/40">Nájazd: </span>
               {formatKm(record.mileage_at_service)}
             </span>
-            {record.price != null && (
-              <span className="tabular-nums">
-                <span className="text-white/40">Cena: </span>
-                {formatPrice(record.price)}
-              </span>
-            )}
+            {(() => {
+              const price = formatPrice(record.price);
+              return price ? (
+                <span className="tabular-nums">
+                  <span className="text-white/40">Cena: </span>
+                  {price}
+                </span>
+              ) : null;
+            })()}
           </div>
         </button>
         <div className="flex shrink-0 items-center gap-1">
@@ -92,26 +76,26 @@ export function ServiceRecordCard({
         </div>
       </div>
 
-      {!open && record.description && (
-        <p className="mt-2 line-clamp-2 text-sm text-white/70">{record.description}</p>
+      {!open && record.description?.trim() && (
+        <p className="mt-2 line-clamp-2 text-sm text-white/70">{record.description.trim()}</p>
       )}
 
       {open && (
         <div className="mt-4 space-y-3 border-t border-brand-border pt-4 text-sm">
-          {record.description && (
-            <p className="whitespace-pre-wrap text-white/80">{record.description}</p>
+          {record.description?.trim() && (
+            <p className="whitespace-pre-wrap text-white/80">{record.description.trim()}</p>
           )}
           <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
-            {record.parts_replaced && (
+            {record.parts_replaced?.trim() && (
               <div>
                 <dt className="text-white/50">Vymenené diely</dt>
-                <dd className="mt-0.5 whitespace-pre-wrap text-white">{record.parts_replaced}</dd>
+                <dd className="mt-0.5 whitespace-pre-wrap text-white">{record.parts_replaced.trim()}</dd>
               </div>
             )}
-            {record.technician && (
+            {record.technician?.trim() && (
               <div>
                 <dt className="text-white/50">Technik</dt>
-                <dd className="mt-0.5 text-white">{record.technician}</dd>
+                <dd className="mt-0.5 text-white">{record.technician.trim()}</dd>
               </div>
             )}
             {record.next_service_km != null && (

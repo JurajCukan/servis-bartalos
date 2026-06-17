@@ -1,11 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Car } from "lucide-react";
 import { StatusBadge } from "../StatusBadge";
+import { formatKm as formatMileage } from "@/lib/format";
 import type { VehicleDetail } from "@/lib/queries/vehicles";
 
-function formatMileage(km: number) {
-  return `${new Intl.NumberFormat("sk-SK").format(km)} km`;
-}
 
 export function VehicleDetailHeader({
   vehicle,

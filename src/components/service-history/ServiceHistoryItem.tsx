@@ -3,31 +3,8 @@ import { Car, User, Gauge, ExternalLink } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { ServiceTypeBadge } from "@/components/garage/detail/ServiceTypeBadge";
+import { formatDateLong as formatDate, formatKm as formatMileage, formatPrice } from "@/lib/format";
 import type { ServiceHistoryItem as Item } from "@/lib/queries/serviceHistory";
-
-function formatDate(iso: string) {
-  try {
-    return new Date(iso).toLocaleDateString("sk-SK", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  } catch {
-    return iso;
-  }
-}
-
-function formatPrice(p: number) {
-  return new Intl.NumberFormat("sk-SK", {
-    style: "currency",
-    currency: "EUR",
-    maximumFractionDigits: 2,
-  }).format(p);
-}
-
-function formatMileage(km: number) {
-  return `${new Intl.NumberFormat("sk-SK").format(km)} km`;
-}
 
 export function ServiceHistoryItem({ item }: { item: Item }) {
   const customer = item.vehicle?.customer
@@ -70,9 +47,12 @@ export function ServiceHistoryItem({ item }: { item: Item }) {
           ) : null}
         </div>
         <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
-          {item.price != null ? (
-            <span className="text-sm font-semibold text-white">{formatPrice(item.price)}</span>
-          ) : null}
+          {(() => {
+            const price = formatPrice(item.price);
+            return price ? (
+              <span className="text-sm font-semibold text-white">{price}</span>
+            ) : null;
+          })()}
           {item.vehicle?.id ? (
             <Link
               to="/garage/$vehicleId"
