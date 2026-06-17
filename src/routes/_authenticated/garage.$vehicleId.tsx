@@ -59,15 +59,21 @@ function VehicleDetailPage() {
   const { vehicleId } = Route.useParams();
   const { data: vehicle } = useSuspenseQuery(vehicleDetailQuery(vehicleId));
   const history = useQuery(serviceHistoryQuery(vehicleId));
+  const [addOpen, setAddOpen] = useState(false);
 
   if (!vehicle) return null;
 
   const placeholder = () => toast.info("Táto funkcia bude doplnená v ďalšom kroku");
+  const openAdd = () => setAddOpen(true);
 
   return (
     <AppShell>
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
-        <VehicleDetailHeader vehicle={vehicle} onAction={placeholder} />
+        <VehicleDetailHeader
+          vehicle={vehicle}
+          onAction={placeholder}
+          onAddRecord={openAdd}
+        />
         <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
           <div className="flex flex-col gap-6">
             <CustomerInfoCard customer={vehicle.customer} />
@@ -76,10 +82,16 @@ function VehicleDetailPage() {
           <ServiceHistorySection
             records={history.data}
             loading={history.isLoading}
-            onAdd={placeholder}
+            onAdd={openAdd}
           />
         </div>
       </div>
+      <AddServiceRecordDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        vehicleId={vehicleId}
+        currentMileage={vehicle.current_mileage}
+      />
     </AppShell>
   );
 }
