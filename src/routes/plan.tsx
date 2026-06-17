@@ -13,6 +13,7 @@ import {
   type PlannedTask,
   type TaskPriority,
 } from "@/lib/queries/scheduledTasks";
+import { usePocketBaseRealtime } from "@/hooks/usePocketBaseRealtime";
 
 export const Route = createFileRoute("/plan")({
   head: () => ({ meta: [{ title: "Dnešný plán — Servisná knižka Bartalos" }] }),
@@ -45,6 +46,8 @@ function sortBucket(a: PlannedTask, b: PlannedTask) {
 
 function PlanPage() {
   const { data, isLoading, error } = useQuery(plannedTasksQuery);
+
+  usePocketBaseRealtime("scheduled_tasks", [["scheduled-tasks"]]);
 
   const grouped = useMemo(() => {
     const today = todayIso();
