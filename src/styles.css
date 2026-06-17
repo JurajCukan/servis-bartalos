@@ -116,6 +116,9 @@
   --brand-bg: #111111;
   --brand-surface: #1a1a1a;
   --brand-border: #2a2a2a;
+  --brand-fg: #ffffff;
+  --brand-fg-muted: rgba(255, 255, 255, 0.62);
+  --brand-fg-subtle: rgba(255, 255, 255, 0.42);
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.208 0.042 265.755);
