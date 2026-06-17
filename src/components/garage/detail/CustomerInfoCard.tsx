@@ -17,7 +17,7 @@ export function CustomerInfoCard({ customer }: { customer: CustomerFull | null }
     <section className="rounded-xl border border-brand-border bg-brand-surface p-5">
       <h2 className="text-lg font-semibold text-white">Zákazník</h2>
       <div className="mt-3 space-y-3">
-        <p className="text-base font-medium text-white">{fullName}</p>
+        <p className="break-words text-base font-medium text-white">{fullName}</p>
         <a
           href={`tel:${customer.phone.replace(/\s+/g, "")}`}
           className="flex items-center gap-2 text-base font-medium text-brand-accent hover:underline"

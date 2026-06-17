@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Calendar, Gauge, CheckCircle2, X } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { formatDateLong, formatKm } from "@/lib/format";
 import type { PlannedTask, TaskPriority, TaskStatus } from "@/lib/queries/scheduledTasks";
 
 const PRIORITY_STYLES: Record<TaskPriority, string> = {
@@ -17,18 +18,6 @@ const STATUS_STYLES: Record<TaskStatus, string> = {
   "Dokončené": "bg-emerald-500/15 text-emerald-300 border-emerald-500/40",
   "Zrušené": "bg-white/10 text-white/50 border-brand-border",
 };
-
-function formatDate(iso: string) {
-  return new Intl.DateTimeFormat("sk-SK", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(new Date(iso));
-}
-
-function formatMileage(km: number) {
-  return `${new Intl.NumberFormat("sk-SK").format(km)} km`;
-}
 
 export function PlannedTaskCard({ task }: { task: PlannedTask }) {
   const queryClient = useQueryClient();
@@ -62,14 +51,16 @@ export function PlannedTaskCard({ task }: { task: PlannedTask }) {
   return (
     <article className="flex flex-col gap-3 rounded-xl border border-brand-border bg-brand-surface p-4">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span
-            className={`rounded-full border px-2 py-0.5 text-xs font-medium ${PRIORITY_STYLES[task.priority]}`}
+            className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${PRIORITY_STYLES[task.priority]}`}
           >
             {task.priority}
           </span>
           {task.task_type && (
-            <span className="text-sm font-semibold text-white">{task.task_type}</span>
+            <span className="min-w-0 truncate text-sm font-semibold text-white">
+              {task.task_type}
+            </span>
           )}
         </div>
         <span
@@ -79,41 +70,43 @@ export function PlannedTaskCard({ task }: { task: PlannedTask }) {
         </span>
       </div>
 
-      <div className="text-sm text-white/80">
+      <div className="min-w-0 text-sm text-white/80">
         {v ? (
-          <p>
+          <p className="break-words">
             <span className="font-medium text-white">
               {v.brand} {v.model}
             </span>{" "}
-            · <span className="font-mono">{v.license_plate}</span>
+            · <span className="break-all font-mono">{v.license_plate}</span>
           </p>
         ) : (
           <p className="text-white/50">Vozidlo bolo odstránené</p>
         )}
-        <p className="text-white/60">{customer}</p>
+        <p className="break-words text-white/60">{customer}</p>
       </div>
 
-      <p className="text-sm text-white/80">{task.description}</p>
+      <p className="whitespace-pre-wrap break-words text-sm text-white/80">
+        {task.description}
+      </p>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/60">
         <span className="inline-flex items-center gap-1.5">
           <Calendar className="h-3.5 w-3.5" />
-          {formatDate(task.planned_date)}
+          {formatDateLong(task.planned_date)}
         </span>
         {task.planned_mileage != null && (
-          <span className="inline-flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-1.5 tabular-nums">
             <Gauge className="h-3.5 w-3.5" />
-            {formatMileage(task.planned_mileage)}
+            {formatKm(task.planned_mileage)}
           </span>
         )}
       </div>
 
-      <div className="flex flex-wrap items-center justify-end gap-2 border-t border-brand-border pt-3">
+      <div className="flex flex-col-reverse gap-2 border-t border-brand-border pt-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
         {v && (
           <Link
             to="/garage/$vehicleId"
             params={{ vehicleId: v.id }}
-            className="rounded-md border border-brand-border bg-transparent px-3 py-1.5 text-xs font-medium text-white/80 transition hover:border-brand-accent hover:text-white"
+            className="inline-flex items-center justify-center rounded-md border border-brand-border bg-transparent px-3 py-1.5 text-xs font-medium text-white/80 transition hover:border-brand-accent hover:text-white"
           >
             Zobraziť vozidlo
           </Link>
@@ -124,7 +117,7 @@ export function PlannedTaskCard({ task }: { task: PlannedTask }) {
               type="button"
               onClick={() => updateStatus.mutate("Zrušené")}
               disabled={busy}
-              className="inline-flex items-center gap-1 rounded-md border border-brand-border px-3 py-1.5 text-xs font-medium text-white/70 transition hover:text-white disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-1 rounded-md border border-brand-border px-3 py-1.5 text-xs font-medium text-white/70 transition hover:text-white disabled:opacity-50"
             >
               <X className="h-3.5 w-3.5" />
               Zrušiť
@@ -133,7 +126,7 @@ export function PlannedTaskCard({ task }: { task: PlannedTask }) {
               type="button"
               onClick={() => updateStatus.mutate("Dokončené")}
               disabled={busy}
-              className="inline-flex items-center gap-1 rounded-md bg-brand-accent px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-accent-hover disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-1 rounded-md bg-brand-accent px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-accent-hover disabled:opacity-50"
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
               Označiť ako dokončené

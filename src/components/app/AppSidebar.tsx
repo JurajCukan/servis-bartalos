@@ -1,6 +1,5 @@
-import { Car, CalendarDays, History, Bell, Settings } from "lucide-react";
+import { Car, CalendarDays, History } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { toast } from "sonner";
 
 import {
   Sidebar,
@@ -19,8 +18,8 @@ type NavItem = {
   key: string;
   label: string;
   icon: typeof Car;
-  to?: "/garage" | "/plan" | "/service-history";
-  match?: string;
+  to: "/garage" | "/plan" | "/service-history";
+  match: string;
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -33,8 +32,6 @@ const NAV_ITEMS: NavItem[] = [
     to: "/service-history",
     match: "/service-history",
   },
-  { key: "alerts", label: "Upozornenia", icon: Bell },
-  { key: "settings", label: "Nastavenia", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -56,31 +53,19 @@ export function AppSidebar() {
             <SidebarMenu>
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
-                const active = item.match ? pathname.startsWith(item.match) : false;
-                const disabled = !item.to;
+                const active = pathname.startsWith(item.match);
                 return (
                   <SidebarMenuItem key={item.key}>
-                    {item.to ? (
-                      <SidebarMenuButton
-                        asChild
-                        isActive={active}
-                        className="text-white data-[active=true]:bg-brand-accent/15 data-[active=true]:text-white"
-                      >
-                        <Link to={item.to}>
-                          <Icon className="h-4 w-4" />
-                          <span>{item.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    ) : (
-                      <SidebarMenuButton
-                        disabled={disabled}
-                        onClick={() => toast.info("Pripravuje sa")}
-                        className="text-white"
-                      >
+                    <SidebarMenuButton
+                      asChild
+                      isActive={active}
+                      className="text-white data-[active=true]:bg-brand-accent/15 data-[active=true]:text-white"
+                    >
+                      <Link to={item.to}>
                         <Icon className="h-4 w-4" />
                         <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    )}
+                      </Link>
+                    </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
               })}

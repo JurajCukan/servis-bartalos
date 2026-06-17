@@ -363,7 +363,7 @@ export function ServiceRecordForm({
     "bg-brand-bg border-brand-border text-white placeholder:text-white/30 focus-visible:ring-brand-accent";
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={form.handleSubmit(onSubmit)} autoComplete="off" className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Dátum" error={errors.date?.message} required>
           <Input type="date" className={inputCls} {...form.register("date")} />
@@ -465,6 +465,7 @@ export function ServiceRecordForm({
         onPendingChange={setPendingFiles}
         disabled={isSubmitting}
       />
+
 
 
 

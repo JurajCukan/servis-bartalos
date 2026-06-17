@@ -85,6 +85,10 @@ export function EditVehicleDialog({
       form.reset(buildDefaults(vehicle));
       setPhotoAction("keep");
       setPendingPhoto(null);
+    } else {
+      // Drop any staged photo when the dialog closes so the Object URL is revoked.
+      setPhotoAction("keep");
+      setPendingPhoto(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, vehicle.id]);

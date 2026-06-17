@@ -27,7 +27,7 @@ export function AddServiceRecordDialog({
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
           side="bottom"
-          className="h-[95vh] overflow-y-auto border-brand-border bg-brand-bg text-white"
+          className="h-[95vh] overflow-y-auto border-brand-border bg-brand-surface text-white"
         >
           <SheetHeader>
             <SheetTitle className="text-white">Pridať servisný záznam</SheetTitle>
@@ -47,7 +47,7 @@ export function AddServiceRecordDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto border-brand-border bg-brand-bg text-white">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto border-brand-border bg-brand-surface text-white">
         <DialogHeader>
           <DialogTitle className="text-white">Pridať servisný záznam</DialogTitle>
         </DialogHeader>
