@@ -33,29 +33,121 @@ const SERVICE_TYPES = [
   "Iné",
 ] as const;
 
+const MAX_MILEAGE = 2_000_000;
+const MAX_PRICE = 1_000_000;
+const MAX_TITLE = 120;
+const MAX_LONG = 2000;
+const MIN_DATE = "1900-01-01";
+const MAX_NEXT_DATE = "2100-01-01";
+
+function isValidDateStr(s: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(s);
+  return !Number.isNaN(d.getTime());
+}
+
+function maxToday() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 const optionalPositiveInt = z
-  .union([z.literal(""), z.coerce.number().int().positive("Zadajte platný nájazd")])
+  .union([
+    z.literal(""),
+    z.coerce
+      .number({ invalid_type_error: "Zadajte platný údaj" })
+      .finite("Zadajte platný údaj")
+      .int("Zadajte platný údaj")
+      .positive("Zadajte platný údaj")
+      .max(MAX_MILEAGE, "Hodnota je príliš vysoká"),
+  ])
   .optional();
 
 const optionalPositiveNumber = z
-  .union([z.literal(""), z.coerce.number().positive("Zadajte platnú cenu")])
+  .union([
+    z.literal(""),
+    z.coerce
+      .number({ invalid_type_error: "Zadajte platnú cenu" })
+      .finite("Zadajte platnú cenu")
+      .positive("Zadajte platnú cenu")
+      .max(MAX_PRICE, "Hodnota je príliš vysoká"),
+  ])
   .optional();
 
-const schema = z.object({
-  date: z.string().min(1, "Toto pole je povinné"),
-  mileage_at_service: z.coerce
-    .number({ invalid_type_error: "Zadajte platný nájazd" })
-    .int("Zadajte platný nájazd")
-    .positive("Zadajte platný nájazd"),
-  service_type: z.string().min(1, "Toto pole je povinné"),
-  title: z.string().trim().min(1, "Toto pole je povinné").max(120),
-  description: z.string().trim().min(1, "Toto pole je povinné").max(2000),
-  parts_replaced: z.string().trim().max(2000).optional().or(z.literal("")),
-  price: optionalPositiveNumber,
-  technician: z.string().trim().max(120).optional().or(z.literal("")),
-  next_service_km: optionalPositiveInt,
-  next_service_date: z.string().optional().or(z.literal("")),
-});
+const schema = z
+  .object({
+    date: z
+      .string()
+      .min(1, "Toto pole je povinné")
+      .refine(isValidDateStr, "Zadajte platný dátum")
+      .refine((s) => s >= MIN_DATE, "Zadajte platný dátum")
+      .refine((s) => s <= maxToday(), "Zadajte platný dátum"),
+    mileage_at_service: z.coerce
+      .number({ invalid_type_error: "Zadajte platný nájazd" })
+      .finite("Zadajte platný nájazd")
+      .int("Zadajte platný nájazd")
+      .positive("Zadajte platný nájazd")
+      .max(MAX_MILEAGE, "Hodnota je príliš vysoká"),
+    service_type: z
+      .string()
+      .min(1, "Toto pole je povinné")
+      .refine(
+        (v) => (SERVICE_TYPES as readonly string[]).includes(v),
+        "Zadajte platný údaj",
+      ),
+    title: z
+      .string()
+      .trim()
+      .min(1, "Toto pole je povinné")
+      .max(MAX_TITLE, "Hodnota je príliš dlhá"),
+    description: z
+      .string()
+      .trim()
+      .min(1, "Toto pole je povinné")
+      .max(MAX_LONG, "Hodnota je príliš dlhá"),
+    parts_replaced: z
+      .string()
+      .trim()
+      .max(MAX_LONG, "Hodnota je príliš dlhá")
+      .optional()
+      .or(z.literal("")),
+    price: optionalPositiveNumber,
+    technician: z
+      .string()
+      .trim()
+      .max(MAX_TITLE, "Hodnota je príliš dlhá")
+      .optional()
+      .or(z.literal("")),
+    next_service_km: optionalPositiveInt,
+    next_service_date: z
+      .string()
+      .optional()
+      .or(z.literal(""))
+      .refine(
+        (s) => !s || (isValidDateStr(s) && s <= MAX_NEXT_DATE),
+        "Zadajte platný dátum",
+      ),
+  })
+  .superRefine((val, ctx) => {
+    if (
+      typeof val.next_service_km === "number" &&
+      val.next_service_km <= val.mileage_at_service
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["next_service_km"],
+        message: "Musí byť vyššie ako aktuálny nájazd",
+      });
+    }
+    if (val.next_service_date && val.next_service_date < val.date) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["next_service_date"],
+        message: "Nesmie byť pred dátumom servisu",
+      });
+    }
+  });
 
 type FormValues = z.input<typeof schema>;
 type ParsedValues = z.output<typeof schema>;
@@ -67,6 +159,17 @@ function today() {
 function emptyToNull<T>(v: T | "" | undefined | null): T | null {
   if (v === "" || v === undefined || v === null) return null;
   return v;
+}
+
+function trimOrNull(v: string | null | undefined): string | null {
+  if (v == null) return null;
+  const t = v.trim();
+  return t.length > 0 ? t : null;
+}
+
+function roundPrice(v: number | null): number | null {
+  if (v == null || !Number.isFinite(v)) return null;
+  return Math.round(v * 100) / 100;
 }
 
 type Mode = "create" | "edit";
