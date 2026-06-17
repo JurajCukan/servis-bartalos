@@ -135,7 +135,7 @@ function GaragePage() {
             ) : filtered.length === 0 ? (
               <EmptyState
                 title="Žiadne výsledky"
-                description="Skúste upraviť vyhľadávanie alebo filtre."
+                description="Žiadne vozidlá nezodpovedajú hľadaniu."
               />
             ) : (
               <VehicleGrid vehicles={filtered} onSelect={openVehicle} />
