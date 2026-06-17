@@ -51,6 +51,9 @@ function GaragePage() {
 
   const { data: vehicles, isLoading, error } = useQuery(vehiclesWithCustomersQuery);
 
+  usePocketBaseRealtime("vehicles", [["vehicles", "with-customers"]]);
+  usePocketBaseRealtime("customers", [["vehicles", "with-customers"]]);
+
   const filtered = useMemo(() => {
     if (!vehicles) return [];
     const list = vehicles.filter(
