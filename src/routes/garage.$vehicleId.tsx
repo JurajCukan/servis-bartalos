@@ -64,6 +64,10 @@ function VehicleDetailPage() {
   const { vehicleId } = Route.useParams();
   const { data: vehicle } = useSuspenseQuery(vehicleDetailQuery(vehicleId));
   const history = useQuery(serviceHistoryQuery(vehicleId));
+
+  usePocketBaseRealtime("vehicles", [["vehicle", vehicleId], ["vehicles", "with-customers"]]);
+  usePocketBaseRealtime("service_records", [["vehicle", vehicleId, "service-records"], ["service-history"]]);
+  usePocketBaseRealtime("scheduled_tasks", [["scheduled-tasks"], ["planned-tasks"]]);
   const [addOpen, setAddOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
