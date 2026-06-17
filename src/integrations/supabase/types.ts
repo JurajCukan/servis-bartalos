@@ -128,6 +128,7 @@ export type Database = {
           next_service_date: string | null
           next_service_km: number | null
           parts_replaced: string | null
+          photo_paths: string[]
           price: number | null
           service_type: string
           technician: string | null
@@ -144,6 +145,7 @@ export type Database = {
           next_service_date?: string | null
           next_service_km?: number | null
           parts_replaced?: string | null
+          photo_paths?: string[]
           price?: number | null
           service_type: string
           technician?: string | null
@@ -160,6 +162,7 @@ export type Database = {
           next_service_date?: string | null
           next_service_km?: number | null
           parts_replaced?: string | null
+          photo_paths?: string[]
           price?: number | null
           service_type?: string
           technician?: string | null

@@ -1,74 +1,82 @@
-## Service record validation + formatting pass
+## Plan: Photo attachments for service records
 
-Tighten the shared `ServiceRecordForm` schema and centralize display formatters so bad numbers never get saved and existing rows render cleanly.
+### 1. Storage & DB approach
 
-### 1. Hardened zod schema (`src/components/garage/detail/ServiceRecordForm.tsx`)
+- **Storage**: reuse existing private bucket `service-photos`.
+- **Path layout**: `{vehicleId}/{serviceRecordId}/{uuid}.{ext}`.
+- **DB**: add a single `photo_paths text[] not null default '{}'` column on `service_records`. Simpler than a join table, matches the small scope, and array updates work cleanly from a single form submit.
+- Store **storage paths**, not URLs. Generate **signed URLs** at display time (1h TTL) since the bucket is private.
 
-Constants at top:
+### 2. Migration (one file)
 
-```
-MAX_MILEAGE = 2_000_000   // km
-MAX_PRICE   = 1_000_000   // EUR
-MAX_TITLE   = 120
-MAX_LONG    = 2000
-MIN_DATE    = "1900-01-01"
-```
+```sql
+alter table public.service_records
+  add column if not exists photo_paths text[] not null default '{}';
 
-Field rules (Slovak messages):
-
-- `title` — `z.string().trim().min(1, "Toto pole je povinné").max(120, "Hodnota je príliš dlhá")`.
-- `date` — required, must parse as a valid date, must be ≥ `MIN_DATE` and ≤ tomorrow (`now + 1 day`, to allow timezone slack). Message: `"Zadajte platný dátum"`.
-- `service_type` — required, must be one of `SERVICE_TYPES`.
-- `mileage_at_service` — `z.coerce.number().finite().int().positive().max(MAX_MILEAGE)`; non-finite/NaN → `"Zadajte platný nájazd"`, over max → `"Hodnota je príliš vysoká"`.
-- `description` — trimmed, required, max 2000, message `"Toto pole je povinné"` / `"Hodnota je príliš dlhá"`.
-- `parts_replaced` — optional, trimmed, max 2000, empty → null.
-- `technician` — optional, trimmed, max 120, empty → null.
-- `price` — optional; when present must be finite, > 0, ≤ MAX_PRICE; round to 2 decimals before save. Messages `"Zadajte platnú cenu"` / `"Hodnota je príliš vysoká"`.
-- `next_service_km` — optional; when present must be finite int, > 0, ≤ MAX_MILEAGE. Messages `"Zadajte platný údaj"` / `"Hodnota je príliš vysoká"`. Also enforce `next_service_km > mileage_at_service` via a `superRefine`, message `"Musí byť vyššie ako aktuálny nájazd"`.
-- `next_service_date` — optional; when present must parse, be ≥ `date` (not earlier than the service date), and ≤ `2100-01-01`. Message `"Zadajte platný dátum"`.
-
-Normalization at submit time:
-- Trim every string field.
-- Convert empty strings to `null` in the payload for: `parts_replaced`, `technician`, `price`, `next_service_km`, `next_service_date`.
-- `Math.round(price * 100) / 100` before insert/update.
-- Mileage values cast through `Number.isFinite` guard; reject otherwise via the schema (already handled).
-
-The existing create + edit modes both go through this single hardened schema, so both flows benefit. No changes to props or callers needed.
-
-### 2. Centralized formatters
-
-New file `src/lib/format.ts`:
-
-```ts
-export function formatKm(km: number | null | undefined): string
-export function formatPrice(p: number | null | undefined): string | null
-export function formatDate(d: string | null | undefined): string
+-- storage policies (open app, no login)
+create policy "service-photos anon read"   on storage.objects for select using (bucket_id = 'service-photos');
+create policy "service-photos anon insert" on storage.objects for insert with check (bucket_id = 'service-photos');
+create policy "service-photos anon delete" on storage.objects for delete using (bucket_id = 'service-photos');
 ```
 
-Rules:
-- `formatKm` returns `"—"` for null/undefined/non-finite; otherwise `Intl.NumberFormat("sk-SK")` + `" km"`.
-- `formatPrice` returns `null` for null/undefined/non-finite so callers can choose to skip rendering; otherwise EUR with 2 decimals.
-- `formatDate` returns `"—"` for null/empty/invalid; otherwise `sk-SK` short date.
+Grants on `service_records` already include anon update/insert/select — no change.
 
-### 3. Use formatters in displays
+### 3. File validation rules (shared helper `src/lib/photo-validation.ts`)
 
-Refactor to import from `@/lib/format` and drop local copies:
-- `src/components/garage/detail/ServiceRecordCard.tsx` — replace local `formatDate`/`formatKm`/`formatPrice`. Guard `description`, `parts_replaced`, `technician` with truthy checks (already done, but also `.trim()` before rendering to avoid empty whitespace).
-- `src/components/service-history/ServiceHistoryItem.tsx` — replace local copies. Skip price block when `formatPrice` returns null.
-- `src/components/garage/detail/VehicleDetailHeader.tsx` — keep its `formatMileage` or replace with `formatKm` (same behavior, just deduped).
+- Allowed MIME: `image/jpeg`, `image/png`, `image/webp`. (HEIC skipped — browser preview unreliable.)
+- Max per file: **10 MB**.
+- Max per record: **8 photos** total (existing + pending).
+- Slovak messages: `"Nepodporovaný formát súboru"`, `"Súbor je príliš veľký (max 10 MB)"`, `"Maximálne 8 fotiek na záznam"`.
 
-### 4. Out of scope (still not built)
+### 4. New components
 
-- Photo upload / attachments.
-- Delete service record.
-- Scheduled-tasks sync on edit.
-- Redesign.
-- Route changes.
+- `src/components/garage/detail/photos/ServiceRecordPhotoPicker.tsx`
+  - Controlled: props `existingPaths: string[]`, `pendingFiles: File[]`, `onChange({ existingPaths, pendingFiles })`.
+  - Renders "Fotky" section: empty state `"Zatiaľ bez fotiek"`, thumbnail grid (existing via signed URLs + pending via `URL.createObjectURL`), remove button per thumb, `"Pridať fotky"` file input button.
+  - Performs validation on add; toast errors.
+- `src/components/garage/detail/photos/ServiceRecordPhotoGrid.tsx`
+  - Read-only grid for record card; uses signed URLs; click → opens `PhotoPreviewDialog`.
+- `src/components/garage/detail/photos/PhotoPreviewDialog.tsx`
+  - Basic shadcn Dialog showing one image at natural max size with prev/next buttons (no fancy lightbox).
+- `src/lib/photos.ts` helper:
+  - `uploadPhotos(vehicleId, recordId, files) → { uploadedPaths, failedCount }`
+  - `deletePhotos(paths[])` (best-effort)
+  - `getSignedUrls(paths[])` (batched via `createSignedUrls`)
 
-### Build-phase summary deliverable
+### 5. ServiceRecordForm changes
 
-1. **Validation:** schema now enforces trim, finite/NaN guards, positive integer mileage, positive number price (rounded to 2 dp), `next_service_km > mileage_at_service`, `next_service_date ≥ date`, `date` between 1900-01-01 and tomorrow, max lengths on all text fields, normalized empty → `null`.
-2. **Guardrails:** `mileage_at_service ≤ 2 000 000`, `next_service_km ≤ 2 000 000`, `price ≤ 1 000 000`, `next_service_date ≤ 2100-01-01`, text fields capped at 120/2000 chars. All use Slovak messages including `"Hodnota je príliš vysoká"`.
-3. **Display:** centralized `formatKm`, `formatPrice`, `formatDate` in `src/lib/format.ts`; null/invalid values render as `"—"` (or skipped entirely for price), thousands separators on km, clean EUR on price. Adopted by `ServiceRecordCard`, `ServiceHistoryItem`, `VehicleDetailHeader`.
-4. Yes — `ServiceRecordForm` is shared by create + edit dialogs, so both flows use the hardened schema.
-5. Photo upload is still **NOT implemented**.
+- Add state for `existingPaths` (init from `record.photo_paths` in edit, `[]` in create) and `pendingFiles: File[]`.
+- Render `<ServiceRecordPhotoPicker>` inside the form between "Cena/Technik" and "Ďalší servis".
+- Mutation flow:
+  1. Insert/update record as today; receive `recordId` (`.select("id").single()` on insert; existing id on edit).
+  2. Compute `removedPaths = record.photo_paths \ existingPaths` (edit only); call `deletePhotos(removedPaths)` best-effort.
+  3. If `pendingFiles.length > 0`: call `uploadPhotos(vehicleId, recordId, pendingFiles)`; collect `uploadedPaths` + `failedCount`.
+  4. Final `photo_paths = [...existingPaths, ...uploadedPaths]`. Update record with new array (single extra UPDATE).
+  5. Return `{ failedCount }`.
+- On success:
+  - Success toast unchanged (`"Servisný záznam bol uložený"` / `"Servisný záznam bol upravený"`).
+  - If `failedCount > 0`: `toast.warning(\`Niektoré fotky sa nepodarilo nahrať (${failedCount})\`)`.
+- Cancel button: revoke any `URL.createObjectURL` previews on unmount.
+
+### 6. Display in cards
+
+- `ServiceRecordCard.tsx`: when record has photos, render `<ServiceRecordPhotoGrid>` inside expanded section above the action row.
+- Optionally show a small photo-count badge near the title.
+- Service history list item (`ServiceHistoryItem.tsx`): show same grid if photos exist (read-only).
+
+### 7. Type updates
+
+- Extend `ServiceRecord` type in `src/lib/queries/vehicles.ts` to include `photo_paths: string[]`.
+- Select query: add `photo_paths` to the select string.
+
+### 8. Query invalidations
+
+Unchanged set after save: `["vehicle", vehicleId, "service-records"]`, `["vehicle", vehicleId]`, `["service-history"]`.
+
+### 9. Out of scope
+
+- No drag reorder, no annotations, no PDF export, no advanced lightbox, no HEIC, no redesign of cards or routes, no delete of whole record.
+
+### Summary deliverable at end of build
+
+Will recap: chosen approach (array column + private bucket signed URLs), migration applied, new files added, create/edit flow behavior, and partial failure handling (warning toast with count, record still saved).

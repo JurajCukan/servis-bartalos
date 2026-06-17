@@ -92,6 +92,7 @@ export type ServiceRecord = {
   technician: string | null;
   next_service_km: number | null;
   next_service_date: string | null;
+  photo_paths: string[];
   created_at: string;
 };
 
@@ -102,11 +103,14 @@ export const serviceHistoryQuery = (vehicleId: string) =>
       const { data, error } = await supabase
         .from("service_records")
         .select(
-          "id, vehicle_id, date, mileage_at_service, service_type, title, description, parts_replaced, price, technician, next_service_km, next_service_date, created_at",
+          "id, vehicle_id, date, mileage_at_service, service_type, title, description, parts_replaced, price, technician, next_service_km, next_service_date, photo_paths, created_at",
         )
         .eq("vehicle_id", vehicleId)
         .order("date", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as ServiceRecord[];
+      return (data ?? []).map((r) => ({
+        ...r,
+        photo_paths: (r as { photo_paths?: string[] | null }).photo_paths ?? [],
+      })) as ServiceRecord[];
     },
   });
