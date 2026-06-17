@@ -11,7 +11,8 @@ import { VehicleDetailSkeleton } from "@/components/garage/detail/VehicleDetailS
 import { AddServiceRecordDialog } from "@/components/garage/detail/AddServiceRecordDialog";
 import { ScheduleServiceDialog } from "@/components/garage/detail/ScheduleServiceDialog";
 import { EditVehicleDialog } from "@/components/garage/edit/EditVehicleDialog";
-import { vehicleDetailQuery, serviceHistoryQuery } from "@/lib/queries/vehicles";
+import { EditServiceRecordDialog } from "@/components/garage/detail/EditServiceRecordDialog";
+import { vehicleDetailQuery, serviceHistoryQuery, type ServiceRecord } from "@/lib/queries/vehicles";
 
 export const Route = createFileRoute("/_authenticated/garage/$vehicleId")({
   head: () => ({ meta: [{ title: "Detail vozidla — Servisná knižka Bartalos" }] }),
@@ -65,6 +66,7 @@ function VehicleDetailPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<ServiceRecord | null>(null);
 
   if (!vehicle) return null;
 
@@ -90,6 +92,7 @@ function VehicleDetailPage() {
             records={history.data}
             loading={history.isLoading}
             onAdd={openAdd}
+            onEdit={setEditingRecord}
           />
         </div>
       </div>
@@ -108,6 +111,13 @@ function VehicleDetailPage() {
         open={editOpen}
         onOpenChange={setEditOpen}
         vehicle={vehicle}
+      />
+      <EditServiceRecordDialog
+        open={!!editingRecord}
+        onOpenChange={(o) => !o && setEditingRecord(null)}
+        vehicleId={vehicleId}
+        currentMileage={vehicle.current_mileage}
+        record={editingRecord}
       />
     </AppShell>
   );
