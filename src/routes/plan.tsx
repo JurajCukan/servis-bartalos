@@ -47,6 +47,8 @@ function sortBucket(a: PlannedTask, b: PlannedTask) {
 function PlanPage() {
   const { data, isLoading, error } = useQuery(plannedTasksQuery);
 
+  usePocketBaseRealtime("scheduled_tasks", [["scheduled-tasks"]]);
+
   const grouped = useMemo(() => {
     const today = todayIso();
     const tomorrow = addDaysIso(today, 1);
