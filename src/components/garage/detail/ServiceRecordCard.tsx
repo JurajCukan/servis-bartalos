@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { ChevronDown, Pencil } from "lucide-react";
+import { ChevronDown, ImageIcon, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDate, formatKm, formatPrice } from "@/lib/format";
 import { ServiceTypeBadge } from "./ServiceTypeBadge";
+import { ServiceRecordPhotoGrid } from "./photos/ServiceRecordPhotoGrid";
 import type { ServiceRecord } from "@/lib/queries/vehicles";
 
 export function ServiceRecordCard({
