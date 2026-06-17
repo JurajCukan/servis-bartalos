@@ -28,7 +28,7 @@ export function ServiceRecordPhotoGrid({ paths }: { paths: string[] }) {
 
   return (
     <div>
-      <div className="text-xs text-white/50 mb-2">Fotky ({paths.length})</div>
+      <div className="text-xs text-brand-fg-muted mb-2">Fotky ({paths.length})</div>
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
         {paths.map((path, idx) => {
           const url = urls[path];
@@ -51,7 +51,7 @@ export function ServiceRecordPhotoGrid({ paths }: { paths: string[] }) {
                   className="h-full w-full object-cover transition group-hover:opacity-80"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-white/30">
+                <div className="flex h-full w-full items-center justify-center text-brand-fg-subtle">
                   <ImageOff className="h-5 w-5" />
                 </div>
               )}

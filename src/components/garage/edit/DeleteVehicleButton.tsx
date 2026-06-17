@@ -110,9 +110,9 @@ export function DeleteVehicleButton({
       </div>
 
       <AlertDialog open={open} onOpenChange={setOpen}>
-        <AlertDialogContent className="border-brand-border bg-brand-surface text-white">
+        <AlertDialogContent className="border-brand-border bg-brand-surface text-brand-fg">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Odstrániť vozidlo?</AlertDialogTitle>
+            <AlertDialogTitle className="text-brand-fg">Odstrániť vozidlo?</AlertDialogTitle>
             <AlertDialogDescription className="text-brand-muted">
               Odstránia sa nasledujúce údaje:
             </AlertDialogDescription>
@@ -126,11 +126,11 @@ export function DeleteVehicleButton({
           <p className="text-sm text-brand-muted">
             Zákazník zostane zachovaný (môže mať ďalšie vozidlá).
           </p>
-          <p className="text-sm font-medium text-white">Táto akcia sa nedá vrátiť späť.</p>
+          <p className="text-sm font-medium text-brand-fg">Táto akcia sa nedá vrátiť späť.</p>
           <AlertDialogFooter>
             <AlertDialogCancel
               disabled={mutation.isPending}
-              className="border-brand-border bg-transparent text-white hover:bg-brand-bg"
+              className="border-brand-border bg-transparent text-brand-fg hover:bg-brand-bg"
             >
               Zrušiť
             </AlertDialogCancel>
@@ -140,7 +140,7 @@ export function DeleteVehicleButton({
                 e.preventDefault();
                 mutation.mutate();
               }}
-              className="bg-destructive text-white hover:bg-destructive/90"
+              className="bg-destructive text-brand-fg hover:bg-destructive/90"
             >
               {mutation.isPending ? "Odstraňujem…" : "Odstrániť vozidlo"}
             </AlertDialogAction>

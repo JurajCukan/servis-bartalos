@@ -53,7 +53,7 @@ export type VehicleFormInput = z.input<typeof schema>;
 export type VehicleFormValues = z.output<typeof schema>;
 
 const inputCls =
-  "bg-brand-bg border-brand-border text-white placeholder:text-white/30 focus-visible:ring-brand-accent";
+  "bg-brand-bg border-brand-border text-brand-fg placeholder:text-brand-fg-subtle focus-visible:ring-brand-accent";
 
 export function VehicleForm({
   onBack,
@@ -180,14 +180,14 @@ export function VehicleForm({
           variant="outline"
           onClick={onBack}
           disabled={isSubmitting}
-          className="border-brand-border bg-transparent text-white hover:bg-brand-surface"
+          className="border-brand-border bg-transparent text-brand-fg hover:bg-brand-surface"
         >
           Späť
         </Button>
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="bg-brand-accent text-white hover:bg-brand-accent-hover"
+          className="bg-brand-accent text-brand-fg hover:bg-brand-accent-hover"
         >
           {isSubmitting ? "Ukladám…" : "Uložiť vozidlo"}
         </Button>
@@ -209,7 +209,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-sm text-white/80">
+      <Label className="text-sm text-brand-fg">
         {label}
         {required && <span className="ml-1 text-brand-accent">*</span>}
       </Label>

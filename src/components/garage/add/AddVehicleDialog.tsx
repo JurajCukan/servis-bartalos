@@ -174,10 +174,10 @@ export function AddVehicleDialog({
       <Sheet open={open} onOpenChange={handleOpenChange}>
         <SheetContent
           side="bottom"
-          className="h-[95vh] overflow-y-auto border-brand-border bg-brand-surface text-white"
+          className="h-[95vh] overflow-y-auto border-brand-border bg-brand-surface text-brand-fg"
         >
           <SheetHeader>
-            <SheetTitle className="text-white">Pridať vozidlo</SheetTitle>
+            <SheetTitle className="text-brand-fg">Pridať vozidlo</SheetTitle>
           </SheetHeader>
           <div className="mt-4">{body}</div>
         </SheetContent>
@@ -187,9 +187,9 @@ export function AddVehicleDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto border-brand-border bg-brand-surface text-white">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto border-brand-border bg-brand-surface text-brand-fg">
         <DialogHeader>
-          <DialogTitle className="text-white">Pridať vozidlo</DialogTitle>
+          <DialogTitle className="text-brand-fg">Pridať vozidlo</DialogTitle>
         </DialogHeader>
         {body}
       </DialogContent>

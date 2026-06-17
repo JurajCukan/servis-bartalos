@@ -14,9 +14,9 @@ const PRIORITY_STYLES: Record<TaskPriority, string> = {
 };
 
 const STATUS_STYLES: Record<TaskStatus, string> = {
-  "Čakajúce": "bg-brand-surface text-white/70 border-brand-border",
+  "Čakajúce": "bg-brand-surface text-brand-fg-muted border-brand-border",
   "Dokončené": "bg-emerald-500/15 text-emerald-300 border-emerald-500/40",
-  "Zrušené": "bg-white/10 text-white/50 border-brand-border",
+  "Zrušené": "bg-brand-surface text-brand-fg-muted border-brand-border",
 };
 
 export function PlannedTaskCard({ task }: { task: PlannedTask }) {
@@ -58,7 +58,7 @@ export function PlannedTaskCard({ task }: { task: PlannedTask }) {
             {task.priority}
           </span>
           {task.task_type && (
-            <span className="min-w-0 truncate text-sm font-semibold text-white">
+            <span className="min-w-0 truncate text-sm font-semibold text-brand-fg">
               {task.task_type}
             </span>
           )}
@@ -70,25 +70,25 @@ export function PlannedTaskCard({ task }: { task: PlannedTask }) {
         </span>
       </div>
 
-      <div className="min-w-0 text-sm text-white/80">
+      <div className="min-w-0 text-sm text-brand-fg">
         {v ? (
           <p className="break-words">
-            <span className="font-medium text-white">
+            <span className="font-medium text-brand-fg">
               {v.brand} {v.model}
             </span>{" "}
             · <span className="break-all font-mono">{v.license_plate}</span>
           </p>
         ) : (
-          <p className="text-white/50">Vozidlo bolo odstránené</p>
+          <p className="text-brand-fg-muted">Vozidlo bolo odstránené</p>
         )}
-        <p className="break-words text-white/60">{customer}</p>
+        <p className="break-words text-brand-fg-muted">{customer}</p>
       </div>
 
-      <p className="whitespace-pre-wrap break-words text-sm text-white/80">
+      <p className="whitespace-pre-wrap break-words text-sm text-brand-fg">
         {task.description}
       </p>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/60">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-brand-fg-muted">
         <span className="inline-flex items-center gap-1.5">
           <Calendar className="h-3.5 w-3.5" />
           {formatDateLong(task.planned_date)}
@@ -106,7 +106,7 @@ export function PlannedTaskCard({ task }: { task: PlannedTask }) {
           <Link
             to="/garage/$vehicleId"
             params={{ vehicleId: v.id }}
-            className="inline-flex items-center justify-center rounded-md border border-brand-border bg-transparent px-3 py-1.5 text-xs font-medium text-white/80 transition hover:border-brand-accent hover:text-white"
+            className="inline-flex items-center justify-center rounded-md border border-brand-border bg-transparent px-3 py-1.5 text-xs font-medium text-brand-fg transition hover:border-brand-accent hover:text-brand-fg"
           >
             Zobraziť vozidlo
           </Link>
@@ -117,7 +117,7 @@ export function PlannedTaskCard({ task }: { task: PlannedTask }) {
               type="button"
               onClick={() => updateStatus.mutate("Zrušené")}
               disabled={busy}
-              className="inline-flex items-center justify-center gap-1 rounded-md border border-brand-border px-3 py-1.5 text-xs font-medium text-white/70 transition hover:text-white disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-1 rounded-md border border-brand-border px-3 py-1.5 text-xs font-medium text-brand-fg-muted transition hover:text-brand-fg disabled:opacity-50"
             >
               <X className="h-3.5 w-3.5" />
               Zrušiť
@@ -126,7 +126,7 @@ export function PlannedTaskCard({ task }: { task: PlannedTask }) {
               type="button"
               onClick={() => updateStatus.mutate("Dokončené")}
               disabled={busy}
-              className="inline-flex items-center justify-center gap-1 rounded-md bg-brand-accent px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-accent-hover disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-1 rounded-md bg-brand-accent px-3 py-1.5 text-xs font-semibold text-brand-fg transition hover:bg-brand-accent-hover disabled:opacity-50"
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
               Označiť ako dokončené

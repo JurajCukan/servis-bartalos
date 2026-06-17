@@ -20,10 +20,10 @@ export function ThemeSettingCard() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <Card className="border-brand-border bg-brand-surface text-white">
+    <Card className="border-brand-border bg-brand-surface text-brand-fg">
       <CardHeader>
-        <CardTitle className="text-white">Vzhľad</CardTitle>
-        <CardDescription className="text-white/60">
+        <CardTitle className="text-brand-fg">Vzhľad</CardTitle>
+        <CardDescription className="text-brand-fg-muted">
           Vyberte si režim zobrazenia aplikácie.
         </CardDescription>
       </CardHeader>
@@ -43,7 +43,7 @@ export function ThemeSettingCard() {
                 className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${
                   active
                     ? "border-brand-accent bg-brand-accent/10"
-                    : "border-brand-border bg-brand-bg hover:border-white/20"
+                    : "border-brand-border bg-brand-bg hover:border-brand-border"
                 }`}
               >
                 <RadioGroupItem
@@ -52,11 +52,11 @@ export function ThemeSettingCard() {
                   className="mt-1 border-white/40 text-brand-accent"
                 />
                 <div className="flex-1 space-y-1">
-                  <div className="flex items-center gap-2 text-sm font-medium text-white">
+                  <div className="flex items-center gap-2 text-sm font-medium text-brand-fg">
                     <Icon className="h-4 w-4" />
                     {opt.label}
                   </div>
-                  <p className="text-xs text-white/60">{opt.description}</p>
+                  <p className="text-xs text-brand-fg-muted">{opt.description}</p>
                 </div>
               </Label>
             );

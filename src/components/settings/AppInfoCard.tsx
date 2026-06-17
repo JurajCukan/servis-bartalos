@@ -9,10 +9,10 @@ const ROWS: { label: string; value: string }[] = [
 
 export function AppInfoCard() {
   return (
-    <Card className="border-brand-border bg-brand-surface text-white">
+    <Card className="border-brand-border bg-brand-surface text-brand-fg">
       <CardHeader>
-        <CardTitle className="text-white">Aplikácia</CardTitle>
-        <CardDescription className="text-white/60">
+        <CardTitle className="text-brand-fg">Aplikácia</CardTitle>
+        <CardDescription className="text-brand-fg-muted">
           Základné informácie o tejto inštalácii.
         </CardDescription>
       </CardHeader>
@@ -23,8 +23,8 @@ export function AppInfoCard() {
               key={row.label}
               className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
             >
-              <dt className="text-sm text-white/60">{row.label}</dt>
-              <dd className="text-sm font-medium text-white">{row.value}</dd>
+              <dt className="text-sm text-brand-fg-muted">{row.label}</dt>
+              <dd className="text-sm font-medium text-brand-fg">{row.value}</dd>
             </div>
           ))}
         </dl>

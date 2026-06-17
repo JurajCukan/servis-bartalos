@@ -21,7 +21,7 @@ export function VehicleEditFormSection({
   const errors = form.formState.errors;
   return (
     <section className="space-y-4">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-white/60">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-brand-fg-muted">
         Vozidlo
       </h3>
       <div className="grid gap-4 sm:grid-cols-2">

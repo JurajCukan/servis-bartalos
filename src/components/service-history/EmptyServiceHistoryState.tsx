@@ -12,9 +12,9 @@ export function EmptyServiceHistoryState({ variant }: { variant: Variant }) {
 
   return (
     <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-brand-border bg-brand-surface/40 px-6 py-16 text-center">
-      <Icon className="h-10 w-10 text-white/40" />
-      <h2 className="text-base font-semibold text-white">{title}</h2>
-      <p className="max-w-md text-sm text-white/60">{text}</p>
+      <Icon className="h-10 w-10 text-brand-fg-subtle" />
+      <h2 className="text-base font-semibold text-brand-fg">{title}</h2>
+      <p className="max-w-md text-sm text-brand-fg-muted">{text}</p>
     </div>
   );
 }

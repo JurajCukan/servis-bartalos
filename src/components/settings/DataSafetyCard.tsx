@@ -10,18 +10,18 @@ const TIPS = [
 
 export function DataSafetyCard() {
   return (
-    <Card className="border-brand-border bg-brand-surface text-white">
+    <Card className="border-brand-border bg-brand-surface text-brand-fg">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-white">
+        <CardTitle className="flex items-center gap-2 text-brand-fg">
           <ShieldCheck className="h-5 w-5 text-brand-accent" />
           Dáta a bezpečnosť
         </CardTitle>
-        <CardDescription className="text-white/60">
+        <CardDescription className="text-brand-fg-muted">
           Odporúčania pre bezpečné používanie aplikácie.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ul className="ml-5 list-disc space-y-2 text-sm text-white/80">
+        <ul className="ml-5 list-disc space-y-2 text-sm text-brand-fg">
           {TIPS.map((tip) => (
             <li key={tip}>{tip}</li>
           ))}

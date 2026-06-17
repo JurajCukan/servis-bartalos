@@ -43,7 +43,7 @@ export function VehicleDetailHeader({
       <div className="flex items-center justify-between gap-3">
         <Link
           to="/garage"
-          className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-sm text-white/70 transition hover:text-white"
+          className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-sm text-brand-fg-muted transition hover:text-brand-fg"
         >
           <ArrowLeft className="h-4 w-4" />
           Späť na garáž
@@ -52,21 +52,21 @@ export function VehicleDetailHeader({
           <button
             type="button"
             onClick={onAction}
-            className="rounded-md border border-brand-border bg-brand-surface px-3 py-2 text-sm font-medium text-white transition hover:border-brand-accent hover:text-brand-accent"
+            className="rounded-md border border-brand-border bg-brand-surface px-3 py-2 text-sm font-medium text-brand-fg transition hover:border-brand-accent hover:text-brand-accent"
           >
             Upraviť
           </button>
           <button
             type="button"
             onClick={onSchedule}
-            className="rounded-md border border-brand-border bg-brand-surface px-3 py-2 text-sm font-medium text-white transition hover:border-brand-accent hover:text-brand-accent"
+            className="rounded-md border border-brand-border bg-brand-surface px-3 py-2 text-sm font-medium text-brand-fg transition hover:border-brand-accent hover:text-brand-accent"
           >
             Naplánovať
           </button>
           <button
             type="button"
             onClick={onAddRecord}
-            className="rounded-md bg-brand-accent px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-accent-hover"
+            className="rounded-md bg-brand-accent px-3 py-2 text-sm font-semibold text-brand-fg transition hover:bg-brand-accent-hover"
           >
             + Pridať záznam
           </button>
@@ -82,7 +82,7 @@ export function VehicleDetailHeader({
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-white/40">
+            <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-brand-fg-subtle">
               <Car className="h-12 w-12" aria-hidden />
               <span className="text-sm">Bez fotky</span>
             </div>
@@ -91,19 +91,19 @@ export function VehicleDetailHeader({
         </div>
 
         <div className="flex flex-col gap-4 p-5">
-          <h1 className="text-2xl font-semibold text-white sm:text-3xl">{title}</h1>
+          <h1 className="text-2xl font-semibold text-brand-fg sm:text-3xl">{title}</h1>
           <dl className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
             <div>
-              <dt className="text-white/50">VIN</dt>
-              <dd className="mt-0.5 break-all font-mono text-white">{vehicle.vin ?? "—"}</dd>
+              <dt className="text-brand-fg-muted">VIN</dt>
+              <dd className="mt-0.5 break-all font-mono text-brand-fg">{vehicle.vin ?? "—"}</dd>
             </div>
             <div>
-              <dt className="text-white/50">ŠPZ</dt>
-              <dd className="mt-0.5 font-medium text-white">{vehicle.license_plate}</dd>
+              <dt className="text-brand-fg-muted">ŠPZ</dt>
+              <dd className="mt-0.5 font-medium text-brand-fg">{vehicle.license_plate}</dd>
             </div>
             <div>
-              <dt className="text-white/50">Nájazd</dt>
-              <dd className="mt-0.5 font-medium tabular-nums text-white">
+              <dt className="text-brand-fg-muted">Nájazd</dt>
+              <dd className="mt-0.5 font-medium tabular-nums text-brand-fg">
                 {formatMileage(vehicle.current_mileage)}
               </dd>
             </div>

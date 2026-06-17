@@ -30,17 +30,17 @@ function SettingsPage() {
         <ThemeSettingCard />
         <AppInfoCard />
         <DataSafetyCard />
-        <Card className="border-brand-border bg-brand-surface text-white">
+        <Card className="border-brand-border bg-brand-surface text-brand-fg">
           <CardHeader>
-            <CardTitle className="text-white">Rýchle akcie</CardTitle>
-            <CardDescription className="text-white/60">
+            <CardTitle className="text-brand-fg">Rýchle akcie</CardTitle>
+            <CardDescription className="text-brand-fg-muted">
               Pokračujte v práci v aplikácii.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button
               asChild
-              className="w-full bg-brand-accent text-white hover:bg-brand-accent-hover sm:w-auto"
+              className="w-full bg-brand-accent text-brand-fg hover:bg-brand-accent-hover sm:w-auto"
             >
               <Link to="/garage">
                 <Car className="mr-2 h-4 w-4" />

@@ -7,7 +7,7 @@ function styleFor(type: string) {
   if (t.includes("brzd")) return "bg-red-600/20 text-red-300 border-red-500/30";
   if (t.includes("kontrol") || t.includes("diagnost"))
     return "bg-zinc-600/30 text-zinc-200 border-zinc-500/30";
-  return "bg-white/5 text-white/80 border-brand-border";
+  return "bg-brand-bg text-brand-fg border-brand-border";
 }
 
 export function ServiceTypeBadge({ type, className }: { type: string; className?: string }) {

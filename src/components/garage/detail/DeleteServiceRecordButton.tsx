@@ -74,9 +74,9 @@ export function DeleteServiceRecordButton({
       </div>
 
       <AlertDialog open={open} onOpenChange={setOpen}>
-        <AlertDialogContent className="border-brand-border bg-brand-surface text-white">
+        <AlertDialogContent className="border-brand-border bg-brand-surface text-brand-fg">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Odstrániť servisný záznam?</AlertDialogTitle>
+            <AlertDialogTitle className="text-brand-fg">Odstrániť servisný záznam?</AlertDialogTitle>
             <AlertDialogDescription className="text-brand-muted">
               Táto akcia sa nedá vrátiť späť.
             </AlertDialogDescription>
@@ -84,7 +84,7 @@ export function DeleteServiceRecordButton({
           <AlertDialogFooter>
             <AlertDialogCancel
               disabled={mutation.isPending}
-              className="border-brand-border bg-transparent text-white hover:bg-brand-bg"
+              className="border-brand-border bg-transparent text-brand-fg hover:bg-brand-bg"
             >
               Zrušiť
             </AlertDialogCancel>
@@ -94,7 +94,7 @@ export function DeleteServiceRecordButton({
                 e.preventDefault();
                 mutation.mutate();
               }}
-              className="bg-destructive text-white hover:bg-destructive/90"
+              className="bg-destructive text-brand-fg hover:bg-destructive/90"
             >
               {mutation.isPending ? "Odstraňujem…" : "Odstrániť"}
             </AlertDialogAction>

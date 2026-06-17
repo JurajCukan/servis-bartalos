@@ -5,8 +5,8 @@ export function CustomerInfoCard({ customer }: { customer: CustomerFull | null }
   if (!customer) {
     return (
       <section className="rounded-xl border border-brand-border bg-brand-surface p-5">
-        <h2 className="text-lg font-semibold text-white">Zákazník</h2>
-        <p className="mt-2 text-sm text-white/50">Bez priradeného zákazníka.</p>
+        <h2 className="text-lg font-semibold text-brand-fg">Zákazník</h2>
+        <p className="mt-2 text-sm text-brand-fg-muted">Bez priradeného zákazníka.</p>
       </section>
     );
   }
@@ -15,9 +15,9 @@ export function CustomerInfoCard({ customer }: { customer: CustomerFull | null }
 
   return (
     <section className="rounded-xl border border-brand-border bg-brand-surface p-5">
-      <h2 className="text-lg font-semibold text-white">Zákazník</h2>
+      <h2 className="text-lg font-semibold text-brand-fg">Zákazník</h2>
       <div className="mt-3 space-y-3">
-        <p className="break-words text-base font-medium text-white">{fullName}</p>
+        <p className="break-words text-base font-medium text-brand-fg">{fullName}</p>
         <a
           href={`tel:${customer.phone.replace(/\s+/g, "")}`}
           className="flex items-center gap-2 text-base font-medium text-brand-accent hover:underline"
@@ -28,15 +28,15 @@ export function CustomerInfoCard({ customer }: { customer: CustomerFull | null }
         {customer.email && (
           <a
             href={`mailto:${customer.email}`}
-            className="flex items-center gap-2 break-all text-sm text-white/80 hover:underline"
+            className="flex items-center gap-2 break-all text-sm text-brand-fg hover:underline"
           >
             <Mail className="h-4 w-4 shrink-0" aria-hidden />
             {customer.email}
           </a>
         )}
         {customer.notes && (
-          <div className="flex items-start gap-2 rounded-md border border-brand-border bg-brand-bg p-3 text-sm text-white/80">
-            <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-white/50" aria-hidden />
+          <div className="flex items-start gap-2 rounded-md border border-brand-border bg-brand-bg p-3 text-sm text-brand-fg">
+            <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-brand-fg-muted" aria-hidden />
             <p className="whitespace-pre-wrap">{customer.notes}</p>
           </div>
         )}

@@ -54,7 +54,7 @@ function today() {
 }
 
 const inputCls =
-  "bg-brand-bg border-brand-border text-white placeholder:text-white/30 focus-visible:ring-brand-accent";
+  "bg-brand-bg border-brand-border text-brand-fg placeholder:text-brand-fg-subtle focus-visible:ring-brand-accent";
 
 export function ScheduleTaskForm({
   vehicleId,
@@ -182,14 +182,14 @@ export function ScheduleTaskForm({
           variant="outline"
           onClick={onCancel}
           disabled={submitting}
-          className="border-brand-border bg-transparent text-white hover:bg-brand-surface"
+          className="border-brand-border bg-transparent text-brand-fg hover:bg-brand-surface"
         >
           Zrušiť
         </Button>
         <Button
           type="submit"
           disabled={submitting}
-          className="bg-brand-accent text-white hover:bg-brand-accent-hover"
+          className="bg-brand-accent text-brand-fg hover:bg-brand-accent-hover"
         >
           {submitting ? "Ukladám…" : "Uložiť plán"}
         </Button>
@@ -211,7 +211,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-sm text-white/80">
+      <Label className="text-sm text-brand-fg">
         {label}
         {required && <span className="ml-1 text-brand-accent">*</span>}
       </Label>

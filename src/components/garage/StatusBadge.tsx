@@ -2,10 +2,10 @@ import type { VehicleStatus } from "@/lib/queries/vehicles";
 import { cn } from "@/lib/utils";
 
 const STYLES: Record<VehicleStatus, string> = {
-  OK: "bg-emerald-600/90 text-white",
-  "SERVIS NUTNÝ": "bg-red-600/90 text-white",
-  NAPLÁNOVANÉ: "bg-blue-600/90 text-white",
-  ARCHÍV: "bg-zinc-600/90 text-white",
+  OK: "bg-emerald-600/90 text-brand-fg",
+  "SERVIS NUTNÝ": "bg-red-600/90 text-brand-fg",
+  NAPLÁNOVANÉ: "bg-blue-600/90 text-brand-fg",
+  ARCHÍV: "bg-zinc-600/90 text-brand-fg",
 };
 
 export function StatusBadge({
