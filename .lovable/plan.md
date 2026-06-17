@@ -1,37 +1,36 @@
-## Fix /plan blank page
+## Build /service-history
 
-### Cause
+### Route
+- `src/routes/_authenticated/service-history.tsx` — loader primes `serviceHistoryQuery` via `context.queryClient.ensureQueryData`; component uses `useSuspenseQuery`. Reads search params `q`, `type` via `validateSearch` (zod) so filter state lives in the URL and is shareable. `errorComponent` + `notFoundComponent` per route rules.
+- Sidebar: add `to: "/service-history"` to the "História servisu" item and widen the `NavItem.to` literal union to include it.
 
-`/plan` returns 200 but renders blank. Console shows:
+### Query
+`src/lib/queries/serviceHistory.ts`:
+- `ServiceHistoryItem` joined shape (record fields + `vehicle: { id, brand, model, license_plate }` + `customer: { first_name, last_name }`).
+- `serviceHistoryQuery = queryOptions({ queryKey: ["service-history","all"], queryFn })` selecting `service_records.* , vehicles!inner(id, brand, model, license_plate, customers!inner(first_name, last_name))`, ordered by `date desc, created_at desc`. RLS already allows anon SELECT on all three tables — no migration needed.
 
-```
-Uncaught: Invariant failed: Expected to find a match below the root match in SPA mode.
-    at hydrate (.../router-core/.../ssr-client.js)
-    at hydrateStart (.../start-client-core/.../hydrateStart.js)
-```
+### Components (under `src/components/service-history/`)
+- `ServiceHistoryPageHeader.tsx` — title "História servisu", subtitle "Prehľad všetkých servisných záznamov."
+- `ServiceHistoryFilters.tsx` — search Input (placeholder per spec) + Select for Typ servisu with the 11 listed options + "Všetky typy". Controlled via URL search params (`useNavigate({ search: prev => ... })`).
+- `ServiceHistoryList.tsx` — receives filtered items, renders `ServiceHistoryItem` list; handles "no results" empty state vs "no records at all" empty state via props.
+- `ServiceHistoryItem.tsx` — Card showing title, date (sk locale), `ServiceTypeBadge` (reuse existing), price (if present), brand+model+ŠPZ, customer name, mileage, description preview (line-clamp-2). Right side: "Zobraziť vozidlo" Link → `/garage/$vehicleId`. Compact, no expand/collapse this iteration (kept simple per spec).
+- `ServiceHistorySkeleton.tsx` — 5 skeleton cards.
+- `EmptyServiceHistoryState.tsx` — two variants via `variant: "empty" | "no-results"` with the exact Slovak copy from the spec.
 
-This is a TanStack Start hydration mismatch on the new route. The static preview is serving a pre-built HTML shell whose route tree predates `src/routes/_authenticated/plan.tsx` (the file was added in the previous turn but the dev/preview server cached the prior client bundle). The server HTML has only the root match; the client router has the `/plan` leaf and asserts it should find a child match, so hydration aborts and React renders nothing.
+### Filtering
+Client-side `useMemo` over the joined dataset:
+- search: lowercase q matched against customer full name, license_plate, brand, model, title, service_type, description.
+- type: exact match on `service_type` unless "all".
 
-`/garage` works because it existed in the cached build; `/plan` is new.
+### Loading & errors
+Route uses Suspense via `useSuspenseQuery`; wrap list in `<Suspense fallback={<ServiceHistorySkeleton />}>` inside the page so filters stay interactive. `errorComponent` shows simple Slovak error with retry calling `router.invalidate()`.
 
-The user perceives "404" because the page is fully blank.
+### Out of scope (explicit non-changes)
+- No edit/delete/export/photo gallery/notifications.
+- Vehicle detail page untouched.
+- No DB migration (existing anon SELECT policies on `service_records`, `vehicles`, `customers` suffice).
+- No visual redesign of existing screens.
 
-### Fix
-
-1. Restart the dev server (`code--restart_dev_server`) so the regenerated `routeTree.gen.ts` and the new `plan.tsx` chunk are served fresh and SSR/hydration agree.
-2. Verify in preview: navigate to `/plan`, confirm Dnešný plán renders with the four sections; also click "Dnešný plán" in the sidebar from `/garage` to verify in-app navigation; check `browser--read_console_logs` is clean of the invariant error.
-
-No code changes needed — the route file (`src/routes/_authenticated/plan.tsx`), sidebar `<Link to="/plan">`, queries, and migration are already in place from the prior iteration and `routeTree.gen.ts` already lists `/_authenticated/plan`. The bug is a stale dev-server state, not a missing/incorrect route registration.
-
-### Explicit non-changes
-
-- Excel import remains intentionally not implemented.
-- No redesign, no rewrite of plan page, scheduling form, or sidebar.
-- Slovak labels and dark UI untouched.
-
-### Verification checklist after restart
-
-- `/plan` direct URL renders the dark plan page (no blank, no hydration error in console).
-- Sidebar "Dnešný plán" navigates to `/plan` and marks itself active.
-- "Zobraziť vozidlo" link on a task card navigates to `/garage/$vehicleId`.
-- "Označiť ako dokončené" updates status and removes the task from the active list.
+### Files
+**Created:** `src/routes/_authenticated/service-history.tsx`, `src/lib/queries/serviceHistory.ts`, 6 components under `src/components/service-history/`.
+**Edited:** `src/components/app/AppSidebar.tsx` (add route + widen union).
