@@ -1,77 +1,48 @@
 ## Goal
-Add safe delete flows for vehicles and individual service records, accessible from the existing edit dialogs, with confirmation dialogs and proper cleanup of related DB rows and storage photos.
+Add a real `/settings` route with a working theme switcher (Svetlý / Tmavý / Podľa systému), persist preference in `localStorage`, and bring back the "Nastavenia" sidebar item.
 
-## Part A — Delete service record
+## Theme system
 
-In `EditServiceRecordDialog`:
-- Add a divider + dangerous "Odstrániť záznam" button (destructive variant) at the bottom of the form, separated from Save/Cancel.
-- Clicking opens an `AlertDialog`:
-  - Title: "Odstrániť servisný záznam?"
-  - Body: "Táto akcia sa nedá vrátiť späť."
-  - Actions: "Zrušiť" / "Odstrániť" (destructive).
-- On confirm:
-  1. Best-effort `deletePhotos(record.photo_paths)` from the `service-photos` bucket.
-  2. `DELETE` the `service_records` row by id.
-  3. Close both dialogs, toast `"Servisný záznam bol odstránený"`.
-  4. Invalidate queries: `["vehicle", vehicleId, "service-records"]`, `["vehicle", vehicleId]`, `["service-history"]`, `["vehicles"]`.
-- On failure: keep dialog open, toast `"Servisný záznam sa nepodarilo odstrániť"`.
+The app currently uses hardcoded `brand-bg/brand-surface/brand-border` tokens (always dark) and `text-white` throughout. A true full-fidelity light mode would require a redesign of every screen, which is explicitly out of scope. Approach:
 
-## Part B — Delete vehicle
+1. Make brand surface/border tokens swap with the `.dark` class so the toggle has a real visual effect on container surfaces:
+   - Move `--color-brand-bg / -surface / -border` out of `@theme inline` literal values.
+   - Define `--brand-bg`, `--brand-surface`, `--brand-border` in `:root` (light values) and `.dark` (current dark values: `#111`, `#1a1a1a`, `#2a2a2a`).
+   - Register them in `@theme inline` as `var(--brand-*)`. Accent stays constant.
+2. Add a tiny ThemeProvider (`src/components/theme/ThemeProvider.tsx`):
+   - Stores `"light" | "dark" | "system"` in `localStorage` key `skb-theme`.
+   - Default = `"dark"` (preserves current look on first load).
+   - Effect toggles the `.dark` class on `document.documentElement`.
+   - When `"system"`, listens to `matchMedia("(prefers-color-scheme: dark)")`.
+   - Exposes `useTheme()` hook returning `{ theme, resolvedTheme, setTheme }`.
+3. Wire `<ThemeProvider>` inside `RootComponent` in `src/routes/__root.tsx` (wraps `<Outlet />` and Toaster). Toaster gets `theme={resolvedTheme}` so toasts follow.
 
-In `EditVehicleDialog`:
-- Add a divider + dangerous "Odstrániť vozidlo" button at the bottom.
-- Clicking opens an `AlertDialog`:
-  - Title: "Odstrániť vozidlo?"
-  - Body lists what will be removed: vehicle data, servisná história, naplánované úkony, pripojené fotky. Customer is preserved (one short line). Ends with "Táto akcia sa nedá vrátiť späť."
-- On confirm:
-  1. `SELECT id, photo_paths FROM service_records WHERE vehicle_id = ?` to gather all record photo paths.
-  2. Best-effort `deletePhotos([...all record paths])` from `service-photos`.
-  3. Best-effort `deleteVehiclePhoto(vehicle.photo_path)` from `vehicle-photos`.
-  4. `DELETE FROM scheduled_tasks WHERE vehicle_id = ?`.
-  5. `DELETE FROM service_records WHERE vehicle_id = ?`.
-  6. `DELETE FROM vehicles WHERE id = ?`.
-  7. Customer row is intentionally NOT deleted.
-- Storage failures are logged (warn) and do not block DB deletion.
-- On success: close dialogs, `router.navigate({ to: "/garage" })`, toast `"Vozidlo bolo odstránené"`, invalidate `["vehicles"]`, `["service-history"]`, `["scheduled-tasks"]`, `["customers"]`.
-- On DB failure: keep dialog open, toast `"Vozidlo sa nepodarilo odstrániť"`.
+Persistence: `localStorage` is available in this client-side React app — preference WILL persist across reloads. Reading happens client-side only (ThemeProvider runs in a `useEffect`/lazy init that checks `typeof window`) to avoid SSR mismatch.
 
-## Backend changes
-
-One migration adding narrow anon DELETE policies (auth role already has ALL):
-
-```sql
-CREATE POLICY "Service records: anon delete" ON public.service_records
-  FOR DELETE TO anon USING (true);
-CREATE POLICY "Scheduled tasks: anon delete" ON public.scheduled_tasks
-  FOR DELETE TO anon USING (true);
-CREATE POLICY "Vehicles: anon delete" ON public.vehicles
-  FOR DELETE TO anon USING (true);
-```
-
-Storage delete policies for both buckets already exist for anon — no storage changes needed.
-
-No schema changes, no grants beyond existing (anon already has table-level privileges from prior migrations; if a grant is missing the migration will add `GRANT DELETE ON ... TO anon`).
+Caveat noted in the final summary: many components still use literal `text-white`, so light mode is functional infrastructure but text contrast on a few inner widgets is imperfect. The brand surfaces themselves swap correctly. A thorough light-mode pass is intentionally not in scope.
 
 ## Files
 
 Created:
-- `src/components/garage/detail/DeleteServiceRecordButton.tsx` — destructive button + AlertDialog + mutation. Receives `record`, `vehicleId`, `onDeleted`.
-- `src/components/garage/edit/DeleteVehicleButton.tsx` — destructive button + AlertDialog + mutation. Receives `vehicle`, `onDeleted`.
-- `supabase/migrations/<timestamp>_anon_delete_policies.sql`.
+- `src/components/theme/ThemeProvider.tsx` — context, hook, persistence, system-pref listener.
+- `src/components/settings/ThemeSettingCard.tsx` — "Vzhľad" card with three options using `RadioGroup` from shadcn (icons: Sun, Moon, Monitor).
+- `src/components/settings/AppInfoCard.tsx` — "Aplikácia" read-only info card.
+- `src/components/settings/DataSafetyCard.tsx` — "Dáta a bezpečnosť" tips card.
+- `src/components/settings/SettingsPageHeader.tsx` — page header matching other page headers.
+- `src/routes/_authenticated/settings.tsx` — `/settings` route with `head()` metadata, renders header + the four section cards (Vzhľad, Aplikácia, Dáta a bezpečnosť, Voliteľne → "Prejsť na garáž" Link button).
 
 Edited:
-- `src/components/garage/detail/EditServiceRecordDialog.tsx` — render `DeleteServiceRecordButton` inside the dialog body footer area; `onDeleted` calls `close()`.
-- `src/components/garage/detail/ServiceRecordForm.tsx` — accept an optional `footerSlot` so the delete button sits inside the form's footer cleanly (alternative: render below the form inside the dialog). Final decision: render below the form inside the dialog with a `<Separator />` and a small "Nebezpečná zóna" label, keeping the form untouched.
-- `src/components/garage/edit/EditVehicleDialog.tsx` — render `DeleteVehicleButton` at the bottom inside a "Nebezpečná zóna" section; on delete success navigate to `/garage` via `useNavigate()` from `@tanstack/react-router`.
+- `src/styles.css` — move brand tokens into `:root`/`.dark` and register via `@theme inline`.
+- `src/routes/__root.tsx` — wrap children in `<ThemeProvider>`; pass resolved theme to `<Toaster>`.
+- `src/components/app/AppSidebar.tsx` — add fourth `NAV_ITEMS` entry: `{ key:"settings", label:"Nastavenia", icon: Settings, to:"/settings", match:"/settings" }`. Widen `to` union type accordingly.
 
-No changes to: `ServiceRecordCard`, `VehicleDetailHeader`, route tree, queries, or types.
+No changes to existing screens, queries, or business logic.
 
-## UX details
+## UI
 
-- Use existing `AlertDialog` from `@/components/ui/alert-dialog` (already in project).
-- Destructive button: `variant="destructive"` with `Trash2` icon from lucide-react, full width on mobile.
-- "Nebezpečná zóna" header: small `text-xs uppercase text-brand-muted` label above the button, with `Separator` (or `<div className="h-px bg-brand-border" />` to match existing style).
-- Buttons disabled while mutation is pending; button label switches to "Odstraňujem…".
+- Settings page uses the same `AppShell` layout as other authenticated pages.
+- Cards reuse the existing dark surface style (`bg-brand-surface border border-brand-border`).
+- Sections: Vzhľad (radio group), Aplikácia (read-only key/value list), Dáta a bezpečnosť (bullet list), Voliteľne ("Prejsť na garáž" button linking to `/garage`).
 
 ## Out of scope
-Undo, recycle bin, bulk delete, cascading customer cleanup, redesign of cards, batch UI.
+User accounts, permissions, cloud sync, notifications engine, exports, full light-mode visual polish across every screen.
