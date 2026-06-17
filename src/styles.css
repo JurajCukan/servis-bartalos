@@ -68,6 +68,9 @@
 
 :root {
   --radius: 0.625rem;
+  --brand-bg: #f7f7f8;
+  --brand-surface: #ffffff;
+  --brand-border: #e5e5e7;
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
@@ -103,6 +106,9 @@
 }
 
 .dark {
+  --brand-bg: #111111;
+  --brand-surface: #1a1a1a;
+  --brand-border: #2a2a2a;
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.208 0.042 265.755);

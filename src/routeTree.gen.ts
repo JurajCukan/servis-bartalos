@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedServiceHistoryRouteImport } from './routes/_authenticated/service-history'
 import { Route as AuthenticatedPlanRouteImport } from './routes/_authenticated/plan'
 import { Route as AuthenticatedGarageIndexRouteImport } from './routes/_authenticated/garage.index'
@@ -24,6 +25,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedServiceHistoryRoute =
   AuthenticatedServiceHistoryRouteImport.update({
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/plan': typeof AuthenticatedPlanRoute
   '/service-history': typeof AuthenticatedServiceHistoryRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/garage/$vehicleId': typeof AuthenticatedGarageVehicleIdRoute
   '/garage/': typeof AuthenticatedGarageIndexRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/plan': typeof AuthenticatedPlanRoute
   '/service-history': typeof AuthenticatedServiceHistoryRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/garage/$vehicleId': typeof AuthenticatedGarageVehicleIdRoute
   '/garage': typeof AuthenticatedGarageIndexRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_authenticated/plan': typeof AuthenticatedPlanRoute
   '/_authenticated/service-history': typeof AuthenticatedServiceHistoryRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/garage/$vehicleId': typeof AuthenticatedGarageVehicleIdRoute
   '/_authenticated/garage/': typeof AuthenticatedGarageIndexRoute
 }
@@ -78,16 +87,24 @@ export interface FileRouteTypes {
     | '/'
     | '/plan'
     | '/service-history'
+    | '/settings'
     | '/garage/$vehicleId'
     | '/garage/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/plan' | '/service-history' | '/garage/$vehicleId' | '/garage'
+  to:
+    | '/'
+    | '/plan'
+    | '/service-history'
+    | '/settings'
+    | '/garage/$vehicleId'
+    | '/garage'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/_authenticated/plan'
     | '/_authenticated/service-history'
+    | '/_authenticated/settings'
     | '/_authenticated/garage/$vehicleId'
     | '/_authenticated/garage/'
   fileRoutesById: FileRoutesById
@@ -112,6 +129,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/service-history': {
       id: '/_authenticated/service-history'
@@ -147,6 +171,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedPlanRoute: typeof AuthenticatedPlanRoute
   AuthenticatedServiceHistoryRoute: typeof AuthenticatedServiceHistoryRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedGarageVehicleIdRoute: typeof AuthenticatedGarageVehicleIdRoute
   AuthenticatedGarageIndexRoute: typeof AuthenticatedGarageIndexRoute
 }
@@ -154,6 +179,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPlanRoute: AuthenticatedPlanRoute,
   AuthenticatedServiceHistoryRoute: AuthenticatedServiceHistoryRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedGarageVehicleIdRoute: AuthenticatedGarageVehicleIdRoute,
   AuthenticatedGarageIndexRoute: AuthenticatedGarageIndexRoute,
 }
