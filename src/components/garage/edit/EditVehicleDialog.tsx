@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -19,10 +19,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  deleteVehiclePhoto,
+  uploadVehiclePhoto,
+} from "@/lib/vehiclePhoto";
 import type { VehicleDetail } from "@/lib/queries/vehicles";
 
 import { CustomerEditFormSection } from "./CustomerEditFormSection";
 import { VehicleEditFormSection } from "./VehicleEditFormSection";
+import { VehiclePhotoField, type PhotoAction } from "./VehiclePhotoField";
 import {
   editSchema,
   emptyToNull,
@@ -72,8 +77,15 @@ export function EditVehicleDialog({
     defaultValues: buildDefaults(vehicle),
   });
 
+  const [photoAction, setPhotoAction] = useState<PhotoAction>("keep");
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+
   useEffect(() => {
-    if (open) form.reset(buildDefaults(vehicle));
+    if (open) {
+      form.reset(buildDefaults(vehicle));
+      setPhotoAction("keep");
+      setPendingPhoto(null);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, vehicle.id]);
 
@@ -133,9 +145,45 @@ export function EditVehicleDialog({
         })
         .eq("id", vehicle.id);
       if (vErr) throw vErr;
+
+      // Handle photo separately so a failure does not roll back text data.
+      let photoWarning: string | null = null;
+      if (photoAction === "replace" && pendingPhoto) {
+        try {
+          const newPath = await uploadVehiclePhoto(vehicle.id, pendingPhoto);
+          const { error: pErr } = await supabase
+            .from("vehicles")
+            .update({ photo_path: newPath })
+            .eq("id", vehicle.id);
+          if (pErr) throw pErr;
+          if (vehicle.photo_path) {
+            await deleteVehiclePhoto(vehicle.photo_path);
+          }
+        } catch (e) {
+          console.warn("Vehicle photo replace failed", e);
+          photoWarning = "Fotku sa nepodarilo uložiť";
+        }
+      } else if (photoAction === "remove") {
+        try {
+          const { error: pErr } = await supabase
+            .from("vehicles")
+            .update({ photo_path: null })
+            .eq("id", vehicle.id);
+          if (pErr) throw pErr;
+          if (vehicle.photo_path) {
+            await deleteVehiclePhoto(vehicle.photo_path);
+          }
+        } catch (e) {
+          console.warn("Vehicle photo remove failed", e);
+          photoWarning = "Fotku sa nepodarilo odstrániť";
+        }
+      }
+
+      return { photoWarning };
     },
-    onSuccess: () => {
+    onSuccess: ({ photoWarning }) => {
       toast.success("Údaje boli uložené");
+      if (photoWarning) toast.warning(photoWarning);
       queryClient.invalidateQueries({ queryKey: ["vehicle", vehicle.id] });
       queryClient.invalidateQueries({ queryKey: ["vehicles"] });
       queryClient.invalidateQueries({ queryKey: ["service-history"] });
@@ -143,7 +191,7 @@ export function EditVehicleDialog({
       onOpenChange(false);
     },
     onError: (err: Error) => {
-      if (err.message === "DUPLICATE_PLATE") return; // inline message already set
+      if (err.message === "DUPLICATE_PLATE") return;
       toast.error("Údaje sa nepodarilo uložiť");
     },
   });
@@ -154,6 +202,18 @@ export function EditVehicleDialog({
 
   const body = (
     <form onSubmit={form.handleSubmit(handler)} className="space-y-6">
+      <VehiclePhotoField
+        currentPath={vehicle.photo_path}
+        currentLegacyUrl={vehicle.photo_path ? null : vehicle.photo_url}
+        action={photoAction}
+        pendingFile={pendingPhoto}
+        onChange={({ action, pendingFile }) => {
+          setPhotoAction(action);
+          setPendingPhoto(pendingFile);
+        }}
+        disabled={mutation.isPending}
+      />
+      <div className="h-px bg-brand-border" />
       <CustomerEditFormSection form={form} />
       <div className="h-px bg-brand-border" />
       <VehicleEditFormSection form={form} />

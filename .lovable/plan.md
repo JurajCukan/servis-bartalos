@@ -1,82 +1,65 @@
-## Plan: Photo attachments for service records
+## Plan: photos in global service history + vehicle main photo
 
-### 1. Storage & DB approach
+### Part A — Service record photos in /service-history
 
-- **Storage**: reuse existing private bucket `service-photos`.
-- **Path layout**: `{vehicleId}/{serviceRecordId}/{uuid}.{ext}`.
-- **DB**: add a single `photo_paths text[] not null default '{}'` column on `service_records`. Simpler than a join table, matches the small scope, and array updates work cleanly from a single form submit.
-- Store **storage paths**, not URLs. Generate **signed URLs** at display time (1h TTL) since the bucket is private.
+**Query change (`src/lib/queries/serviceHistory.ts`)**
+- Add `photo_paths` to the SELECT string and to the `ServiceHistoryItem` type (`photo_paths: string[]`, normalized to `[]` when null, same shape as `serviceHistoryQuery` in `vehicles.ts`).
 
-### 2. Migration (one file)
+**Display (`src/components/service-history/ServiceHistoryItem.tsx`)**
+- Below the description block, when `item.photo_paths.length > 0`, render the existing `<ServiceRecordPhotoGrid paths={item.photo_paths} />`.
+- No change if list is empty (no clutter, no extra label beyond what the grid already shows).
+- `ServiceRecordPhotoGrid` already handles signed URLs (1h TTL) and opens `PhotoPreviewDialog` — fully reused, no new components.
 
+### Part B — Vehicle main photo
+
+**Storage & DB**
+- Reuse existing private bucket `vehicle-photos`.
+- Add one column: `vehicles.photo_path text null`. Keep the existing `photo_url` column untouched for back-compat; new code reads `photo_path` first and falls back to `photo_url` (legacy/external URLs) when path is null. This avoids breaking any existing rows.
+- Path layout: `{vehicleId}/main-{uuid}.{ext}` (single object per vehicle; old file is removed on replace/remove).
+
+**Migration (one file)**
 ```sql
-alter table public.service_records
-  add column if not exists photo_paths text[] not null default '{}';
+alter table public.vehicles
+  add column if not exists photo_path text null;
 
--- storage policies (open app, no login)
-create policy "service-photos anon read"   on storage.objects for select using (bucket_id = 'service-photos');
-create policy "service-photos anon insert" on storage.objects for insert with check (bucket_id = 'service-photos');
-create policy "service-photos anon delete" on storage.objects for delete using (bucket_id = 'service-photos');
+-- vehicle-photos storage policies (open app, matches service-photos)
+create policy "vehicle-photos anon read"   on storage.objects for select using (bucket_id = 'vehicle-photos');
+create policy "vehicle-photos anon insert" on storage.objects for insert with check (bucket_id = 'vehicle-photos');
+create policy "vehicle-photos anon delete" on storage.objects for delete using (bucket_id = 'vehicle-photos');
 ```
+No new grants on `vehicles` needed (anon update already in place).
 
-Grants on `service_records` already include anon update/insert/select — no change.
+**Helper (`src/lib/vehiclePhoto.ts`, new)**
+- `uploadVehiclePhoto(vehicleId, file) → path`
+- `deleteVehiclePhoto(path)` (best-effort)
+- `getVehiclePhotoSignedUrl(path) → string` (1h TTL, single object — uses `createSignedUrl`)
+- Validation: same MIME set as service photos (`jpeg|png|webp`), max 10 MB, Slovak error messages reusing the strings from `src/lib/photos.ts`.
 
-### 3. File validation rules (shared helper `src/lib/photo-validation.ts`)
+**Edit dialog (`EditVehicleDialog.tsx` + new `VehiclePhotoField.tsx`)**
+- Extend `EditVehicleDialog` with local state: `photoAction: "keep" | "replace" | "remove"`, `pendingFile: File | null`, `pendingPreviewUrl` (Object URL, revoked on close).
+- New `VehiclePhotoField` rendered above the customer section: shows current photo (signed URL) or "Bez fotky" placeholder; buttons "Nahrať fotku" / "Nahradiť" / "Odstrániť" / "Zrušiť zmenu". Performs client-side validation before staging.
+- Submit flow:
+  1. Run the existing customer + vehicle UPDATE (unchanged).
+  2. If `photoAction === "replace"`: upload new file, then on success UPDATE `vehicles.photo_path` and delete previous file (if any) best-effort.
+  3. If `photoAction === "remove"`: UPDATE `photo_path = null` and delete previous file best-effort.
+  4. Photo failures don't roll back text data — toast warning `"Fotku sa nepodarilo uložiť"`; text save success toast stays.
+- Invalidations unchanged (`["vehicle", id]`, `["vehicles"]`, `["service-history"]`, `["customers"]`).
 
-- Allowed MIME: `image/jpeg`, `image/png`, `image/webp`. (HEIC skipped — browser preview unreliable.)
-- Max per file: **10 MB**.
-- Max per record: **8 photos** total (existing + pending).
-- Slovak messages: `"Nepodporovaný formát súboru"`, `"Súbor je príliš veľký (max 10 MB)"`, `"Maximálne 8 fotiek na záznam"`.
+**Display**
 
-### 4. New components
+Extend `VehicleWithCustomer` and `VehicleDetail` types with `photo_path: string | null`, add it to both SELECT strings in `src/lib/queries/vehicles.ts`.
 
-- `src/components/garage/detail/photos/ServiceRecordPhotoPicker.tsx`
-  - Controlled: props `existingPaths: string[]`, `pendingFiles: File[]`, `onChange({ existingPaths, pendingFiles })`.
-  - Renders "Fotky" section: empty state `"Zatiaľ bez fotiek"`, thumbnail grid (existing via signed URLs + pending via `URL.createObjectURL`), remove button per thumb, `"Pridať fotky"` file input button.
-  - Performs validation on add; toast errors.
-- `src/components/garage/detail/photos/ServiceRecordPhotoGrid.tsx`
-  - Read-only grid for record card; uses signed URLs; click → opens `PhotoPreviewDialog`.
-- `src/components/garage/detail/photos/PhotoPreviewDialog.tsx`
-  - Basic shadcn Dialog showing one image at natural max size with prev/next buttons (no fancy lightbox).
-- `src/lib/photos.ts` helper:
-  - `uploadPhotos(vehicleId, recordId, files) → { uploadedPaths, failedCount }`
-  - `deletePhotos(paths[])` (best-effort)
-  - `getSignedUrls(paths[])` (batched via `createSignedUrls`)
+- `VehicleCard.tsx` (garage): if `photo_path` is set, resolve a signed URL (small `useEffect` + state, same pattern as `ServiceRecordPhotoGrid`); else if `photo_url` legacy, use directly; else keep current "Bez fotky" placeholder.
+- `VehicleDetailHeader.tsx`: same resolution logic for the hero image; placeholder unchanged.
+- To avoid N+1 signed-URL calls on the garage grid, batch in `VehicleGrid.tsx`: collect all `photo_path` values once, call `supabase.storage.from('vehicle-photos').createSignedUrls(paths, 3600)`, pass a `signedUrls: Record<path,url>` map into each `VehicleCard`. Card falls back to placeholder while map loads.
 
-### 5. ServiceRecordForm changes
+### Out of scope (unchanged)
+- Multiple/gallery photos for vehicles, drag-drop sort, annotations, redesign, export, service record delete.
 
-- Add state for `existingPaths` (init from `record.photo_paths` in edit, `[]` in create) and `pendingFiles: File[]`.
-- Render `<ServiceRecordPhotoPicker>` inside the form between "Cena/Technik" and "Ďalší servis".
-- Mutation flow:
-  1. Insert/update record as today; receive `recordId` (`.select("id").single()` on insert; existing id on edit).
-  2. Compute `removedPaths = record.photo_paths \ existingPaths` (edit only); call `deletePhotos(removedPaths)` best-effort.
-  3. If `pendingFiles.length > 0`: call `uploadPhotos(vehicleId, recordId, pendingFiles)`; collect `uploadedPaths` + `failedCount`.
-  4. Final `photo_paths = [...existingPaths, ...uploadedPaths]`. Update record with new array (single extra UPDATE).
-  5. Return `{ failedCount }`.
-- On success:
-  - Success toast unchanged (`"Servisný záznam bol uložený"` / `"Servisný záznam bol upravený"`).
-  - If `failedCount > 0`: `toast.warning(\`Niektoré fotky sa nepodarilo nahrať (${failedCount})\`)`.
-- Cancel button: revoke any `URL.createObjectURL` previews on unmount.
-
-### 6. Display in cards
-
-- `ServiceRecordCard.tsx`: when record has photos, render `<ServiceRecordPhotoGrid>` inside expanded section above the action row.
-- Optionally show a small photo-count badge near the title.
-- Service history list item (`ServiceHistoryItem.tsx`): show same grid if photos exist (read-only).
-
-### 7. Type updates
-
-- Extend `ServiceRecord` type in `src/lib/queries/vehicles.ts` to include `photo_paths: string[]`.
-- Select query: add `photo_paths` to the select string.
-
-### 8. Query invalidations
-
-Unchanged set after save: `["vehicle", vehicleId, "service-records"]`, `["vehicle", vehicleId]`, `["service-history"]`.
-
-### 9. Out of scope
-
-- No drag reorder, no annotations, no PDF export, no advanced lightbox, no HEIC, no redesign of cards or routes, no delete of whole record.
-
-### Summary deliverable at end of build
-
-Will recap: chosen approach (array column + private bucket signed URLs), migration applied, new files added, create/edit flow behavior, and partial failure handling (warning toast with count, record still saved).
+### End-of-build summary will cover
+1. service-history grid wiring (query field + reused `ServiceRecordPhotoGrid`/`PhotoPreviewDialog`).
+2. files touched for global history (`queries/serviceHistory.ts`, `ServiceHistoryItem.tsx`).
+3. DB/storage choice (new `photo_path` column + existing `vehicle-photos` bucket + 3 anon policies).
+4. files created/changed for vehicle photo (`vehiclePhoto.ts`, `VehiclePhotoField.tsx`, `EditVehicleDialog.tsx`, `VehicleCard.tsx`, `VehicleGrid.tsx`, `VehicleDetailHeader.tsx`, `queries/vehicles.ts`, migration).
+5. upload/replace/remove via staged action in edit dialog, with best-effort old-file delete and non-blocking photo failure.
+6. garage cards + detail header now resolve signed URLs from `photo_path` and fall back to legacy `photo_url`, then placeholder.

@@ -3,6 +3,7 @@ import { Car, User, Gauge, ExternalLink } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { ServiceTypeBadge } from "@/components/garage/detail/ServiceTypeBadge";
+import { ServiceRecordPhotoGrid } from "@/components/garage/detail/photos/ServiceRecordPhotoGrid";
 import { formatDateLong as formatDate, formatKm as formatMileage, formatPrice } from "@/lib/format";
 import type { ServiceHistoryItem as Item } from "@/lib/queries/serviceHistory";
 
@@ -44,6 +45,9 @@ export function ServiceHistoryItem({ item }: { item: Item }) {
           </div>
           {item.description ? (
             <p className="line-clamp-2 text-sm text-white/70">{item.description}</p>
+          ) : null}
+          {item.photo_paths && item.photo_paths.length > 0 ? (
+            <ServiceRecordPhotoGrid paths={item.photo_paths} />
           ) : null}
         </div>
         <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
