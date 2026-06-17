@@ -22,6 +22,10 @@
   --color-brand-bg: var(--brand-bg);
   --color-brand-surface: var(--brand-surface);
   --color-brand-border: var(--brand-border);
+  --color-brand-fg: var(--brand-fg);
+  --color-brand-fg-muted: var(--brand-fg-muted);
+  --color-brand-fg-subtle: var(--brand-fg-subtle);
+  --color-brand-muted: var(--brand-fg-muted);
   --color-brand-accent: #cc0000;
   --color-brand-accent-hover: #b00000;
   --radius-sm: calc(var(--radius) - 4px);
