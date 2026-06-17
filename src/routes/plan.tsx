@@ -14,7 +14,7 @@ import {
   type TaskPriority,
 } from "@/lib/queries/scheduledTasks";
 
-export const Route = createFileRoute("/_authenticated/plan")({
+export const Route = createFileRoute("/plan")({
   head: () => ({ meta: [{ title: "Dnešný plán — Servisná knižka Bartalos" }] }),
   component: PlanPage,
 });

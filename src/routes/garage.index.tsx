@@ -15,7 +15,7 @@ import { vehiclesWithCustomersQuery, type VehicleWithCustomer } from "@/lib/quer
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { Plus } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/garage/")({
+export const Route = createFileRoute("/garage/")({
   head: () => ({ meta: [{ title: "Moja Garáž — Servisná knižka Bartalos" }] }),
   component: GaragePage,
 });

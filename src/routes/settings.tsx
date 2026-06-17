@@ -9,7 +9,7 @@ import { ThemeSettingCard } from "@/components/settings/ThemeSettingCard";
 import { AppInfoCard } from "@/components/settings/AppInfoCard";
 import { DataSafetyCard } from "@/components/settings/DataSafetyCard";
 
-export const Route = createFileRoute("/_authenticated/settings")({
+export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
       { title: "Nastavenia — Servisná knižka Bartalos" },

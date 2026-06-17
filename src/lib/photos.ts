@@ -1,11 +1,7 @@
-import { supabase } from "@/integrations/supabase/client";
-
-const BUCKET = "service-photos";
-const SIGNED_URL_TTL = 60 * 60; // 1h
-
+// Photo helpers for service_records (PocketBase multi-file field "photos")
 export const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp"] as const;
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
-export const MAX_PHOTOS_PER_RECORD = 8;
+export const MAX_PHOTOS_PER_RECORD = 10;
 
 export type PhotoValidationError = {
   file: File;
@@ -38,68 +34,4 @@ export function validateFiles(
   }
 
   return { accepted, errors, remainingSlots: slots };
-}
-
-function extFromType(type: string): string {
-  if (type === "image/jpeg") return "jpg";
-  if (type === "image/png") return "png";
-  if (type === "image/webp") return "webp";
-  return "bin";
-}
-
-function randomId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
-export async function uploadPhotos(
-  vehicleId: string,
-  recordId: string,
-  files: File[],
-): Promise<{ uploadedPaths: string[]; failedCount: number }> {
-  const uploadedPaths: string[] = [];
-  let failedCount = 0;
-
-  for (const file of files) {
-    const path = `${vehicleId}/${recordId}/${randomId()}.${extFromType(file.type)}`;
-    const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
-      contentType: file.type,
-      upsert: false,
-    });
-    if (error) {
-      console.warn("Photo upload failed", path, error);
-      failedCount += 1;
-    } else {
-      uploadedPaths.push(path);
-    }
-  }
-  return { uploadedPaths, failedCount };
-}
-
-export async function deletePhotos(paths: string[]): Promise<void> {
-  if (paths.length === 0) return;
-  const { error } = await supabase.storage.from(BUCKET).remove(paths);
-  if (error) {
-    console.warn("Photo delete failed", error);
-  }
-}
-
-export async function getSignedUrls(paths: string[]): Promise<Record<string, string>> {
-  const result: Record<string, string> = {};
-  if (paths.length === 0) return result;
-  const { data, error } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrls(paths, SIGNED_URL_TTL);
-  if (error) {
-    console.warn("Signed url generation failed", error);
-    return result;
-  }
-  for (const item of data ?? []) {
-    if (item.path && item.signedUrl) {
-      result[item.path] = item.signedUrl;
-    }
-  }
-  return result;
 }
