@@ -36,12 +36,15 @@ export function ServiceRecordCard({
               <span className="text-white/40">Nájazd: </span>
               {formatKm(record.mileage_at_service)}
             </span>
-            {record.price != null && (
-              <span className="tabular-nums">
-                <span className="text-white/40">Cena: </span>
-                {formatPrice(record.price)}
-              </span>
-            )}
+            {(() => {
+              const price = formatPrice(record.price);
+              return price ? (
+                <span className="tabular-nums">
+                  <span className="text-white/40">Cena: </span>
+                  {price}
+                </span>
+              ) : null;
+            })()}
           </div>
         </button>
         <div className="flex shrink-0 items-center gap-1">
