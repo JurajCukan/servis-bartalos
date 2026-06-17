@@ -13,6 +13,7 @@ import {
   type PlannedTask,
   type TaskPriority,
 } from "@/lib/queries/scheduledTasks";
+import { usePocketBaseRealtime } from "@/hooks/usePocketBaseRealtime";
 
 export const Route = createFileRoute("/plan")({
   head: () => ({ meta: [{ title: "Dnešný plán — Servisná knižka Bartalos" }] }),
