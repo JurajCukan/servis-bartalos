@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
 
 import { AppShell } from "@/components/app/AppShell";
 import { DashboardHeader } from "@/components/garage/DashboardHeader";
@@ -11,6 +10,7 @@ import { VehicleSort, type SortKey } from "@/components/garage/VehicleSort";
 import { VehicleGrid } from "@/components/garage/VehicleGrid";
 import { EmptyState } from "@/components/garage/EmptyState";
 import { DashboardLoadingSkeleton } from "@/components/garage/LoadingSkeleton";
+import { AddVehicleDialog } from "@/components/garage/add/AddVehicleDialog";
 import { vehiclesWithCustomersQuery, type VehicleWithCustomer } from "@/lib/queries/vehicles";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { Plus } from "lucide-react";
@@ -45,6 +45,7 @@ function GaragePage() {
   const [status, setStatus] = useState("all");
   const [fuel, setFuel] = useState("all");
   const [sort, setSort] = useState<SortKey>("default");
+  const [addOpen, setAddOpen] = useState(false);
   const debouncedSearch = normalize(useDebouncedValue(search, 300));
 
   const { data: vehicles, isLoading, error } = useQuery(vehiclesWithCustomersQuery);
@@ -84,8 +85,7 @@ function GaragePage() {
     return sorted;
   }, [vehicles, status, fuel, debouncedSearch, sort]);
 
-  const showAddPlaceholder = () =>
-    toast.info("Pridanie vozidla bude doplnené v ďalšom kroku");
+  const openAdd = () => setAddOpen(true);
   const openVehicle = (v: { id: string }) =>
     navigate({ to: "/garage/$vehicleId", params: { vehicleId: v.id } });
 
