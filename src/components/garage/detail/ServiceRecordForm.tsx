@@ -252,17 +252,53 @@ export function ServiceRecordForm({
         next_service_date: nextDate,
       };
 
+      let recordId: string;
+      const originalPaths = isEdit && record ? record.photo_paths ?? [] : [];
+
       if (isEdit && record) {
         const { error: updateError } = await supabase
           .from("service_records")
           .update(payload)
           .eq("id", record.id);
         if (updateError) throw updateError;
+        recordId = record.id;
       } else {
-        const { error: insertError } = await supabase
+        const { data: inserted, error: insertError } = await supabase
           .from("service_records")
-          .insert({ vehicle_id: vehicleId, ...payload });
+          .insert({ vehicle_id: vehicleId, ...payload, photo_paths: [] })
+          .select("id")
+          .single();
         if (insertError) throw insertError;
+        recordId = inserted.id;
+      }
+
+      // Photo management
+      const removedPaths = originalPaths.filter((p) => !existingPaths.includes(p));
+      if (removedPaths.length > 0) {
+        await deletePhotos(removedPaths);
+      }
+      let photoFailedCount = 0;
+      let uploadedPaths: string[] = [];
+      if (pendingFiles.length > 0) {
+        const res = await uploadPhotos(vehicleId, recordId, pendingFiles);
+        uploadedPaths = res.uploadedPaths;
+        photoFailedCount = res.failedCount;
+      }
+      const finalPaths = [...existingPaths, ...uploadedPaths];
+      const pathsChanged =
+        removedPaths.length > 0 ||
+        uploadedPaths.length > 0 ||
+        !isEdit ||
+        finalPaths.length !== originalPaths.length;
+      if (pathsChanged) {
+        const { error: pathErr } = await supabase
+          .from("service_records")
+          .update({ photo_paths: finalPaths })
+          .eq("id", recordId);
+        if (pathErr) {
+          console.warn("Photo paths update failed", pathErr);
+          photoFailedCount += uploadedPaths.length;
+        }
       }
 
       let mileageUpdated = false;
@@ -295,9 +331,9 @@ export function ServiceRecordForm({
         }
       }
 
-      return { mileageUpdated };
+      return { mileageUpdated, photoFailedCount };
     },
-    onSuccess: ({ mileageUpdated }) => {
+    onSuccess: ({ mileageUpdated, photoFailedCount }) => {
       queryClient.invalidateQueries({ queryKey: ["vehicle", vehicleId, "service-records"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle", vehicleId] });
       queryClient.invalidateQueries({ queryKey: ["service-history"] });
@@ -305,6 +341,9 @@ export function ServiceRecordForm({
         queryClient.invalidateQueries({ queryKey: ["vehicles", "with-customers"] });
       }
       toast.success(isEdit ? "Servisný záznam bol upravený" : "Servisný záznam bol uložený");
+      if (photoFailedCount > 0) {
+        toast.warning(`Niektoré fotky sa nepodarilo nahrať (${photoFailedCount})`);
+      }
       onSuccess();
     },
     onError: (err) => {
