@@ -27,6 +27,12 @@ export function ServiceRecordCard({
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold text-white">{record.title}</h3>
             <ServiceTypeBadge type={record.service_type} />
+            {record.photo_paths && record.photo_paths.length > 0 && (
+              <span className="inline-flex items-center gap-1 rounded border border-brand-border bg-brand-bg px-1.5 py-0.5 text-[11px] text-white/60">
+                <ImageIcon className="h-3 w-3" aria-hidden />
+                {record.photo_paths.length}
+              </span>
+            )}
           </div>
           <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/60">
             <span>
