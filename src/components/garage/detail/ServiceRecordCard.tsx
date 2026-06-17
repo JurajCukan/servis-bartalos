@@ -120,6 +120,9 @@ export function ServiceRecordCard({
               </div>
             )}
           </dl>
+          {record.photo_paths && record.photo_paths.length > 0 && (
+            <ServiceRecordPhotoGrid paths={record.photo_paths} />
+          )}
         </div>
       )}
     </div>
