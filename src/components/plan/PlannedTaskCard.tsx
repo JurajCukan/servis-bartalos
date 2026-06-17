@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Calendar, Gauge, CheckCircle2, X } from "lucide-react";
 
-import { supabase } from "@/integrations/supabase/client";
+import pb from "@/lib/pocketbase";
 import { formatDateLong, formatKm } from "@/lib/format";
 import type { PlannedTask, TaskPriority, TaskStatus } from "@/lib/queries/scheduledTasks";
 
@@ -24,15 +24,11 @@ export function PlannedTaskCard({ task }: { task: PlannedTask }) {
 
   const updateStatus = useMutation({
     mutationFn: async (status: TaskStatus) => {
-      const { error } = await supabase
-        .from("scheduled_tasks")
-        .update({ status })
-        .eq("id", task.id);
-      if (error) throw error;
+      await pb.collection("scheduled_tasks").update(task.id, { status });
       return status;
     },
     onSuccess: (status) => {
-      queryClient.invalidateQueries({ queryKey: ["scheduled-tasks", "active"] });
+      queryClient.invalidateQueries({ queryKey: ["scheduled-tasks"] });
       if (status === "Dokončené") toast.success("Úkon bol označený ako dokončený");
       else if (status === "Zrušené") toast.success("Plán bol zrušený");
     },
