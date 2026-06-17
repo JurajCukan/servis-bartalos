@@ -1,44 +1,75 @@
 ## Goal
-Remove all authentication from the app. Open the workshop app directly at `/garage`, no login screen, no session checks. Keep Supabase as the data store; relax RLS so the dashboard works without a signed-in user.
+Add a vehicle detail page at `/garage/$vehicleId` showing identity header, customer, technical specs, and service history. Wire dashboard cards to navigate to it. Action buttons are placeholders.
 
-## Routing changes
-- `src/routes/index.tsx` → simple `beforeLoad` that `redirect({ to: "/garage" })`. No auth check.
-- `src/routes/login.tsx` → delete the file (was the only consumer of `lib/auth.ts`). With the file gone, `/login` falls through to the root 404; if the user prefers a redirect, we can instead keep a tiny stub that redirects to `/garage`. **Default: delete.**
-- `src/routes/_authenticated/route.tsx` → remove the auth gate. Convert to a plain pass-through layout: `component: () => <Outlet />`, no `beforeLoad`, drop `ssr: false`. Keep the folder so the existing `/_authenticated/garage.tsx` route file (URL `/garage`) keeps working without renames.
+## Routing
+- New file `src/routes/_authenticated/garage.$vehicleId.tsx` → URL `/garage/$vehicleId`.
+  - Loader primes both queries via `context.queryClient.ensureQueryData`.
+  - Component uses `useSuspenseQuery` for vehicle+customer and a regular `useQuery` for service records (history can stream).
+  - `errorComponent` and `notFoundComponent` provided.
+- `src/routes/_authenticated/garage.tsx`: wire `<VehicleCard onClick>` to `navigate({ to: "/garage/$vehicleId", params: { vehicleId: v.id } })` via `useNavigate`. Remove the `openVehicle` toast.
+- `src/components/garage/VehicleCard.tsx`: no change — keep `onClick(v)` API.
 
-## UI cleanup
-- `src/components/app/AppSidebar.tsx`:
-  - Remove `useProfileQuery`, `logout`, `useNavigate`, `LogOut` imports.
-  - Remove the avatar/initials/name/role block and the "Odhlásiť sa" button.
-  - Replace the sidebar footer with a static workshop block:
-    - title: `Autoservis Bartalos`
-    - subtitle: `Interná servisná aplikácia`
-  - Keep nav items unchanged (Vozidlá active, others disabled with "Pripravuje sa" toast).
-- `src/routes/_authenticated/garage.tsx` → no changes needed; it already does not read auth state.
+> Note: `garage.tsx` is currently a leaf at `/garage`. Adding a sibling `garage.$vehicleId.tsx` is the standard flat convention and does not require converting `garage.tsx` into a layout.
 
-## Data/auth layer cleanup
-- Delete `src/lib/auth.ts`.
-- Delete `src/lib/queries/profile.ts`.
-- Leave `src/integrations/supabase/client.ts`, `auth-attacher.ts`, `auth-middleware.ts`, `client.server.ts`, `types.ts` untouched (auto-generated; harmless if unused). `attachSupabaseAuth` in `src/start.ts` is a no-op when there is no session, so leave `src/start.ts` alone.
-- No `onAuthStateChange` is currently wired in `__root.tsx`, so nothing to remove there.
+## Data layer (`src/lib/queries/vehicles.ts`)
+Add two new query factories alongside the existing list query:
 
-## Backend (RLS) — minimum to make queries work anonymously
-The dashboard reads `vehicles` joined with `customers`. Current policies are `TO authenticated` only, so anon requests return empty. Minimum migration:
+```ts
+vehicleDetailQuery(vehicleId)  // queryKey: ["vehicle", vehicleId]
+  -> select * from vehicles + customer:customers(*) where id = vehicleId .single()
+serviceHistoryQuery(vehicleId) // queryKey: ["vehicle", vehicleId, "service-records"]
+  -> select * from service_records where vehicle_id = vehicleId order by date desc
+```
 
-1. `GRANT SELECT ON public.vehicles, public.customers TO anon;`
-2. Add `FOR SELECT TO anon USING (true)` policies on `vehicles` and `customers` (read-only public access). Leave write policies authenticated-only for now since this iteration does not add/edit data from the UI.
-3. Leave `profiles`, `service_records`, `scheduled_tasks` policies as-is (not used in this iteration).
+Types: `VehicleDetail` (full vehicle row + full customer), `ServiceRecord` (full row). Throw on Supabase error; throw `notFound()` from the loader when vehicle row is null.
 
-Rationale: smallest possible change to unblock the seeded dashboard. No schema changes, no data changes.
+## Components (`src/components/garage/detail/`)
+- `VehicleDetailHeader.tsx` — back link "Späť na garáž" (`<Link to="/garage">`), title `YEAR BRAND MODEL`, status badge, photo or "Bez fotky" placeholder (reuse Car icon pattern from VehicleCard), metadata row (VIN, ŠPZ, Nájazd), action buttons "Upraviť" / "Naplánovať" / "+ Pridať záznam" → toast `"Táto funkcia bude doplnená v ďalšom kroku"`.
+- `CustomerInfoCard.tsx` — "Zákazník" card; name, phone (prominent, `tel:` link), email (`mailto:` if present), notes if present.
+- `VehicleSpecsCard.tsx` — "Technické špecifikácie" card; definition list. Rule: hide empty rows entirely (cleaner than dashes). Fields: Motor (engine), Prevodovka (transmission), Pohon (drive), Výkon (power), Objem oleja (oil_volume), Rozmer pneu (tire_size), Typ paliva (fuel_type). If all empty → render muted "Žiadne údaje".
+- `ServiceTypeBadge.tsx` — small badge keyed by service_type substring match: Kompletný servis → blue, Výmena oleja → amber, Výmena bŕzd → red, Kontrola/diagnostika → gray, fallback → neutral dark.
+- `ServiceRecordCard.tsx` — `<button>` whole-card toggle (uses `useState` local), `aria-expanded`. Collapsed: title, date (sk-SK), `Nájazd pri servise`, `ServiceTypeBadge`, price if present, 1–2 line description preview (`line-clamp-2`). Expanded: full description, parts_replaced, technician, next_service_km, next_service_date — each with Slovak label, hidden when null.
+- `ServiceHistorySection.tsx` — "Servisná história" title with count `"N záznamov"` (Slovak plural: 1 záznam / 2–4 záznamy / 5+ záznamov). Renders list of `ServiceRecordCard` or `EmptyState` ("Zatiaľ bez servisnej histórie" / "Pre toto vozidlo ešte nebol pridaný žiadny servisný záznam." / "+ Pridať záznam" button → toast).
+- `VehicleDetailSkeleton.tsx` — header skeleton, two column skeleton blocks for customer/specs, 3 service card skeletons.
+
+Reuse existing `StatusBadge`, `EmptyState`.
+
+## Page composition (route component)
+```
+<AppShell>
+  <div className="mx-auto max-w-7xl flex flex-col gap-6">
+    <VehicleDetailHeader vehicle={...} onAction={toast} />
+    <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+      <div className="flex flex-col gap-6">
+        <CustomerInfoCard customer={...} />
+        <VehicleSpecsCard vehicle={...} />
+      </div>
+      <ServiceHistorySection records={...} loading={...} />
+    </div>
+  </div>
+</AppShell>
+```
+On mobile (default), the grid collapses to single column; section order matches the spec (header → customer → specs → history).
+
+Loading: route loader awaits vehicle detail (critical) and primes (non-blocking) service history; show `<VehicleDetailSkeleton />` via `pendingComponent`. Within the page, while `serviceHistoryQuery` is loading, show 3 skeleton cards inside the history section.
+
+## Backend access
+RLS already permits `anon SELECT` on `vehicles` and `customers`. `service_records` currently has only `TO authenticated` policies; anon reads will return empty. Add a minimum migration:
+
+```sql
+GRANT SELECT ON public.service_records TO anon;
+CREATE POLICY "Service records: anon read" ON public.service_records FOR SELECT TO anon USING (true);
+```
 
 ## Verification
-- `/` redirects straight to `/garage`.
-- `/garage` renders the seeded vehicles with no login screen, search/filter/sort work.
-- Sidebar footer shows the static workshop block, no logout button.
-- No code paths still call `lib/auth.ts` or `useProfileQuery` (grep after edits).
+- Click a card on `/garage` → URL becomes `/garage/<uuid>`, detail page renders with seeded data.
+- Back link returns to `/garage`.
+- Vehicle with no service records shows empty state.
+- Each service record expands/collapses on click.
+- All action buttons show the placeholder toast.
 
-## Final summary (to be delivered after build)
-1. Removed/changed: `src/routes/login.tsx` (deleted), `src/lib/auth.ts` (deleted), `src/lib/queries/profile.ts` (deleted), `src/routes/index.tsx` (simple redirect), `src/routes/_authenticated/route.tsx` (gate removed), `src/components/app/AppSidebar.tsx` (logout + profile removed, static footer added).
-2. Backend: one migration adding `anon` SELECT grants + policies on `vehicles` and `customers`.
-3. `/garage` works directly without login.
-4. Remaining auth deps: only auto-generated Supabase integration files (`client.ts`, `auth-attacher.ts`, `auth-middleware.ts`, `client.server.ts`) remain on disk but are unused by the app.
+## Final summary (delivered after build)
+1. Routes: `src/routes/_authenticated/garage.$vehicleId.tsx`. Components under `src/components/garage/detail/`: `VehicleDetailHeader`, `CustomerInfoCard`, `VehicleSpecsCard`, `ServiceTypeBadge`, `ServiceRecordCard`, `ServiceHistorySection`, `VehicleDetailSkeleton`.
+2. Queries: `vehicleDetailQuery(id)`, `serviceHistoryQuery(id)` in `src/lib/queries/vehicles.ts` (or split into `service-records.ts`).
+3. Placeholders: Upraviť, Naplánovať, +Pridať záznam (header + empty state) all toast.
+4. Navigation: dashboard `VehicleCard` click → detail route via `useNavigate`.
