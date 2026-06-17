@@ -19,9 +19,9 @@
  */
 
 @theme inline {
-  --color-brand-bg: #111111;
-  --color-brand-surface: #1a1a1a;
-  --color-brand-border: #2a2a2a;
+  --color-brand-bg: var(--brand-bg);
+  --color-brand-surface: var(--brand-surface);
+  --color-brand-border: var(--brand-border);
   --color-brand-accent: #cc0000;
   --color-brand-accent-hover: #b00000;
   --radius-sm: calc(var(--radius) - 4px);
