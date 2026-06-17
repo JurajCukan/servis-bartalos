@@ -19,10 +19,12 @@ export function ServiceHistorySection({
   records,
   loading,
   onAdd,
+  onEdit,
 }: {
   records: ServiceRecord[] | undefined;
   loading: boolean;
   onAdd: () => void;
+  onEdit?: (record: ServiceRecord) => void;
 }) {
   return (
     <section className="flex flex-col gap-4">
@@ -57,7 +59,7 @@ export function ServiceHistorySection({
       ) : (
         <div className="flex flex-col gap-3">
           {records.map((r) => (
-            <ServiceRecordCard key={r.id} record={r} />
+            <ServiceRecordCard key={r.id} record={r} onEdit={onEdit} />
           ))}
         </div>
       )}

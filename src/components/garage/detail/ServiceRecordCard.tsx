@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ServiceTypeBadge } from "./ServiceTypeBadge";
 import type { ServiceRecord } from "@/lib/queries/vehicles";
@@ -24,18 +24,24 @@ function formatPrice(p: number) {
   return new Intl.NumberFormat("sk-SK", { style: "currency", currency: "EUR" }).format(p);
 }
 
-export function ServiceRecordCard({ record }: { record: ServiceRecord }) {
+export function ServiceRecordCard({
+  record,
+  onEdit,
+}: {
+  record: ServiceRecord;
+  onEdit?: (record: ServiceRecord) => void;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
-    <button
-      type="button"
-      aria-expanded={open}
-      onClick={() => setOpen((o) => !o)}
-      className="group w-full rounded-xl border border-brand-border bg-brand-surface p-4 text-left transition hover:border-brand-accent/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
-    >
+    <div className="group w-full rounded-xl border border-brand-border bg-brand-surface p-4 transition hover:border-brand-accent/60">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+          className="min-w-0 flex-1 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent rounded-md"
+        >
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold text-white">{record.title}</h3>
             <ServiceTypeBadge type={record.service_type} />
@@ -56,14 +62,34 @@ export function ServiceRecordCard({ record }: { record: ServiceRecord }) {
               </span>
             )}
           </div>
-        </div>
-        <ChevronDown
-          className={cn(
-            "h-5 w-5 shrink-0 text-white/50 transition-transform",
-            open && "rotate-180",
+        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          {onEdit && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(record);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-xs font-medium text-white/70 transition hover:border-brand-border hover:bg-brand-bg hover:text-white"
+              aria-label="Upraviť záznam"
+            >
+              <Pencil className="h-3.5 w-3.5" aria-hidden />
+              Upraviť
+            </button>
           )}
-          aria-hidden
-        />
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-label={open ? "Zbaliť" : "Rozbaliť"}
+            className="rounded-md p-1 text-white/50 transition hover:text-white"
+          >
+            <ChevronDown
+              className={cn("h-5 w-5 transition-transform", open && "rotate-180")}
+              aria-hidden
+            />
+          </button>
+        </div>
       </div>
 
       {!open && record.description && (
@@ -105,6 +131,6 @@ export function ServiceRecordCard({ record }: { record: ServiceRecord }) {
           </dl>
         </div>
       )}
-    </button>
+    </div>
   );
 }
