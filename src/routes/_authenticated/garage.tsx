@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -40,6 +40,7 @@ function matchesSearch(v: VehicleWithCustomer, q: string) {
 }
 
 function GaragePage() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [fuel, setFuel] = useState("all");
@@ -85,8 +86,8 @@ function GaragePage() {
 
   const showAddPlaceholder = () =>
     toast.info("Pridanie vozidla bude doplnené v ďalšom kroku");
-  const openVehicle = () =>
-    toast.info("Detail vozidla bude doplnený v ďalšom kroku");
+  const openVehicle = (v: { id: string }) =>
+    navigate({ to: "/garage/$vehicleId", params: { vehicleId: v.id } });
 
   return (
     <AppShell>
