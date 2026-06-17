@@ -10,10 +10,12 @@ function formatMileage(km: number) {
 export function VehicleDetailHeader({
   vehicle,
   onAction,
+  onSchedule,
   onAddRecord,
 }: {
   vehicle: VehicleDetail;
   onAction: () => void;
+  onSchedule: () => void;
   onAddRecord: () => void;
 }) {
   const title = [vehicle.year, vehicle.brand, vehicle.model].filter(Boolean).join(" ");
@@ -38,7 +40,7 @@ export function VehicleDetailHeader({
           </button>
           <button
             type="button"
-            onClick={onAction}
+            onClick={onSchedule}
             className="rounded-md border border-brand-border bg-brand-surface px-3 py-2 text-sm font-medium text-white transition hover:border-brand-accent hover:text-brand-accent"
           >
             Naplánovať
