@@ -14,7 +14,246 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      customers: {
+        Row: {
+          created_at: string
+          email: string | null
+          first_name: string
+          id: string
+          last_name: string
+          notes: string | null
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          notes?: string | null
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          notes?: string | null
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string | null
+          role: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          name?: string | null
+          role?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string | null
+          role?: string
+        }
+        Relationships: []
+      }
+      scheduled_tasks: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          notes: string | null
+          planned_date: string
+          planned_mileage: number | null
+          priority: string
+          status: string
+          task_type: string | null
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          notes?: string | null
+          planned_date: string
+          planned_mileage?: number | null
+          priority?: string
+          status?: string
+          task_type?: string | null
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          notes?: string | null
+          planned_date?: string
+          planned_mileage?: number | null
+          priority?: string
+          status?: string
+          task_type?: string | null
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_tasks_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_records: {
+        Row: {
+          created_at: string
+          date: string
+          description: string
+          id: string
+          mileage_at_service: number
+          next_service_date: string | null
+          next_service_km: number | null
+          parts_replaced: string | null
+          price: number | null
+          service_type: string
+          technician: string | null
+          title: string
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          description: string
+          id?: string
+          mileage_at_service: number
+          next_service_date?: string | null
+          next_service_km?: number | null
+          parts_replaced?: string | null
+          price?: number | null
+          service_type: string
+          technician?: string | null
+          title: string
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          description?: string
+          id?: string
+          mileage_at_service?: number
+          next_service_date?: string | null
+          next_service_km?: number | null
+          parts_replaced?: string | null
+          price?: number | null
+          service_type?: string
+          technician?: string | null
+          title?: string
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_records_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicles: {
+        Row: {
+          brand: string
+          created_at: string
+          current_mileage: number
+          customer_id: string
+          drive: string | null
+          engine: string | null
+          fuel_type: string | null
+          id: string
+          license_plate: string
+          model: string
+          notes: string | null
+          oil_volume: string | null
+          photo_url: string | null
+          power: string | null
+          status: string
+          tire_size: string | null
+          transmission: string | null
+          updated_at: string
+          vin: string | null
+          year: number | null
+        }
+        Insert: {
+          brand: string
+          created_at?: string
+          current_mileage: number
+          customer_id: string
+          drive?: string | null
+          engine?: string | null
+          fuel_type?: string | null
+          id?: string
+          license_plate: string
+          model: string
+          notes?: string | null
+          oil_volume?: string | null
+          photo_url?: string | null
+          power?: string | null
+          status?: string
+          tire_size?: string | null
+          transmission?: string | null
+          updated_at?: string
+          vin?: string | null
+          year?: number | null
+        }
+        Update: {
+          brand?: string
+          created_at?: string
+          current_mileage?: number
+          customer_id?: string
+          drive?: string | null
+          engine?: string | null
+          fuel_type?: string | null
+          id?: string
+          license_plate?: string
+          model?: string
+          notes?: string | null
+          oil_volume?: string | null
+          photo_url?: string | null
+          power?: string | null
+          status?: string
+          tire_size?: string | null
+          transmission?: string | null
+          updated_at?: string
+          vin?: string | null
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicles_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
