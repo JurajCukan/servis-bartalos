@@ -1,88 +1,71 @@
-## Goal
-Add a working "Pridať servisný záznam" flow from the vehicle detail page: dialog with validated form → insert into `service_records` → bump `vehicles.current_mileage` if higher → optionally create a `scheduled_tasks` row → refresh queries.
+## Add Vehicle flow
 
-## Backend (one migration)
-Open up the minimum writes for the no-auth internal app:
-```sql
-GRANT INSERT ON public.service_records TO anon;
-CREATE POLICY "Service records: anon insert" ON public.service_records
-  FOR INSERT TO anon WITH CHECK (true);
+Build a 2-step "Pridať vozidlo" dialog wired into the dashboard, with anon writes for `customers` and `vehicles`, duplicate ŠPZ protection, and post-save navigation to the new vehicle detail.
 
-GRANT UPDATE (current_mileage, updated_at) ON public.vehicles TO anon;
-CREATE POLICY "Vehicles: anon update mileage" ON public.vehicles
-  FOR UPDATE TO anon USING (true) WITH CHECK (true);
+### 1. Backend (one migration)
 
-GRANT INSERT, SELECT ON public.scheduled_tasks TO anon;
-CREATE POLICY "Scheduled tasks: anon insert" ON public.scheduled_tasks
-  FOR INSERT TO anon WITH CHECK (true);
-```
-Narrow column GRANT on `vehicles` (only `current_mileage`) limits write surface. The Postgres linter will warn about `USING (true)` on UPDATE — that's an accepted trade-off for this always-open internal app and is consistent with prior write policies.
+Grants/policies (additive, minimal):
 
-## Form stack
-Use `react-hook-form` + `zod` + `@hookform/resolvers/zod` (need to install resolvers) with the existing shadcn `Form`, `Dialog`, `Sheet`, `Input`, `Textarea`, `Select`, `Button`. Use `Dialog` on desktop and `Sheet` (side="bottom", full height) on mobile, switched by a small `useIsMobile` hook (already in `src/hooks` from shadcn template; otherwise a tiny `useMediaQuery`).
+- `GRANT INSERT ON public.customers TO anon` + RLS policy `Customers: anon insert` (`WITH CHECK (true)`).
+- `GRANT INSERT ON public.vehicles TO anon` + RLS policy `Vehicles: anon insert` (`WITH CHECK (true)`).
+- `customers` already has anon SELECT (used for picker + soft duplicate); `vehicles` already has anon SELECT (used for ŠPZ duplicate check). No new SELECT grants needed.
 
-## New components (under `src/components/garage/detail/`)
-- **`AddServiceRecordDialog.tsx`** — controlled `open`/`onOpenChange`, picks Dialog vs Sheet based on viewport, renders title "Pridať servisný záznam" and `<ServiceRecordForm />`. Handles dialog close on success.
-- **`ServiceRecordForm.tsx`** — the form itself. Owns RHF + zod schema, submit handler, loading state, and toast errors. Receives `vehicleId`, `currentMileage`, `onSuccess`.
+### 2. New components (`src/components/garage/add/`)
 
-Schema (Slovak messages):
+- `AddVehicleDialog.tsx` — responsive shell: `Dialog` on desktop, full-screen `Sheet` (side="bottom") on mobile via `useIsMobile`. Owns `step` state (1 | 2), customer-resolution state, and the final mutation. Sticky footer with the step-specific buttons.
+- `StepIndicator.tsx` — tiny "1 Zákazník → 2 Vozidlo" header.
+- `CustomerStep.tsx` — top toggle ("Existujúci zákazník" / "Nový zákazník"); renders `CustomerPicker` or new-customer fields. Validates on "Pokračovať" and emits resolved customer payload upward.
+- `CustomerPicker.tsx` — search input + result list. Uses a `useQuery(["customers", "search", q])` with `.ilike` on `first_name`, `last_name`, `phone` (debounced 250 ms, limit 20). Shows full name + phone.
+- `VehicleForm.tsx` — RHF + zod form for vehicle fields. Submit triggers parent's mutation.
+
+### 3. Validation (zod, Slovak messages)
+
+- New customer: `first_name`, `last_name`, `phone` required (trim, max 120); `email` optional but valid; `notes` optional.
+- Vehicle: `brand`, `model`, `license_plate` required; `current_mileage` required positive integer; `year` optional but `1900..currentYear+1`; `vin` trimmed (max 32); other tech fields trimmed optional.
+- Normalisation in submit: `license_plate` → trimmed + uppercased; all text fields trimmed; empty optional strings become `null`.
+- Messages: "Toto pole je povinné", "Zadajte platný rok", "Zadajte platný email", "Zadajte platný nájazd".
+
+### 4. Duplicate ŠPZ check
+
+Inside the mutation, before insert:
+
 ```ts
-z.object({
-  date: z.string().min(1, "Toto pole je povinné"),
-  mileage_at_service: z.coerce.number().int().positive("Zadajte platný nájazd"),
-  service_type: z.string().min(1, "Toto pole je povinné"),
-  title: z.string().trim().min(1, "Toto pole je povinné").max(120),
-  description: z.string().trim().min(1, "Toto pole je povinné").max(2000),
-  parts_replaced: z.string().trim().max(2000).optional().or(z.literal("")),
-  price: z.union([z.literal(""), z.coerce.number().positive("Zadajte platnú cenu")]).optional(),
-  technician: z.string().trim().max(120).optional().or(z.literal("")),
-  next_service_km: z.union([z.literal(""), z.coerce.number().int().positive("Zadajte platný nájazd")]).optional(),
-  next_service_date: z.string().optional().or(z.literal("")),
-})
+const { data: existing } = await supabase
+  .from("vehicles")
+  .select("id")
+  .eq("license_plate", normalizedPlate)
+  .maybeSingle();
+if (existing) throw new DuplicatePlateError(existing.id);
 ```
-Defaults: `date = today (YYYY-MM-DD)`, others empty. Service type uses shadcn `Select` with placeholder "Vyberte typ servisu" and the 11 options listed.
 
-Inputs: `<Input type="date">` for dates, `<Input type="number" inputMode="numeric" min={1}>` for km, `<Input type="number" step="0.01" min={0}>` for price, `<Textarea>` for description/parts_replaced. Dark styling consistent with existing brand tokens.
+On `DuplicatePlateError`, show toast `"Vozidlo s touto ŠPZ už existuje"` with an action button "Otvoriť" that navigates to `/garage/$vehicleId`. Dialog stays open with values preserved. Soft warning for new customer with matching `(first_name, last_name, phone)` is skipped this iteration to keep scope light (noted in summary).
 
-Submit button "Uložiť záznam" (disabled while `isSubmitting`), secondary "Zrušiť" closes the dialog.
+### 5. Save flow
 
-## Mutation flow (inside form)
-Use a single `useMutation` whose mutationFn does the orchestration:
-1. `insert into service_records` with `vehicle_id` + form values (empty strings → null for optional fields).
-2. If `mileage_at_service > currentMileage`: `update vehicles set current_mileage = newMileage where id = vehicleId`. If this fails, surface a softer toast but keep the record (the insert already succeeded).
-3. If `next_service_km` or `next_service_date` filled: `insert into scheduled_tasks` with:
-   - `vehicle_id`, `planned_date = next_service_date || null`, `planned_mileage = next_service_km || null`
-   - `task_type = service_type`
-   - `description = "Automaticky vytvorené zo servisného záznamu: " + title`
-   - `priority = "Stredná"`, `status = "Čakajúce"`
-   - If this insert fails, swallow with a warn-toast; main save was successful.
+`useMutation` in `AddVehicleDialog`:
 
-`onSuccess`:
-- `queryClient.invalidateQueries({ queryKey: ["vehicle", vehicleId, "service-records"] })`
-- if mileage changed: `queryClient.invalidateQueries({ queryKey: ["vehicle", vehicleId] })` and `["vehicles", "with-customers"]`
-- `toast.success("Servisný záznam bol uložený")`
-- close dialog
+1. If new customer → `insert customers ... .select("id").single()`, capture `customer_id`. If existing → use selected id.
+2. Run duplicate ŠPZ check (above).
+3. `insert vehicles { customer_id, brand, model, year, vin, license_plate, current_mileage, engine, transmission, drive, power, oil_volume, tire_size, fuel_type, notes, status: "OK" } .select("id").single()`.
+4. `onSuccess`:
+   - `queryClient.invalidateQueries({ queryKey: ["vehicles", "with-customers"] })`
+   - `queryClient.invalidateQueries({ queryKey: ["customers"] })`
+   - toast `"Vozidlo bolo pridané"`
+   - close dialog, then `navigate({ to: "/garage/$vehicleId", params: { vehicleId: newId } })`.
+5. `onError` (non-duplicate): toast `"Vozidlo sa nepodarilo uložiť"`; dialog stays open with values preserved.
 
-`onError`: `toast.error("Servisný záznam sa nepodarilo uložiť")`; form keeps values; submit re-enabled.
+### 6. Wiring
 
-## Wiring entry points
-- `VehicleDetailHeader` — replace the toast on "+ Pridať záznam" with a controlled open setter passed from the route. Keep the other two action buttons as toast placeholders.
-- `ServiceHistorySection` — same: `onAdd` callback now opens the dialog instead of toasting.
-- `routes/_authenticated/garage.$vehicleId.tsx` — owns `useState` for dialog open and renders `<AddServiceRecordDialog vehicleId={...} currentMileage={vehicle.current_mileage} open onOpenChange />`.
+`src/routes/_authenticated/garage.tsx`: replace `showAddPlaceholder` with `const [addOpen, setAddOpen] = useState(false)`; pass `() => setAddOpen(true)` to `DashboardHeader` and the empty-state button; render `<AddVehicleDialog open={addOpen} onOpenChange={setAddOpen} />` at the bottom.
 
-## Decisions / things to confirm at end
-- Scheduled task auto-creation: implemented (best-effort, won't block the main save).
-- Vehicle mileage auto-update: implemented (only when entered > current).
-- Refresh: via React Query invalidation of `["vehicle", id, "service-records"]` and conditionally `["vehicle", id]`, `["vehicles", "with-customers"]`.
+### 7. Files
 
-## Files
-New: `AddServiceRecordDialog.tsx`, `ServiceRecordForm.tsx`, `src/hooks/use-media-query.ts` (if `use-mobile` not already present).
-Edited: `VehicleDetailHeader.tsx`, `ServiceHistorySection.tsx`, `routes/_authenticated/garage.$vehicleId.tsx`.
-Install: `@hookform/resolvers`.
+- New: `src/components/garage/add/AddVehicleDialog.tsx`, `CustomerStep.tsx`, `CustomerPicker.tsx`, `VehicleForm.tsx`, `StepIndicator.tsx`; migration `…_add_vehicle_anon_writes.sql`.
+- Edited: `src/routes/_authenticated/garage.tsx`.
+- No changes to existing visuals, sidebar, or detail page. No edit/photo/import flows.
 
-## Final summary (delivered after build)
-1. New components: `AddServiceRecordDialog`, `ServiceRecordForm` (+ small media-query hook if missing).
-2. Backend: anon INSERT on `service_records`, anon UPDATE (column-scoped to `current_mileage`) on `vehicles`, anon INSERT on `scheduled_tasks`, each with a permissive policy.
-3. Vehicle mileage auto-update: yes, when new > current.
-4. scheduled_tasks auto-creation: yes, best-effort; failure does not block the main save.
-5. Refresh: React Query invalidates the service-history and vehicle-detail keys on success.
+### 8. Open decisions
+
+- Existing-customer search uses client `.ilike` query (not full-text); sufficient for a 2–3 mechanic dataset.
+- After save we redirect to the new vehicle's detail page (and also invalidate the grid so a back navigation is fresh).
+- Soft duplicate-customer warning is intentionally skipped — keeps the flow simple this iteration.
