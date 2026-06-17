@@ -1,65 +1,61 @@
-## Plan: photos in global service history + vehicle main photo
+## Plan: MVP polish & production-readiness pass
 
-### Part A — Service record photos in /service-history
+Tight, low-risk pass. No new features, no module reshuffles, no redesigns. Each item below is a small, scoped tweak.
 
-**Query change (`src/lib/queries/serviceHistory.ts`)**
-- Add `photo_paths` to the SELECT string and to the `ServiceHistoryItem` type (`photo_paths: string[]`, normalized to `[]` when null, same shape as `serviceHistoryQuery` in `vehicles.ts`).
+### 1. Root-level placeholders & global error pages
+- `src/routes/__root.tsx`:
+  - Replace generic Lovable metadata (`title: "Lovable App"`, English description, `og:*`, `twitter:site`) with Slovak Servisná knižka Bartalos values (title `"Servisná knižka Bartalos"`, sk description, locale `sk_SK`, drop the irrelevant `@Lovable` twitter handle).
+  - Rewrite `NotFoundComponent` and `ErrorComponent` in Slovak and the app's dark surface tokens (`bg-brand-bg`, `text-white`, `brand-accent` button) so a runtime error doesn't fall back to an English light-mode screen. Buttons: "Skúsiť znova" / "Späť na garáž".
+- Keep redirect from `/` → `/garage` unchanged.
 
-**Display (`src/components/service-history/ServiceHistoryItem.tsx`)**
-- Below the description block, when `item.photo_paths.length > 0`, render the existing `<ServiceRecordPhotoGrid paths={item.photo_paths} />`.
-- No change if list is empty (no clutter, no extra label beyond what the grid already shows).
-- `ServiceRecordPhotoGrid` already handles signed URLs (1h TTL) and opens `PhotoPreviewDialog` — fully reused, no new components.
+### 2. Sidebar "coming soon" stubs
+- `AppSidebar`: the `Upozornenia` and `Nastavenia` items currently toast `"Pripravuje sa"`. Two options — pick the cleaner: remove them from `NAV_ITEMS` entirely for the MVP. (Stops users clicking dead links and matches the "remove leftover placeholders" requirement.)
 
-### Part B — Vehicle main photo
+### 3. Page headers consistency
+- `ServiceHistoryPageHeader`: bump heading to `text-2xl sm:text-3xl font-semibold tracking-tight` to match `DashboardHeader` / `PlanPageHeader`. Same vertical rhythm (`space-y-1`).
 
-**Storage & DB**
-- Reuse existing private bucket `vehicle-photos`.
-- Add one column: `vehicles.photo_path text null`. Keep the existing `photo_url` column untouched for back-compat; new code reads `photo_path` first and falls back to `photo_url` (legacy/external URLs) when path is null. This avoids breaking any existing rows.
-- Path layout: `{vehicleId}/main-{uuid}.{ext}` (single object per vehicle; old file is removed on replace/remove).
+### 4. Dialog/sheet surface consistency
+- All form dialogs/sheets currently mix `bg-brand-bg` (add/edit service record, add vehicle, schedule) with `bg-brand-surface` (edit vehicle). Standardize on `bg-brand-surface` for every dialog and sheet (matches card surfaces; inputs already use `bg-brand-bg` for contrast). Files: `AddServiceRecordDialog`, `EditServiceRecordDialog`, `AddVehicleDialog`, `ScheduleServiceDialog`. `EditVehicleDialog` already correct.
 
-**Migration (one file)**
-```sql
-alter table public.vehicles
-  add column if not exists photo_path text null;
+### 5. Format helper consolidation (low-risk)
+- `PlannedTaskCard` defines its own `formatDate` / `formatMileage`. Replace with imports from `@/lib/format` (`formatDateLong`, `formatKm`) — same `sk-SK` Intl output, removes duplication.
 
--- vehicle-photos storage policies (open app, matches service-photos)
-create policy "vehicle-photos anon read"   on storage.objects for select using (bucket_id = 'vehicle-photos');
-create policy "vehicle-photos anon insert" on storage.objects for insert with check (bucket_id = 'vehicle-photos');
-create policy "vehicle-photos anon delete" on storage.objects for delete using (bucket_id = 'vehicle-photos');
-```
-No new grants on `vehicles` needed (anon update already in place).
+### 6. Overflow / truncation hardening
+Small `min-w-0` / `break-words` / `truncate` additions where long values can break layout:
+- `VehicleSpecsCard`: add `break-words min-w-0` on `<dd>` so a long Motor / Pneu value can wrap.
+- `CustomerInfoCard`: add `break-words` on the name `<p>`.
+- `PlannedTaskCard`: wrap header inner row with `min-w-0`; add `truncate` on `task_type` text; add `break-all` to the license plate `<span>` to match `ServiceHistoryItem`.
+- `ServiceRecordCard`: add `min-w-0` on the expand button's text container so the title/badges row doesn't push the right-side actions off-screen on narrow widths.
 
-**Helper (`src/lib/vehiclePhoto.ts`, new)**
-- `uploadVehiclePhoto(vehicleId, file) → path`
-- `deleteVehiclePhoto(path)` (best-effort)
-- `getVehiclePhotoSignedUrl(path) → string` (1h TTL, single object — uses `createSignedUrl`)
-- Validation: same MIME set as service photos (`jpeg|png|webp`), max 10 MB, Slovak error messages reusing the strings from `src/lib/photos.ts`.
+### 7. Mobile button hierarchy & spacing
+- `PlannedTaskCard` action row: on very narrow screens the three buttons can wrap awkwardly. Add `w-full sm:w-auto` to the secondary buttons inside `flex-wrap` rows to keep wrapping clean. Keep the primary "Označiť ako dokončené" as the rightmost emphasized action.
+- `DashboardHeader` "Pridať vozidlo" button: add `w-full sm:w-auto` so on mobile (where it sits below the title block) it spans the row consistently with other primary CTAs.
 
-**Edit dialog (`EditVehicleDialog.tsx` + new `VehiclePhotoField.tsx`)**
-- Extend `EditVehicleDialog` with local state: `photoAction: "keep" | "replace" | "remove"`, `pendingFile: File | null`, `pendingPreviewUrl` (Object URL, revoked on close).
-- New `VehiclePhotoField` rendered above the customer section: shows current photo (signed URL) or "Bez fotky" placeholder; buttons "Nahrať fotku" / "Nahradiť" / "Odstrániť" / "Zrušiť zmenu". Performs client-side validation before staging.
-- Submit flow:
-  1. Run the existing customer + vehicle UPDATE (unchanged).
-  2. If `photoAction === "replace"`: upload new file, then on success UPDATE `vehicles.photo_path` and delete previous file (if any) best-effort.
-  3. If `photoAction === "remove"`: UPDATE `photo_path = null` and delete previous file best-effort.
-  4. Photo failures don't roll back text data — toast warning `"Fotku sa nepodarilo uložiť"`; text save success toast stays.
-- Invalidations unchanged (`["vehicle", id]`, `["vehicles"]`, `["service-history"]`, `["customers"]`).
+### 8. Form polish
+- `ServiceRecordForm`: remove leftover blank lines after the photo picker; add `autoComplete="off"` on the form. Add `min={1}` guard for `current_mileage` consistency (already in place).
+- All three form `Field` helpers (`ServiceRecordForm`, `VehicleForm`, `ScheduleTaskForm`) render the required-asterisk in `brand-accent` (red on dark). Already consistent — verify no drift.
+- Keep error text style consistent: `text-xs text-red-400`. Spot-check — already uniform.
 
-**Display**
+### 9. Toast wording sweep
+Pass over every `toast.*` call in the app for tone & grammar parity. Current state is already close; small fixes only:
+- `toast.success("Údaje boli uložené")` → unchanged.
+- Confirm warnings use `toast.warning(...)` and errors use `toast.error(...)` consistently (spot found OK).
+- Make sure no English string slipped in.
 
-Extend `VehicleWithCustomer` and `VehicleDetail` types with `photo_path: string | null`, add it to both SELECT strings in `src/lib/queries/vehicles.ts`.
+### 10. Small bugs
+- `EditVehicleDialog`: when the user opens the edit dialog after a previous unsaved photo selection then closes, the staged `File` object URL needs to be revoked. `VehiclePhotoField` already revokes via `useEffect` cleanup — verify nothing leaks when dialog unmounts mid-edit. If needed, also reset state in the dialog's `onOpenChange(false)` path (currently only resets on `open === true`).
+- `ServiceHistoryItem` photo grid: when an item has photos, the grid currently sits next to the long-description `line-clamp-2` — confirm spacing (`mt-2` / parent `gap-2`) reads cleanly on mobile; adjust to `mt-1` if needed.
 
-- `VehicleCard.tsx` (garage): if `photo_path` is set, resolve a signed URL (small `useEffect` + state, same pattern as `ServiceRecordPhotoGrid`); else if `photo_url` legacy, use directly; else keep current "Bez fotky" placeholder.
-- `VehicleDetailHeader.tsx`: same resolution logic for the hero image; placeholder unchanged.
-- To avoid N+1 signed-URL calls on the garage grid, batch in `VehicleGrid.tsx`: collect all `photo_path` values once, call `supabase.storage.from('vehicle-photos').createSignedUrls(paths, 3600)`, pass a `signedUrls: Record<path,url>` map into each `VehicleCard`. Card falls back to placeholder while map loads.
+### Out of scope (explicit)
+- No new modules / screens.
+- No analytics, notifications engine, exports, role system, integrations.
+- No table/column changes.
+- No restructure of route tree, no component splits beyond the few imports above.
+- Not implementing the Upozornenia / Nastavenia screens — only hiding the dead nav items.
 
-### Out of scope (unchanged)
-- Multiple/gallery photos for vehicles, drag-drop sort, annotations, redesign, export, service record delete.
-
-### End-of-build summary will cover
-1. service-history grid wiring (query field + reused `ServiceRecordPhotoGrid`/`PhotoPreviewDialog`).
-2. files touched for global history (`queries/serviceHistory.ts`, `ServiceHistoryItem.tsx`).
-3. DB/storage choice (new `photo_path` column + existing `vehicle-photos` bucket + 3 anon policies).
-4. files created/changed for vehicle photo (`vehiclePhoto.ts`, `VehiclePhotoField.tsx`, `EditVehicleDialog.tsx`, `VehicleCard.tsx`, `VehicleGrid.tsx`, `VehicleDetailHeader.tsx`, `queries/vehicles.ts`, migration).
-5. upload/replace/remove via staged action in edit dialog, with best-effort old-file delete and non-blocking photo failure.
-6. garage cards + detail header now resolve signed URLs from `photo_path` and fall back to legacy `photo_url`, then placeholder.
+### Summary deliverable at end of build
+1. Fixes applied (root metadata, English fallback pages → Slovak/dark, sidebar dead items removed, dialog surfaces unified, header sizing aligned, overflow guards added, mobile button widths).
+2. Components/screens touched (root, AppSidebar, page headers, four dialogs, PlannedTaskCard, ServiceRecordCard, VehicleSpecsCard, CustomerInfoCard, ServiceRecordForm).
+3. Confirmed which placeholders were removed (sidebar items, Lovable metadata, English 404/error).
+4. Confirmed bug fixes (photo preview URL cleanup, mobile wrap on planned task actions).
+5. Confirm no new major features were added.
