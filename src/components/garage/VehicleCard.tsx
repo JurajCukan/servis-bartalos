@@ -1,10 +1,8 @@
 import { Car } from "lucide-react";
 import { StatusBadge } from "./StatusBadge";
+import { formatKm as formatMileage } from "@/lib/format";
 import type { VehicleWithCustomer } from "@/lib/queries/vehicles";
 
-function formatMileage(km: number) {
-  return `${new Intl.NumberFormat("sk-SK").format(km)} km`;
-}
 
 export function VehicleCard({
   vehicle,
