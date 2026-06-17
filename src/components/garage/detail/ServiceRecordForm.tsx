@@ -331,6 +331,8 @@ export function ServiceRecordForm({
             type="number"
             inputMode="numeric"
             min={1}
+            max={MAX_MILEAGE}
+            step={1}
             className={inputCls}
             {...form.register("mileage_at_service")}
           />
@@ -361,16 +363,17 @@ export function ServiceRecordForm({
         <Input
           className={inputCls}
           placeholder="napr. Pravidelná údržba 60 000 km"
+          maxLength={MAX_TITLE}
           {...form.register("title")}
         />
       </Field>
 
       <Field label="Popis" error={errors.description?.message} required>
-        <Textarea rows={4} className={inputCls} {...form.register("description")} />
+        <Textarea rows={4} maxLength={MAX_LONG} className={inputCls} {...form.register("description")} />
       </Field>
 
       <Field label="Vymenené diely" error={errors.parts_replaced?.message}>
-        <Textarea rows={3} className={inputCls} {...form.register("parts_replaced")} />
+        <Textarea rows={3} maxLength={MAX_LONG} className={inputCls} {...form.register("parts_replaced")} />
       </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">
