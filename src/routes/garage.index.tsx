@@ -110,6 +110,7 @@ function GaragePage() {
               <VehicleFilters
                 status={status}
                 fuel={fuel}
+                vehicles={vehicles ?? []}
                 onStatusChange={setStatus}
                 onFuelChange={setFuel}
               />
