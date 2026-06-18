@@ -27,10 +27,10 @@ export function ServiceRecordCard({
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <h3 className="min-w-0 break-words text-base font-semibold text-brand-fg">{record.title}</h3>
             <ServiceTypeBadge type={record.service_type} />
-            {record.photos && record.photos.length > 0 && (
+            {record.photo_paths && record.photo_paths.length > 0 && (
               <span className="inline-flex shrink-0 items-center gap-1 rounded border border-brand-border bg-brand-bg px-1.5 py-0.5 text-[11px] text-brand-fg-muted">
                 <ImageIcon className="h-3 w-3" aria-hidden />
-                {record.photos.length}
+                {record.photo_paths.length}
               </span>
             )}
           </div>
@@ -120,8 +120,8 @@ export function ServiceRecordCard({
               </div>
             )}
           </dl>
-          {record.photo_urls && record.photo_urls.length > 0 && (
-            <ServiceRecordPhotoGrid urls={record.photo_urls} />
+          {record.photo_paths && record.photo_paths.length > 0 && (
+            <ServiceRecordPhotoGrid paths={record.photo_paths} />
           )}
         </div>
       )}

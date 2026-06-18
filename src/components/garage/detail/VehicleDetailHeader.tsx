@@ -1,8 +1,11 @@
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Car } from "lucide-react";
 import { StatusBadge } from "../StatusBadge";
 import { formatKm as formatMileage } from "@/lib/format";
+import { getVehiclePhotoSignedUrl } from "@/lib/vehiclePhoto";
 import type { VehicleDetail } from "@/lib/queries/vehicles";
+
 
 export function VehicleDetailHeader({
   vehicle,
@@ -16,7 +19,24 @@ export function VehicleDetailHeader({
   onAddRecord: () => void;
 }) {
   const title = [vehicle.year, vehicle.brand, vehicle.model].filter(Boolean).join(" ");
-  const imageUrl = vehicle.photo_url;
+
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!vehicle.photo_path) {
+      setSignedUrl(null);
+      return;
+    }
+    getVehiclePhotoSignedUrl(vehicle.photo_path).then((u) => {
+      if (!cancelled) setSignedUrl(u);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [vehicle.photo_path]);
+
+  const imageUrl = signedUrl ?? (vehicle.photo_path ? null : vehicle.photo_url);
+
 
   return (
     <header className="flex flex-col gap-5">
@@ -79,7 +99,7 @@ export function VehicleDetailHeader({
             </div>
             <div>
               <dt className="text-brand-fg-muted">ŠPZ</dt>
-              <dd className="mt-0.5 font-mono font-medium text-brand-fg">{vehicle.license_plate}</dd>
+              <dd className="mt-0.5 font-medium text-brand-fg">{vehicle.license_plate}</dd>
             </div>
             <div>
               <dt className="text-brand-fg-muted">Nájazd</dt>

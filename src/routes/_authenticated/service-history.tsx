@@ -12,14 +12,13 @@ import { ServiceHistorySkeleton } from "@/components/service-history/ServiceHist
 import { EmptyServiceHistoryState } from "@/components/service-history/EmptyServiceHistoryState";
 import { EmptyState } from "@/components/garage/EmptyState";
 import { serviceHistoryQuery } from "@/lib/queries/serviceHistory";
-import { usePocketBaseRealtime } from "@/hooks/usePocketBaseRealtime";
 
 const searchSchema = z.object({
   q: fallback(z.string(), "").default(""),
   type: fallback(z.string(), "all").default("all"),
 });
 
-export const Route = createFileRoute("/service-history")({
+export const Route = createFileRoute("/_authenticated/service-history")({
   validateSearch: zodValidator(searchSchema),
   head: () => ({ meta: [{ title: "História servisu — Servisná knižka Bartalos" }] }),
   component: ServiceHistoryPage,
@@ -29,8 +28,6 @@ function ServiceHistoryPage() {
   const { q, type } = Route.useSearch();
   const navigate = useNavigate({ from: "/service-history" });
   const { data, isLoading, error } = useQuery(serviceHistoryQuery);
-
-  usePocketBaseRealtime("service_records", [["service-history", "all"]]);
 
   const filtered = useMemo(() => {
     const items = data ?? [];

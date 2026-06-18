@@ -14,7 +14,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import pb from "@/lib/pocketbase";
+import { supabase } from "@/integrations/supabase/client";
+import { deletePhotos } from "@/lib/photos";
 import type { ServiceRecord } from "@/lib/queries/vehicles";
 
 export function DeleteServiceRecordButton({
@@ -31,8 +32,14 @@ export function DeleteServiceRecordButton({
 
   const mutation = useMutation({
     mutationFn: async () => {
-      // PocketBase auto-deletes attached files when the record is deleted.
-      await pb.collection("service_records").delete(record.id);
+      if (record.photo_paths?.length) {
+        await deletePhotos(record.photo_paths);
+      }
+      const { error } = await supabase
+        .from("service_records")
+        .delete()
+        .eq("id", record.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Servisný záznam bol odstránený");
@@ -53,7 +60,7 @@ export function DeleteServiceRecordButton({
     <>
       <div className="space-y-2 pt-2">
         <div className="h-px bg-brand-border" />
-        <p className="text-xs uppercase tracking-wide text-brand-fg-muted">Nebezpečná zóna</p>
+        <p className="text-xs uppercase tracking-wide text-brand-muted">Nebezpečná zóna</p>
         <Button
           type="button"
           variant="destructive"
@@ -70,7 +77,7 @@ export function DeleteServiceRecordButton({
         <AlertDialogContent className="border-brand-border bg-brand-surface text-brand-fg">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-brand-fg">Odstrániť servisný záznam?</AlertDialogTitle>
-            <AlertDialogDescription className="text-brand-fg-muted">
+            <AlertDialogDescription className="text-brand-muted">
               Táto akcia sa nedá vrátiť späť.
             </AlertDialogDescription>
           </AlertDialogHeader>

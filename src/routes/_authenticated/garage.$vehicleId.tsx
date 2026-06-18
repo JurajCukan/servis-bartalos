@@ -13,9 +13,8 @@ import { ScheduleServiceDialog } from "@/components/garage/detail/ScheduleServic
 import { EditVehicleDialog } from "@/components/garage/edit/EditVehicleDialog";
 import { EditServiceRecordDialog } from "@/components/garage/detail/EditServiceRecordDialog";
 import { vehicleDetailQuery, serviceHistoryQuery, type ServiceRecord } from "@/lib/queries/vehicles";
-import { usePocketBaseRealtime } from "@/hooks/usePocketBaseRealtime";
 
-export const Route = createFileRoute("/garage/$vehicleId")({
+export const Route = createFileRoute("/_authenticated/garage/$vehicleId")({
   head: () => ({ meta: [{ title: "Detail vozidla — Servisná knižka Bartalos" }] }),
   loader: async ({ params, context }) => {
     const vehicle = await context.queryClient.ensureQueryData(
@@ -64,10 +63,6 @@ function VehicleDetailPage() {
   const { vehicleId } = Route.useParams();
   const { data: vehicle } = useSuspenseQuery(vehicleDetailQuery(vehicleId));
   const history = useQuery(serviceHistoryQuery(vehicleId));
-
-  usePocketBaseRealtime("vehicles", [["vehicle", vehicleId], ["vehicles", "with-customers"]]);
-  usePocketBaseRealtime("service_records", [["vehicle", vehicleId, "service-records"], ["service-history"]]);
-  usePocketBaseRealtime("scheduled_tasks", [["scheduled-tasks"], ["planned-tasks"]]);
   const [addOpen, setAddOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);

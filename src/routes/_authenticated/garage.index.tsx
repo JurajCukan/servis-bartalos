@@ -13,10 +13,9 @@ import { DashboardLoadingSkeleton } from "@/components/garage/LoadingSkeleton";
 import { AddVehicleDialog } from "@/components/garage/add/AddVehicleDialog";
 import { vehiclesWithCustomersQuery, type VehicleWithCustomer } from "@/lib/queries/vehicles";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
-import { usePocketBaseRealtime } from "@/hooks/usePocketBaseRealtime";
 import { Plus } from "lucide-react";
 
-export const Route = createFileRoute("/garage/")({
+export const Route = createFileRoute("/_authenticated/garage/")({
   head: () => ({ meta: [{ title: "Moja Garáž — Servisná knižka Bartalos" }] }),
   component: GaragePage,
 });
@@ -50,9 +49,6 @@ function GaragePage() {
   const debouncedSearch = normalize(useDebouncedValue(search, 300));
 
   const { data: vehicles, isLoading, error } = useQuery(vehiclesWithCustomersQuery);
-
-  usePocketBaseRealtime("vehicles", [["vehicles", "with-customers"]]);
-  usePocketBaseRealtime("customers", [["vehicles", "with-customers"]]);
 
   const filtered = useMemo(() => {
     if (!vehicles) return [];
@@ -114,7 +110,6 @@ function GaragePage() {
               <VehicleFilters
                 status={status}
                 fuel={fuel}
-                vehicles={vehicles ?? []}
                 onStatusChange={setStatus}
                 onFuelChange={setFuel}
               />
@@ -139,7 +134,7 @@ function GaragePage() {
             ) : filtered.length === 0 ? (
               <EmptyState
                 title="Žiadne výsledky"
-                description="Žiadne vozidlá nezodpovedajú hľadaniu."
+                description="Skúste upraviť vyhľadávanie alebo filtre."
               />
             ) : (
               <VehicleGrid vehicles={filtered} onSelect={openVehicle} />

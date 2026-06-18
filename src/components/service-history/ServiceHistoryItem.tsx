@@ -46,9 +46,9 @@ export function ServiceHistoryItem({ item }: { item: Item }) {
           {item.description ? (
             <p className="line-clamp-2 break-words text-sm text-brand-fg-muted">{item.description}</p>
           ) : null}
-          {item.photo_urls && item.photo_urls.length > 0 ? (
+          {item.photo_paths && item.photo_paths.length > 0 ? (
             <div className="mt-1">
-              <ServiceRecordPhotoGrid urls={item.photo_urls} />
+              <ServiceRecordPhotoGrid paths={item.photo_paths} />
             </div>
           ) : null}
         </div>

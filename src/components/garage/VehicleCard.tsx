@@ -1,7 +1,10 @@
+import { useEffect, useState } from "react";
 import { Car } from "lucide-react";
 import { StatusBadge } from "./StatusBadge";
 import { formatKm as formatMileage } from "@/lib/format";
+import { getVehiclePhotoSignedUrl } from "@/lib/vehiclePhoto";
 import type { VehicleWithCustomer } from "@/lib/queries/vehicles";
+
 
 export function VehicleCard({
   vehicle,
@@ -14,7 +17,23 @@ export function VehicleCard({
     ? `${vehicle.customer.first_name} ${vehicle.customer.last_name}`
     : "—";
   const vinShort = vehicle.vin ? vehicle.vin.slice(-8) : null;
-  const phone = vehicle.customer?.phone;
+
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!vehicle.photo_path) {
+      setSignedUrl(null);
+      return;
+    }
+    getVehiclePhotoSignedUrl(vehicle.photo_path).then((u) => {
+      if (!cancelled) setSignedUrl(u);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [vehicle.photo_path]);
+
+  const imageUrl = signedUrl ?? (vehicle.photo_path ? null : vehicle.photo_url);
 
   return (
     <button
@@ -23,9 +42,9 @@ export function VehicleCard({
       className="group flex w-full flex-col overflow-hidden rounded-xl border border-brand-border bg-brand-surface text-left transition hover:border-brand-accent/60 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
     >
       <div className="relative aspect-[16/10] w-full overflow-hidden bg-brand-bg">
-        {vehicle.photo_url ? (
+        {imageUrl ? (
           <img
-            src={vehicle.photo_url}
+            src={imageUrl}
             alt={`${vehicle.brand} ${vehicle.model}`}
             className="h-full w-full object-cover transition group-hover:scale-105"
             loading="lazy"
@@ -48,20 +67,11 @@ export function VehicleCard({
             {vehicle.year ? `${vehicle.year} · ` : ""}
             {customerName}
           </p>
-          {phone ? (
-            <a
-              href={`tel:${phone}`}
-              onClick={(e) => e.stopPropagation()}
-              className="text-xs text-brand-fg-muted underline-offset-2 hover:text-brand-fg hover:underline"
-            >
-              {phone}
-            </a>
-          ) : null}
         </div>
 
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
           <dt className="text-brand-fg-muted">ŠPZ</dt>
-          <dd className="truncate font-mono font-medium text-brand-fg">{vehicle.license_plate}</dd>
+          <dd className="truncate font-medium text-brand-fg">{vehicle.license_plate}</dd>
 
           <dt className="text-brand-fg-muted">Nájazd</dt>
           <dd className="tabular-nums font-medium text-brand-fg">

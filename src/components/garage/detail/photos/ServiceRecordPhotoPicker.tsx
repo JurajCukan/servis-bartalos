@@ -1,30 +1,46 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   ALLOWED_MIME,
   MAX_PHOTOS_PER_RECORD,
+  getSignedUrls,
   validateFiles,
 } from "@/lib/photos";
 
-export type ExistingPhoto = { filename: string; url: string };
-
 export function ServiceRecordPhotoPicker({
-  existing,
+  existingPaths,
   pendingFiles,
   onExistingChange,
   onPendingChange,
   disabled,
 }: {
-  existing: ExistingPhoto[];
+  existingPaths: string[];
   pendingFiles: File[];
-  onExistingChange: (next: ExistingPhoto[]) => void;
+  onExistingChange: (paths: string[]) => void;
   onPendingChange: (files: File[]) => void;
   disabled?: boolean;
 }) {
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
 
+  // Signed URLs for existing photos
+  useEffect(() => {
+    let cancelled = false;
+    if (existingPaths.length === 0) {
+      setSignedUrls({});
+      return;
+    }
+    getSignedUrls(existingPaths).then((res) => {
+      if (!cancelled) setSignedUrls(res);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [existingPaths]);
+
+  // Object URLs for pending files
   const pendingUrls = useMemo(
     () => pendingFiles.map((f) => URL.createObjectURL(f)),
     [pendingFiles],
@@ -35,7 +51,7 @@ export function ServiceRecordPhotoPicker({
     };
   }, [pendingUrls]);
 
-  const totalCount = existing.length + pendingFiles.length;
+  const totalCount = existingPaths.length + pendingFiles.length;
   const atLimit = totalCount >= MAX_PHOTOS_PER_RECORD;
 
   const handleAdd = (files: FileList | null) => {
@@ -94,12 +110,14 @@ export function ServiceRecordPhotoPicker({
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-          {existing.map((p, idx) => (
+          {existingPaths.map((path, idx) => (
             <Thumb
-              key={`e-${p.filename}`}
-              url={p.url}
+              key={`e-${path}`}
+              url={signedUrls[path]}
               label={`Fotka ${idx + 1}`}
-              onRemove={() => onExistingChange(existing.filter((x) => x.filename !== p.filename))}
+              onRemove={() =>
+                onExistingChange(existingPaths.filter((p) => p !== path))
+              }
               disabled={disabled}
             />
           ))}

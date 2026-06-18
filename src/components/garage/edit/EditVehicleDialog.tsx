@@ -18,7 +18,11 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
-import pb from "@/lib/pocketbase";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  deleteVehiclePhoto,
+  uploadVehiclePhoto,
+} from "@/lib/vehiclePhoto";
 import type { VehicleDetail } from "@/lib/queries/vehicles";
 
 import { CustomerEditFormSection } from "./CustomerEditFormSection";
@@ -83,6 +87,7 @@ export function EditVehicleDialog({
       setPhotoAction("keep");
       setPendingPhoto(null);
     } else {
+      // Drop any staged photo when the dialog closes so the Object URL is revoked.
       setPhotoAction("keep");
       setPendingPhoto(null);
     }
@@ -94,75 +99,85 @@ export function EditVehicleDialog({
       const plate = values.license_plate.trim().toUpperCase();
 
       if (plate !== vehicle.license_plate) {
-        try {
-          const dup = await pb
-            .collection("vehicles")
-            .getFirstListItem(
-              pb.filter("license_plate = {:p} && id != {:id}", {
-                p: plate,
-                id: vehicle.id,
-              }),
-            );
-          if (dup) {
-            form.setError("license_plate", {
-              type: "manual",
-              message: "Vozidlo s touto ŠPZ už existuje",
-            });
-            throw new Error("DUPLICATE_PLATE");
-          }
-        } catch (e) {
-          const status = (e as { status?: number }).status;
-          if (status !== 404 && (e as Error).message !== "DUPLICATE_PLATE") {
-            // ignore "not found" => no duplicate
-          }
-          if ((e as Error).message === "DUPLICATE_PLATE") throw e;
+        const { data: dup, error: dupErr } = await supabase
+          .from("vehicles")
+          .select("id")
+          .eq("license_plate", plate)
+          .neq("id", vehicle.id)
+          .maybeSingle();
+        if (dupErr) throw dupErr;
+        if (dup) {
+          form.setError("license_plate", {
+            type: "manual",
+            message: "Vozidlo s touto ŠPZ už existuje",
+          });
+          throw new Error("DUPLICATE_PLATE");
         }
       }
 
       if (vehicle.customer) {
-        await pb.collection("customers").update(vehicle.customer.id, {
-          first_name: values.first_name.trim(),
-          last_name: values.last_name.trim(),
-          phone: values.phone.trim(),
-          email: emptyToNull(values.email as string),
-          notes: emptyToNull(values.customer_notes as string),
-        });
+        const { error: cErr } = await supabase
+          .from("customers")
+          .update({
+            first_name: values.first_name.trim(),
+            last_name: values.last_name.trim(),
+            phone: values.phone.trim(),
+            email: emptyToNull(values.email as string),
+            notes: emptyToNull(values.customer_notes as string),
+          })
+          .eq("id", vehicle.customer.id);
+        if (cErr) throw cErr;
       }
 
-      const vehiclePayload: Record<string, unknown> = {
-        brand: values.brand.trim(),
-        model: values.model.trim(),
-        year:
-          values.year === "" || values.year == null ? null : Number(values.year),
-        license_plate: plate,
-        vin: emptyToNull(values.vin as string),
-        current_mileage: Number(values.current_mileage),
-        engine: emptyToNull(values.engine as string),
-        transmission: emptyToNull(values.transmission as string),
-        drive: emptyToNull(values.drive as string),
-        power: emptyToNull(values.power as string),
-        oil_volume: emptyToNull(values.oil_volume as string),
-        tire_size: emptyToNull(values.tire_size as string),
-        fuel_type: emptyToNull(values.fuel_type as string),
-        notes: emptyToNull(values.vehicle_notes as string),
-      };
+      const { error: vErr } = await supabase
+        .from("vehicles")
+        .update({
+          brand: values.brand.trim(),
+          model: values.model.trim(),
+          year:
+            values.year === "" || values.year == null ? null : Number(values.year),
+          license_plate: plate,
+          vin: emptyToNull(values.vin as string),
+          current_mileage: Number(values.current_mileage),
+          engine: emptyToNull(values.engine as string),
+          transmission: emptyToNull(values.transmission as string),
+          drive: emptyToNull(values.drive as string),
+          power: emptyToNull(values.power as string),
+          oil_volume: emptyToNull(values.oil_volume as string),
+          tire_size: emptyToNull(values.tire_size as string),
+          fuel_type: emptyToNull(values.fuel_type as string),
+          notes: emptyToNull(values.vehicle_notes as string),
+        })
+        .eq("id", vehicle.id);
+      if (vErr) throw vErr;
 
-      await pb.collection("vehicles").update(vehicle.id, vehiclePayload);
-
-      // Handle photo as a separate update so a failure doesn't roll back text data.
+      // Handle photo separately so a failure does not roll back text data.
       let photoWarning: string | null = null;
       if (photoAction === "replace" && pendingPhoto) {
         try {
-          const fd = new FormData();
-          fd.append("photo", pendingPhoto);
-          await pb.collection("vehicles").update(vehicle.id, fd);
+          const newPath = await uploadVehiclePhoto(vehicle.id, pendingPhoto);
+          const { error: pErr } = await supabase
+            .from("vehicles")
+            .update({ photo_path: newPath })
+            .eq("id", vehicle.id);
+          if (pErr) throw pErr;
+          if (vehicle.photo_path) {
+            await deleteVehiclePhoto(vehicle.photo_path);
+          }
         } catch (e) {
           console.warn("Vehicle photo replace failed", e);
           photoWarning = "Fotku sa nepodarilo uložiť";
         }
       } else if (photoAction === "remove") {
         try {
-          await pb.collection("vehicles").update(vehicle.id, { photo: null });
+          const { error: pErr } = await supabase
+            .from("vehicles")
+            .update({ photo_path: null })
+            .eq("id", vehicle.id);
+          if (pErr) throw pErr;
+          if (vehicle.photo_path) {
+            await deleteVehiclePhoto(vehicle.photo_path);
+          }
         } catch (e) {
           console.warn("Vehicle photo remove failed", e);
           photoWarning = "Fotku sa nepodarilo odstrániť";
@@ -193,7 +208,8 @@ export function EditVehicleDialog({
   const body = (
     <form onSubmit={form.handleSubmit(handler)} className="space-y-6">
       <VehiclePhotoField
-        currentUrl={vehicle.photo_url}
+        currentPath={vehicle.photo_path}
+        currentLegacyUrl={vehicle.photo_path ? null : vehicle.photo_url}
         action={photoAction}
         pendingFile={pendingPhoto}
         onChange={({ action, pendingFile }) => {

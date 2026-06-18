@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
 
-import pb from "@/lib/pocketbase";
-import { ServiceRecordPhotoPicker, type ExistingPhoto } from "./photos/ServiceRecordPhotoPicker";
+import { supabase } from "@/integrations/supabase/client";
+import { deletePhotos, uploadPhotos } from "@/lib/photos";
+import { ServiceRecordPhotoPicker } from "./photos/ServiceRecordPhotoPicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -193,16 +194,11 @@ export function ServiceRecordForm({
   const queryClient = useQueryClient();
   const isEdit = mode === "edit" && record != null;
 
-  const initialExisting = useMemo<ExistingPhoto[]>(() => {
-    if (!isEdit || !record) return [];
-    return record.photos.map((filename, i) => ({
-      filename,
-      url: record.photo_urls[i] ?? "",
-    }));
-  }, [isEdit, record]);
-
-  const [existing, setExisting] = useState<ExistingPhoto[]>(initialExisting);
+  const [existingPaths, setExistingPaths] = useState<string[]>(
+    isEdit ? record.photo_paths ?? [] : [],
+  );
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -257,62 +253,80 @@ export function ServiceRecordForm({
       };
 
       let recordId: string;
-      const originalFilenames = isEdit && record ? record.photos : [];
+      const originalPaths = isEdit && record ? record.photo_paths ?? [] : [];
 
       if (isEdit && record) {
-        await pb.collection("service_records").update(record.id, payload);
+        const { error: updateError } = await supabase
+          .from("service_records")
+          .update(payload)
+          .eq("id", record.id);
+        if (updateError) throw updateError;
         recordId = record.id;
       } else {
-        const created = await pb
-          .collection("service_records")
-          .create({ vehicle: vehicleId, ...payload });
-        recordId = created.id;
+        const { data: inserted, error: insertError } = await supabase
+          .from("service_records")
+          .insert({ vehicle_id: vehicleId, ...payload, photo_paths: [] })
+          .select("id")
+          .single();
+        if (insertError) throw insertError;
+        recordId = inserted.id;
       }
 
-      // Photo management via FormData
-      const keptFilenames = new Set(existing.map((e) => e.filename));
-      const removed = originalFilenames.filter((f) => !keptFilenames.has(f));
-      const hasPhotoChanges = removed.length > 0 || pendingFiles.length > 0;
-
+      // Photo management
+      const removedPaths = originalPaths.filter((p) => !existingPaths.includes(p));
+      if (removedPaths.length > 0) {
+        await deletePhotos(removedPaths);
+      }
       let photoFailedCount = 0;
-      if (hasPhotoChanges) {
-        try {
-          const fd = new FormData();
-          for (const f of removed) fd.append("photos-", f);
-          for (const file of pendingFiles) fd.append("photos", file);
-          await pb.collection("service_records").update(recordId, fd);
-        } catch (e) {
-          console.warn("Photo update failed", e);
-          photoFailedCount = pendingFiles.length;
+      let uploadedPaths: string[] = [];
+      if (pendingFiles.length > 0) {
+        const res = await uploadPhotos(vehicleId, recordId, pendingFiles);
+        uploadedPaths = res.uploadedPaths;
+        photoFailedCount = res.failedCount;
+      }
+      const finalPaths = [...existingPaths, ...uploadedPaths];
+      const pathsChanged =
+        removedPaths.length > 0 ||
+        uploadedPaths.length > 0 ||
+        !isEdit ||
+        finalPaths.length !== originalPaths.length;
+      if (pathsChanged) {
+        const { error: pathErr } = await supabase
+          .from("service_records")
+          .update({ photo_paths: finalPaths })
+          .eq("id", recordId);
+        if (pathErr) {
+          console.warn("Photo paths update failed", pathErr);
+          photoFailedCount += uploadedPaths.length;
         }
       }
 
       let mileageUpdated = false;
       if (newMileage > currentMileage) {
-        try {
-          await pb
-            .collection("vehicles")
-            .update(vehicleId, { current_mileage: newMileage });
+        const { error: updErr } = await supabase
+          .from("vehicles")
+          .update({ current_mileage: newMileage })
+          .eq("id", vehicleId);
+        if (updErr) {
+          console.warn("Mileage update failed", updErr);
+        } else {
           mileageUpdated = true;
-        } catch (e) {
-          console.warn("Mileage update failed", e);
         }
       }
 
       // Auto-create scheduled task only on create flow
       if (!isEdit && (nextKm != null || nextDate != null)) {
-        try {
-          await pb.collection("scheduled_tasks").create({
-            vehicle: vehicleId,
-            planned_date: nextDate ?? today(),
-            planned_mileage: nextKm,
-            task_type: raw.service_type,
-            description: `Automaticky vytvorené zo servisného záznamu: ${raw.title}`,
-            priority: "Stredná",
-            status: "Čakajúce",
-          });
-        } catch (e) {
-          console.warn("Scheduled task creation failed", e);
+        const { error: taskErr } = await supabase.from("scheduled_tasks").insert({
+          vehicle_id: vehicleId,
+          planned_date: nextDate ?? today(),
+          planned_mileage: nextKm,
+          task_type: raw.service_type,
+          description: `Automaticky vytvorené zo servisného záznamu: ${raw.title}`,
+          priority: "Stredná",
+          status: "Čakajúce",
+        });
+        if (taskErr) {
+          console.warn("Scheduled task creation failed", taskErr);
           toast.warning("Záznam uložený, ale plánovanú úlohu sa nepodarilo vytvoriť");
         }
       }
@@ -445,12 +459,15 @@ export function ServiceRecordForm({
       </div>
 
       <ServiceRecordPhotoPicker
-        existing={existing}
+        existingPaths={existingPaths}
         pendingFiles={pendingFiles}
-        onExistingChange={setExisting}
+        onExistingChange={setExistingPaths}
         onPendingChange={setPendingFiles}
         disabled={isSubmitting}
       />
+
+
+
 
       <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
         <Button
@@ -487,12 +504,12 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-brand-fg-muted">
+      <Label className="text-sm text-brand-fg">
         {label}
-        {required && <span className="text-brand-error"> *</span>}
+        {required && <span className="ml-1 text-brand-accent">*</span>}
       </Label>
       {children}
-      {error && <p className="text-xs text-brand-error">{error}</p>}
+      {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
 
-import pb from "@/lib/pocketbase";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -84,8 +84,8 @@ export function ScheduleTaskForm({
         raw.planned_mileage === "" || raw.planned_mileage == null
           ? null
           : Number(raw.planned_mileage);
-      await pb.collection("scheduled_tasks").create({
-        vehicle: vehicleId,
+      const { error } = await supabase.from("scheduled_tasks").insert({
+        vehicle_id: vehicleId,
         planned_date: raw.planned_date,
         planned_mileage: mileage,
         task_type: raw.task_type,
@@ -93,9 +93,10 @@ export function ScheduleTaskForm({
         priority: raw.priority,
         status: "Čakajúce",
       });
+      if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["scheduled-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["scheduled-tasks", "active"] });
       toast.success("Servis bol naplánovaný");
       onSuccess();
     },
