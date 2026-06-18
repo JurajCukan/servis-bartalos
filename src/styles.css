@@ -26,8 +26,9 @@
   --color-brand-fg-muted: var(--brand-fg-muted);
   --color-brand-fg-subtle: var(--brand-fg-subtle);
   --color-brand-muted: var(--brand-fg-muted);
-  --color-brand-accent: #cc0000;
-  --color-brand-accent-hover: #b00000;
+  --color-brand-accent: #ff2a1a;
+  --color-brand-accent-hover: #e01500;
+  --color-brand-accent-glow: #ff7a1a;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
