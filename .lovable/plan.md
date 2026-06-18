@@ -1,35 +1,43 @@
-## Cieľ
-Nahradiť text v ľavom dolnom rohu sidebaru ("Autoservis Bartalos / Interná servisná aplikácia") za logo a zladiť farebnú paletu appky s logom (čierna + neónová červeno-oranžová).
+## Výmena loga a redesign appky podľa loga Autoservis Bartalos
 
-## Kroky
+### Cieľ
+Nahradiť staré logo s čiernym pozadím novým transparentným logom a upraviť vizuálny štýl aplikácie tak, aby ladil s neónovo-červeno-čiernym garážovým štýlu loga.
 
-### 1. Pridať logo ako asset
-- Nahrať `user-uploads://autoservis_logo.jpg` cez `lovable-assets` CLI → `src/assets/autoservis-logo.jpg.asset.json`.
-- Importovať pointer JSON v `AppSidebar.tsx`.
+### Problém
+- Aktuálne logo má pevné čierne pozadie, ktoré v svetlom móde pôsobí ako tmavá škvrna
+- Footer sidebaru má natvrdo `bg-black`, čo nekorešponduje s light theme
+- Farebné tokeny sú teraz príliš „generické“ — neodrážajú garážový/neónový charakter loga
 
-### 2. `src/components/app/AppSidebar.tsx` — footer
-- Odstrániť oba `<p>` v `SidebarFooter`.
-- Vložiť `<img src={logo.url} alt="Autoservis Bartalos" />` v rozumnej veľkosti (~h-16, object-contain, vycentrované). Logo má čierne pozadie, takže v light móde mu dáme jemné zaoblené čierne pozadie aby ladilo (logo už má vlastný black background — nechať tak).
-- Header (`SidebarHeader`) zostane textový ("Servisná knižka / Autoservis Bartalos") aby sa neopakovalo logo.
+### Zmeny
 
-### 3. Zladiť farby s logom (`src/styles.css`)
-Logo paleta: čistá čierna, neónová červená `#ff2a1a`, oranžový glow `#ff7a1a`, biela.
+#### 1. Asset — nové logo
+- Nahrať `user-uploads://generated-image_compressed.png` cez `lovable-assets` ako transparentný PNG
+- Vytvoriť `.asset.json` pointer v `src/assets/autoservis-logo-transparent.png.asset.json`
+- Zmazať starý `src/assets/autoservis-logo.jpg.asset.json`
 
-Úpravy tokenov:
-- `--color-brand-accent: #ff2a1a` (bola `#cc0000`) — sýtejšia neónová červená zhodná s logom.
-- `--color-brand-accent-hover: #e01500`.
-- Pridať nový token `--color-brand-accent-glow: #ff7a1a` (oranžový sekundárny accent, neregistrovaný v komponentoch hromadne — využije sa lokálne, napr. v subtle hover/border ringoch ak treba).
-- Dark mód `--brand-bg`/`--brand-surface` zostávajú (`#111` / `#1a1a` / border `#2a2a`) — sedia s logom.
-- Light mód ostáva (svetlosivý povrch + čierny text) — kontrast s červeným accentom funguje.
+#### 2. Sidebar footer (`src/components/app/AppSidebar.tsx`)
+- Odstrániť `bg-black` wrapper okolo loga
+- Nahradiť starý JPG import za nový PNG asset
+- Upraviť padding/rozmery tak, aby logo vyzeralo dobre na oboch témach
 
-### 4. Bez zmien
-- Žiadne layout zmeny, žiadny redesign stránok, žiadne nové komponenty mimo loga.
-- StatusBadge a ostatné saturated buttony zostávajú — používajú stále `bg-brand-accent` token, takže automaticky zdedia novú červenú.
+#### 3. Color tokeny (`src/styles.css`)
+- **Dark mode**: zosvetliť surface odtiene na čistejšiu čiernu `#0a0a0a` → `#111111` → `#1a1a1a` (už takmer tam)
+- **Accent**: upraviť `--color-brand-accent` na hodnotu lepšie ladiacu s neónom loga (aktuálne `#ff2a1a` je blízko, mierne doladiť teplšie)
+- **Glow**: pridať / upraviť `--color-brand-accent-glow` na oranžovo-červenú `#ff5e1a`
+- **Light mode surfaces**: zmeniť na veľmi svetlé teplé neutrály, aby kontrast s logom bol čistý
+- **Sidebar footer**: odstrániť pevné `bg-black`, použiť `bg-brand-surface` / `bg-brand-bg`
 
-## Súbory dotknuté
-- nový `src/assets/autoservis-logo.jpg.asset.json`
-- `src/components/app/AppSidebar.tsx` (footer)
-- `src/styles.css` (accent tokeny)
+#### 4. Prípadné drobné úpravy komponentov
+- Ak sa niekde vyskytuje starý asset import, prepísať
+- Overiť, že `StatusBadge` a tlačidlá s `bg-brand-accent` stále majú `text-white`
 
-## Overenie
-- Skontrolovať `/garage` v dark aj light móde: logo v dolnom rohu, akcie (Pridať vozidlo) a aktívna sidebar položka nesú novú neónovú červenú zhodnú s logom.
+### Technické detaily
+- Nepoužijeme žiadny nový npm balík
+- Žiadna zmena routing, auth ani DB
+- Čisto frontend: asset + CSS tokeny + 1 komponent
+
+### Overenie
+- Logo v sidebar footeri je čitateľné v dark aj light mode
+- Žiadne čierne pozadie okolo loga v light mode
+- Accent farby (tlačidlá, active sidebar item) ladí s logom
+- Dark mode pôsobí „garage neon“ atmosférou
