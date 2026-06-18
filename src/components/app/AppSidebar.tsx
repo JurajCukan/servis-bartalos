@@ -1,7 +1,7 @@
 import { Car, CalendarDays, History, Settings } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
 
-import logoAsset from "@/assets/autoservis-logo.jpg.asset.json";
+import logoAsset from "@/assets/autoservis-logo-transparent.png.asset.json";
 
 import {
   Sidebar,
@@ -77,12 +77,12 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-brand-border bg-black p-3">
-        <div className="flex items-center justify-center rounded-md bg-black p-2">
+      <SidebarFooter className="border-t border-brand-border bg-brand-bg p-3">
+        <div className="flex items-center justify-center p-2">
           <img
             src={logoAsset.url}
             alt="Autoservis Bartalos"
-            className="h-16 w-auto object-contain"
+            className="h-20 w-auto object-contain"
           />
         </div>
       </SidebarFooter>
