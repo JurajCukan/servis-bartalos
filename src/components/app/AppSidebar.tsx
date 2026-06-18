@@ -1,6 +1,8 @@
 import { Car, CalendarDays, History, Settings } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
 
+import logoAsset from "@/assets/autoservis-logo.jpg.asset.json";
+
 import {
   Sidebar,
   SidebarContent,
