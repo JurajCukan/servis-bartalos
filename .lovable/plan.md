@@ -1,43 +1,22 @@
-## Výmena loga a redesign appky podľa loga Autoservis Bartalos
-
-### Cieľ
-Nahradiť staré logo s čiernym pozadím novým transparentným logom a upraviť vizuálny štýl aplikácie tak, aby ladil s neónovo-červeno-čiernym garážovým štýlu loga.
+## Výmena loga na verziu bez pozadia (vhodnú pre dark mode)
 
 ### Problém
-- Aktuálne logo má pevné čierne pozadie, ktoré v svetlom móde pôsobí ako tmavá škvrna
-- Footer sidebaru má natvrdo `bg-black`, čo nekorešponduje s light theme
-- Farebné tokeny sú teraz príliš „generické“ — neodrážajú garážový/neónový charakter loga
+Aktuálne logo v sidebar footeri má biele/svetlé pozadie, ktoré v dark móde vytvára svetlú škvrnu. Nový upload (`autoservis_logo_bez_pozadia-Photoroom.png`) je skutočne transparentný a bude vyzerať dobre na oboch témach.
 
 ### Zmeny
 
-#### 1. Asset — nové logo
-- Nahrať `user-uploads://generated-image_compressed.png` cez `lovable-assets` ako transparentný PNG
-- Vytvoriť `.asset.json` pointer v `src/assets/autoservis-logo-transparent.png.asset.json`
-- Zmazať starý `src/assets/autoservis-logo.jpg.asset.json`
+1. **Nahrať nový asset**
+   - `lovable-assets create --file /mnt/user-uploads/autoservis_logo_bez_pozadia-Photoroom_compressed.png --filename autoservis-logo.png > src/assets/autoservis-logo.png.asset.json`
 
-#### 2. Sidebar footer (`src/components/app/AppSidebar.tsx`)
-- Odstrániť `bg-black` wrapper okolo loga
-- Nahradiť starý JPG import za nový PNG asset
-- Upraviť padding/rozmery tak, aby logo vyzeralo dobre na oboch témach
+2. **`src/components/app/AppSidebar.tsx`**
+   - Prepnúť import z `autoservis-logo-transparent.png.asset.json` na nový `autoservis-logo.png.asset.json`.
+   - Ponechať aktuálny layout (centered, `h-20`, `bg-brand-bg` footer).
 
-#### 3. Color tokeny (`src/styles.css`)
-- **Dark mode**: zosvetliť surface odtiene na čistejšiu čiernu `#0a0a0a` → `#111111` → `#1a1a1a` (už takmer tam)
-- **Accent**: upraviť `--color-brand-accent` na hodnotu lepšie ladiacu s neónom loga (aktuálne `#ff2a1a` je blízko, mierne doladiť teplšie)
-- **Glow**: pridať / upraviť `--color-brand-accent-glow` na oranžovo-červenú `#ff5e1a`
-- **Light mode surfaces**: zmeniť na veľmi svetlé teplé neutrály, aby kontrast s logom bol čistý
-- **Sidebar footer**: odstrániť pevné `bg-black`, použiť `bg-brand-surface` / `bg-brand-bg`
+3. **Zmazať starý asset**
+   - `lovable-assets delete --file src/assets/autoservis-logo-transparent.png.asset.json`
 
-#### 4. Prípadné drobné úpravy komponentov
-- Ak sa niekde vyskytuje starý asset import, prepísať
-- Overiť, že `StatusBadge` a tlačidlá s `bg-brand-accent` stále majú `text-white`
+4. **Overiť v preview**
+   - Skontrolovať sidebar v dark aj light móde — logo musí byť čitateľné bez svetlého/tmavého pozadia okolo.
 
-### Technické detaily
-- Nepoužijeme žiadny nový npm balík
-- Žiadna zmena routing, auth ani DB
-- Čisto frontend: asset + CSS tokeny + 1 komponent
-
-### Overenie
-- Logo v sidebar footeri je čitateľné v dark aj light mode
-- Žiadne čierne pozadie okolo loga v light mode
-- Accent farby (tlačidlá, active sidebar item) ladí s logom
-- Dark mode pôsobí „garage neon“ atmosférou
+### Mimo scope
+- Žiadne zmeny farebných tokenov ani iných komponentov — logo je jediná zmena.
