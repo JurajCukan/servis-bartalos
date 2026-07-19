@@ -1,23 +1,20 @@
 {
-  "name": "tanstack_start_ts",
+  "name": "servis-bartalos",
   "private": true,
-  "sideEffects": false,
+  "version": "1.0.0",
+  "author": "Juraj Cukan",
+  "description": "Servisná knižka Bartalos",
   "type": "module",
-  "main": "dist-electron/main.js",
+  "main": "electron/dist/main.js",
   "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
-    "build:dev": "vite build --mode development",
-    "preview": "vite preview",
+    "predev": "npm run build:electron",
+    "dev": "concurrently \"vite\" \"electron .\"",
+    "build:renderer": "vite build",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "build": "npm run build:renderer && npm run build:electron && electron-builder",
+    "dist": "npm run build -- --publish always",
     "lint": "eslint .",
-    "format": "prettier --write .",
-    "electron:build-src": "vite build -c vite.electron.config.ts",
-    "electron:watch-src": "vite build -c vite.electron.config.ts --watch",
-    "electron:run": "electron .",
-    "electron:dev": "concurrently -k \"npm run dev\" \"npm run electron:watch-src\" \"wait-on http://127.0.0.1:8080 && cross-env NODE_ENV=development npm run electron:run\"",
-    "electron:prod-build": "cross-env NITRO_PRESET=node-server npm run build && npm run electron:build-src",
-    "electron:prod-run": "cross-env NODE_ENV=production npm run electron:run",
-    "electron:package": "npm run electron:prod-build && electron-builder build --windows"
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -47,20 +44,19 @@
     "@radix-ui/react-toggle": "^1.1.10",
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
-    "@supabase/supabase-js": "^2.108.2",
     "@tailwindcss/vite": "^4.2.1",
     "@tanstack/react-query": "^5.83.0",
     "@tanstack/react-router": "^1.168.25",
-    "@tanstack/react-start": "^1.167.50",
-    "@tanstack/router-plugin": "^1.167.28",
     "@tanstack/zod-adapter": "^1.167.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
+    "electron-updater": "^6.3.0",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.575.0",
+    "pocketbase": "^0.21.5",
     "react": "^19.2.0",
     "react-day-picker": "^9.14.0",
     "react-dom": "^19.2.0",
@@ -77,14 +73,13 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
-    "@lovable.dev/vite-tanstack-config": "2.7.6",
     "@types/node": "^22.16.5",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.2.0",
     "concurrently": "^10.0.3",
     "cross-env": "^10.1.0",
-    "electron": "^43.1.1",
+    "electron": "^31.7.7",
     "electron-builder": "^26.15.3",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.1",
@@ -92,31 +87,10 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
-    "nitro": "3.0.260603-beta",
     "prettier": "^3.7.3",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
     "vite": "^8.0.16",
     "wait-on": "^9.0.10"
-  },
-  "build": {
-    "appId": "com.autoservis-bartalos.app",
-    "productName": "Servis Bartalos",
-    "directories": {
-      "output": "dist-packaged"
-    },
-    "files": [
-      "dist-electron/**/*",
-      ".output/**/*",
-      "package.json"
-    ],
-    "asar": true,
-    "asarUnpack": [
-      ".output/**"
-    ],
-    "win": {
-      "target": "nsis",
-      "requestedExecutionLevel": "asInvoker"
-    }
   }
 }

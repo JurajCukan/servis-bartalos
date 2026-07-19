@@ -4,43 +4,25 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   VEHICLE_PHOTO_MIME,
-  getVehiclePhotoSignedUrl,
   validateVehiclePhoto,
 } from "@/lib/vehiclePhoto";
 
 export type PhotoAction = "keep" | "replace" | "remove";
 
 export function VehiclePhotoField({
-  currentPath,
-  currentLegacyUrl,
+  currentUrl,
   action,
   pendingFile,
   onChange,
   disabled,
 }: {
-  currentPath: string | null;
-  currentLegacyUrl: string | null;
+  currentUrl: string | null;
   action: PhotoAction;
   pendingFile: File | null;
   onChange: (next: { action: PhotoAction; pendingFile: File | null }) => void;
   disabled?: boolean;
 }) {
   const fileRef = useRef<HTMLInputElement | null>(null);
-  const [signedUrl, setSignedUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!currentPath) {
-      setSignedUrl(null);
-      return;
-    }
-    getVehiclePhotoSignedUrl(currentPath).then((u) => {
-      if (!cancelled) setSignedUrl(u);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [currentPath]);
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -53,14 +35,14 @@ export function VehiclePhotoField({
     return () => URL.revokeObjectURL(url);
   }, [pendingFile]);
 
-  const hasCurrent = Boolean(currentPath || currentLegacyUrl);
+  const hasCurrent = Boolean(currentUrl);
   const showRemoved = action === "remove";
   const displayUrl =
     action === "replace" && previewUrl
       ? previewUrl
       : showRemoved
         ? null
-        : (signedUrl ?? currentLegacyUrl);
+        : currentUrl;
 
   const handlePick = (files: FileList | null) => {
     const file = files?.[0];
@@ -81,7 +63,11 @@ export function VehiclePhotoField({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
         <div className="relative aspect-[16/10] w-full overflow-hidden rounded-md border border-brand-border bg-brand-bg sm:w-64">
           {displayUrl ? (
-            <img src={displayUrl} alt="Fotka vozidla" className="h-full w-full object-cover" />
+            <img
+              src={displayUrl}
+              alt="Fotka vozidla"
+              className="h-full w-full object-cover"
+            />
           ) : (
             <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-brand-fg-subtle">
               <Car className="h-8 w-8" aria-hidden />
@@ -149,7 +135,9 @@ export function VehiclePhotoField({
           />
         </div>
       </div>
-      <p className="text-xs text-brand-fg-subtle">JPG, PNG alebo WEBP, max 10 MB.</p>
+      <p className="text-xs text-brand-fg-subtle">
+        JPG, PNG alebo WEBP, max 10 MB.
+      </p>
     </section>
   );
 }

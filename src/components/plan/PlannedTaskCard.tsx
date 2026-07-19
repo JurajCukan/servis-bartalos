@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Calendar, Gauge, CheckCircle2, X } from "lucide-react";
 
-import { supabase } from "@/integrations/supabase/client";
+import pb from "@/lib/pocketbase";
 import { formatDateLong, formatKm } from "@/lib/format";
 import type { PlannedTask, TaskPriority, TaskStatus } from "@/lib/queries/scheduledTasks";
 
@@ -14,9 +14,9 @@ const PRIORITY_STYLES: Record<TaskPriority, string> = {
 };
 
 const STATUS_STYLES: Record<TaskStatus, string> = {
-  Čakajúce: "bg-brand-surface text-brand-fg-muted border-brand-border",
-  Dokončené: "bg-emerald-500/15 text-emerald-300 border-emerald-500/40",
-  Zrušené: "bg-brand-surface text-brand-fg-muted border-brand-border",
+  "Čakajúce": "bg-brand-surface text-brand-fg-muted border-brand-border",
+  "Dokončené": "bg-emerald-500/15 text-emerald-300 border-emerald-500/40",
+  "Zrušené": "bg-brand-surface text-brand-fg-muted border-brand-border",
 };
 
 export function PlannedTaskCard({ task }: { task: PlannedTask }) {
@@ -24,12 +24,11 @@ export function PlannedTaskCard({ task }: { task: PlannedTask }) {
 
   const updateStatus = useMutation({
     mutationFn: async (status: TaskStatus) => {
-      const { error } = await supabase.from("scheduled_tasks").update({ status }).eq("id", task.id);
-      if (error) throw error;
+      await pb.collection("scheduled_tasks").update(task.id, { status });
       return status;
     },
     onSuccess: (status) => {
-      queryClient.invalidateQueries({ queryKey: ["scheduled-tasks", "active"] });
+      queryClient.invalidateQueries({ queryKey: ["scheduled-tasks"] });
       if (status === "Dokončené") toast.success("Úkon bol označený ako dokončený");
       else if (status === "Zrušené") toast.success("Plán bol zrušený");
     },
@@ -40,7 +39,9 @@ export function PlannedTaskCard({ task }: { task: PlannedTask }) {
   });
 
   const v = task.vehicle;
-  const customer = v?.customer ? `${v.customer.first_name} ${v.customer.last_name}` : "—";
+  const customer = v?.customer
+    ? `${v.customer.first_name} ${v.customer.last_name}`
+    : "—";
   const busy = updateStatus.isPending;
 
   return (
@@ -79,7 +80,9 @@ export function PlannedTaskCard({ task }: { task: PlannedTask }) {
         <p className="break-words text-brand-fg-muted">{customer}</p>
       </div>
 
-      <p className="whitespace-pre-wrap break-words text-sm text-brand-fg">{task.description}</p>
+      <p className="whitespace-pre-wrap break-words text-sm text-brand-fg">
+        {task.description}
+      </p>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-brand-fg-muted">
         <span className="inline-flex items-center gap-1.5">

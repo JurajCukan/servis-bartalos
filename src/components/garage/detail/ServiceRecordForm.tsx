@@ -1,13 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
 
-import { supabase } from "@/integrations/supabase/client";
-import { deletePhotos, uploadPhotos } from "@/lib/photos";
-import { ServiceRecordPhotoPicker } from "./photos/ServiceRecordPhotoPicker";
+import pb from "@/lib/pocketbase";
+import { ServiceRecordPhotoPicker, type ExistingPhoto } from "./photos/ServiceRecordPhotoPicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -94,7 +93,10 @@ const schema = z
     service_type: z
       .string()
       .min(1, "Toto pole je povinné")
-      .refine((v) => (SERVICE_TYPES as readonly string[]).includes(v), "Zadajte platný údaj"),
+      .refine(
+        (v) => (SERVICE_TYPES as readonly string[]).includes(v),
+        "Zadajte platný údaj",
+      ),
     title: z
       .string()
       .trim()
@@ -123,10 +125,16 @@ const schema = z
       .string()
       .optional()
       .or(z.literal(""))
-      .refine((s) => !s || (isValidDateStr(s) && s <= MAX_NEXT_DATE), "Zadajte platný dátum"),
+      .refine(
+        (s) => !s || (isValidDateStr(s) && s <= MAX_NEXT_DATE),
+        "Zadajte platný dátum",
+      ),
   })
   .superRefine((val, ctx) => {
-    if (typeof val.next_service_km === "number" && val.next_service_km <= val.mileage_at_service) {
+    if (
+      typeof val.next_service_km === "number" &&
+      val.next_service_km <= val.mileage_at_service
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["next_service_km"],
@@ -185,9 +193,15 @@ export function ServiceRecordForm({
   const queryClient = useQueryClient();
   const isEdit = mode === "edit" && record != null;
 
-  const [existingPaths, setExistingPaths] = useState<string[]>(
-    isEdit ? (record.photo_paths ?? []) : [],
-  );
+  const initialExisting = useMemo<ExistingPhoto[]>(() => {
+    if (!isEdit || !record) return [];
+    return record.photos.map((filename, i) => ({
+      filename,
+      url: record.photo_urls[i] ?? "",
+    }));
+  }, [isEdit, record]);
+
+  const [existing, setExisting] = useState<ExistingPhoto[]>(initialExisting);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
   const form = useForm<FormValues>({
@@ -243,80 +257,62 @@ export function ServiceRecordForm({
       };
 
       let recordId: string;
-      const originalPaths = isEdit && record ? (record.photo_paths ?? []) : [];
+      const originalFilenames = isEdit && record ? record.photos : [];
 
       if (isEdit && record) {
-        const { error: updateError } = await supabase
-          .from("service_records")
-          .update(payload)
-          .eq("id", record.id);
-        if (updateError) throw updateError;
+        await pb.collection("service_records").update(record.id, payload);
         recordId = record.id;
       } else {
-        const { data: inserted, error: insertError } = await supabase
-          .from("service_records")
-          .insert({ vehicle_id: vehicleId, ...payload, photo_paths: [] })
-          .select("id")
-          .single();
-        if (insertError) throw insertError;
-        recordId = inserted.id;
+        const created = await pb
+          .collection("service_records")
+          .create({ vehicle: vehicleId, ...payload });
+        recordId = created.id;
       }
 
-      // Photo management
-      const removedPaths = originalPaths.filter((p) => !existingPaths.includes(p));
-      if (removedPaths.length > 0) {
-        await deletePhotos(removedPaths);
-      }
+      // Photo management via FormData
+      const keptFilenames = new Set(existing.map((e) => e.filename));
+      const removed = originalFilenames.filter((f) => !keptFilenames.has(f));
+      const hasPhotoChanges = removed.length > 0 || pendingFiles.length > 0;
+
       let photoFailedCount = 0;
-      let uploadedPaths: string[] = [];
-      if (pendingFiles.length > 0) {
-        const res = await uploadPhotos(vehicleId, recordId, pendingFiles);
-        uploadedPaths = res.uploadedPaths;
-        photoFailedCount = res.failedCount;
-      }
-      const finalPaths = [...existingPaths, ...uploadedPaths];
-      const pathsChanged =
-        removedPaths.length > 0 ||
-        uploadedPaths.length > 0 ||
-        !isEdit ||
-        finalPaths.length !== originalPaths.length;
-      if (pathsChanged) {
-        const { error: pathErr } = await supabase
-          .from("service_records")
-          .update({ photo_paths: finalPaths })
-          .eq("id", recordId);
-        if (pathErr) {
-          console.warn("Photo paths update failed", pathErr);
-          photoFailedCount += uploadedPaths.length;
+      if (hasPhotoChanges) {
+        try {
+          const fd = new FormData();
+          for (const f of removed) fd.append("photos-", f);
+          for (const file of pendingFiles) fd.append("photos", file);
+          await pb.collection("service_records").update(recordId, fd);
+        } catch (e) {
+          console.warn("Photo update failed", e);
+          photoFailedCount = pendingFiles.length;
         }
       }
 
       let mileageUpdated = false;
       if (newMileage > currentMileage) {
-        const { error: updErr } = await supabase
-          .from("vehicles")
-          .update({ current_mileage: newMileage })
-          .eq("id", vehicleId);
-        if (updErr) {
-          console.warn("Mileage update failed", updErr);
-        } else {
+        try {
+          await pb
+            .collection("vehicles")
+            .update(vehicleId, { current_mileage: newMileage });
           mileageUpdated = true;
+        } catch (e) {
+          console.warn("Mileage update failed", e);
         }
       }
 
       // Auto-create scheduled task only on create flow
       if (!isEdit && (nextKm != null || nextDate != null)) {
-        const { error: taskErr } = await supabase.from("scheduled_tasks").insert({
-          vehicle_id: vehicleId,
-          planned_date: nextDate ?? today(),
-          planned_mileage: nextKm,
-          task_type: raw.service_type,
-          description: `Automaticky vytvorené zo servisného záznamu: ${raw.title}`,
-          priority: "Stredná",
-          status: "Čakajúce",
-        });
-        if (taskErr) {
-          console.warn("Scheduled task creation failed", taskErr);
+        try {
+          await pb.collection("scheduled_tasks").create({
+            vehicle: vehicleId,
+            planned_date: nextDate ?? today(),
+            planned_mileage: nextKm,
+            task_type: raw.service_type,
+            description: `Automaticky vytvorené zo servisného záznamu: ${raw.title}`,
+            priority: "Stredná",
+            status: "Čakajúce",
+          });
+        } catch (e) {
+          console.warn("Scheduled task creation failed", e);
           toast.warning("Záznam uložený, ale plánovanú úlohu sa nepodarilo vytvoriť");
         }
       }
@@ -359,7 +355,11 @@ export function ServiceRecordForm({
           <Input type="date" className={inputCls} {...form.register("date")} />
         </Field>
 
-        <Field label="Nájazd pri servise (km)" error={errors.mileage_at_service?.message} required>
+        <Field
+          label="Nájazd pri servise (km)"
+          error={errors.mileage_at_service?.message}
+          required
+        >
           <Input
             type="number"
             inputMode="numeric"
@@ -402,21 +402,11 @@ export function ServiceRecordForm({
       </Field>
 
       <Field label="Popis" error={errors.description?.message} required>
-        <Textarea
-          rows={4}
-          maxLength={MAX_LONG}
-          className={inputCls}
-          {...form.register("description")}
-        />
+        <Textarea rows={4} maxLength={MAX_LONG} className={inputCls} {...form.register("description")} />
       </Field>
 
       <Field label="Vymenené diely" error={errors.parts_replaced?.message}>
-        <Textarea
-          rows={3}
-          maxLength={MAX_LONG}
-          className={inputCls}
-          {...form.register("parts_replaced")}
-        />
+        <Textarea rows={3} maxLength={MAX_LONG} className={inputCls} {...form.register("parts_replaced")} />
       </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -450,19 +440,14 @@ export function ServiceRecordForm({
         </Field>
 
         <Field label="Ďalší servis dátum" error={errors.next_service_date?.message}>
-          <Input
-            type="date"
-            max={MAX_NEXT_DATE}
-            className={inputCls}
-            {...form.register("next_service_date")}
-          />
+          <Input type="date" max={MAX_NEXT_DATE} className={inputCls} {...form.register("next_service_date")} />
         </Field>
       </div>
 
       <ServiceRecordPhotoPicker
-        existingPaths={existingPaths}
+        existing={existing}
         pendingFiles={pendingFiles}
-        onExistingChange={setExistingPaths}
+        onExistingChange={setExisting}
         onPendingChange={setPendingFiles}
         disabled={isSubmitting}
       />
@@ -502,12 +487,12 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-sm text-brand-fg">
+      <Label className="text-brand-fg-muted">
         {label}
-        {required && <span className="ml-1 text-brand-accent">*</span>}
+        {required && <span className="text-brand-error"> *</span>}
       </Label>
       {children}
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && <p className="text-xs text-brand-error">{error}</p>}
     </div>
   );
 }

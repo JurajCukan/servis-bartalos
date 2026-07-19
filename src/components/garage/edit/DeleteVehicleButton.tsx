@@ -3,6 +3,7 @@ import { Trash2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
+import type { RecordModel } from "pocketbase";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,9 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { supabase } from "@/integrations/supabase/client";
-import { deletePhotos } from "@/lib/photos";
-import { deleteVehiclePhoto } from "@/lib/vehiclePhoto";
+import pb from "@/lib/pocketbase";
 import type { VehicleDetail } from "@/lib/queries/vehicles";
 
 export function DeleteVehicleButton({
@@ -33,45 +32,26 @@ export function DeleteVehicleButton({
 
   const mutation = useMutation({
     mutationFn: async () => {
-      // 1. collect service record photo paths
-      const { data: records, error: rErr } = await supabase
-        .from("service_records")
-        .select("photo_paths")
-        .eq("vehicle_id", vehicle.id);
-      if (rErr) throw rErr;
-
-      const allPhotoPaths = (records ?? [])
-        .flatMap((r) => (r as { photo_paths?: string[] | null }).photo_paths ?? [])
-        .filter(Boolean);
-
-      // 2. best-effort storage cleanup
-      try {
-        if (allPhotoPaths.length) await deletePhotos(allPhotoPaths);
-      } catch (e) {
-        console.warn("Service photos cleanup failed", e);
-      }
-      try {
-        if (vehicle.photo_path) await deleteVehiclePhoto(vehicle.photo_path);
-      } catch (e) {
-        console.warn("Vehicle photo cleanup failed", e);
+      // Best-effort: PocketBase will auto-delete attached files when records are deleted.
+      const scheduled = await pb
+        .collection("scheduled_tasks")
+        .getFullList<RecordModel>({
+          filter: pb.filter("vehicle = {:vid}", { vid: vehicle.id }),
+        });
+      for (const t of scheduled) {
+        await pb.collection("scheduled_tasks").delete(t.id);
       }
 
-      // 3. delete child rows
-      const { error: stErr } = await supabase
-        .from("scheduled_tasks")
-        .delete()
-        .eq("vehicle_id", vehicle.id);
-      if (stErr) throw stErr;
+      const records = await pb
+        .collection("service_records")
+        .getFullList<RecordModel>({
+          filter: pb.filter("vehicle = {:vid}", { vid: vehicle.id }),
+        });
+      for (const r of records) {
+        await pb.collection("service_records").delete(r.id);
+      }
 
-      const { error: srErr } = await supabase
-        .from("service_records")
-        .delete()
-        .eq("vehicle_id", vehicle.id);
-      if (srErr) throw srErr;
-
-      // 4. delete vehicle (customer is intentionally kept)
-      const { error: vErr } = await supabase.from("vehicles").delete().eq("id", vehicle.id);
-      if (vErr) throw vErr;
+      await pb.collection("vehicles").delete(vehicle.id);
     },
     onSuccess: () => {
       toast.success("Vozidlo bolo odstránené");
@@ -93,7 +73,7 @@ export function DeleteVehicleButton({
     <>
       <div className="space-y-2 pt-2">
         <div className="h-px bg-brand-border" />
-        <p className="text-xs uppercase tracking-wide text-brand-muted">Nebezpečná zóna</p>
+        <p className="text-xs uppercase tracking-wide text-brand-fg-muted">Nebezpečná zóna</p>
         <Button
           type="button"
           variant="destructive"
@@ -110,17 +90,17 @@ export function DeleteVehicleButton({
         <AlertDialogContent className="border-brand-border bg-brand-surface text-brand-fg">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-brand-fg">Odstrániť vozidlo?</AlertDialogTitle>
-            <AlertDialogDescription className="text-brand-muted">
+            <AlertDialogDescription className="text-brand-fg-muted">
               Odstránia sa nasledujúce údaje:
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <ul className="ml-5 list-disc space-y-1 text-sm text-brand-muted">
+          <ul className="ml-5 list-disc space-y-1 text-sm text-brand-fg-muted">
             <li>údaje o vozidle</li>
             <li>servisná história tohto vozidla</li>
             <li>naplánované úkony pre toto vozidlo</li>
             <li>pripojené fotky vozidla a servisných záznamov</li>
           </ul>
-          <p className="text-sm text-brand-muted">
+          <p className="text-sm text-brand-fg-muted">
             Zákazník zostane zachovaný (môže mať ďalšie vozidlá).
           </p>
           <p className="text-sm font-medium text-brand-fg">Táto akcia sa nedá vrátiť späť.</p>

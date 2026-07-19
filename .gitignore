@@ -30,3 +30,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Packaging & Electron
+release/
+dist/
+dist-electron/
+electron/dist/
+pocketbase/pocketbase_0.39.8_windows_amd64/
+
