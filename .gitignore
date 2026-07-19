@@ -37,4 +37,5 @@ dist/
 dist-electron/
 electron/dist/
 pocketbase/pocketbase_0.39.8_windows_amd64/
+pocketbase/pb_data/
 

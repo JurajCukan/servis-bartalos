@@ -9,12 +9,12 @@
     "createRule": "",
     "updateRule": "",
     "deleteRule": "",
-    "schema": [
-      { "name": "first_name", "type": "text", "required": true, "options": { "min": 1, "max": 120 } },
-      { "name": "last_name",  "type": "text", "required": true, "options": { "min": 1, "max": 120 } },
-      { "name": "phone",      "type": "text", "required": true, "options": { "min": 1, "max": 40 } },
-      { "name": "email",      "type": "email", "required": false, "options": {} },
-      { "name": "notes",      "type": "text",  "required": false, "options": { "max": 4000 } }
+    "fields": [
+      { "name": "first_name", "type": "text", "required": true, "system": false, "options": { "min": 1, "max": 120 } },
+      { "name": "last_name",  "type": "text", "required": true, "system": false, "options": { "min": 1, "max": 120 } },
+      { "name": "phone",      "type": "text", "required": true, "system": false, "options": { "min": 1, "max": 40 } },
+      { "name": "email",      "type": "email", "required": false, "system": false, "options": {} },
+      { "name": "notes",      "type": "text",  "required": false, "system": false, "options": { "max": 4000 } }
     ],
     "indexes": [
       "CREATE INDEX idx_customers_last_name ON customers (last_name)"
@@ -30,11 +30,12 @@
     "createRule": "",
     "updateRule": "",
     "deleteRule": "",
-    "schema": [
+    "fields": [
       {
         "name": "customer",
         "type": "relation",
         "required": true,
+        "system": false,
         "options": {
           "collectionId": "pbc_customers",
           "cascadeDelete": true,
@@ -42,22 +43,22 @@
           "maxSelect": 1
         }
       },
-      { "name": "brand",         "type": "text",   "required": true,  "options": { "min": 1, "max": 80 } },
-      { "name": "model",         "type": "text",   "required": true,  "options": { "min": 1, "max": 80 } },
-      { "name": "year",          "type": "number", "required": false, "options": { "min": 1900, "max": 2100, "noDecimal": true } },
-      { "name": "vin",           "type": "text",   "required": false, "options": { "max": 32 } },
-      { "name": "license_plate", "type": "text",   "required": true,  "options": { "min": 1, "max": 16 } },
-      { "name": "current_mileage","type": "number","required": true,  "options": { "min": 0, "max": 2000000, "noDecimal": true } },
+      { "name": "brand",         "type": "text",   "required": true,  "system": false, "options": { "min": 1, "max": 80 } },
+      { "name": "model",         "type": "text",   "required": true,  "system": false, "options": { "min": 1, "max": 80 } },
+      { "name": "year",          "type": "number", "required": false, "system": false, "options": { "min": 1900, "max": 2100, "noDecimal": true } },
+      { "name": "vin",           "type": "text",   "required": false, "system": false, "options": { "max": 32 } },
+      { "name": "license_plate", "type": "text",   "required": true,  "system": false, "options": { "min": 1, "max": 16 } },
+      { "name": "current_mileage","type": "number","required": true,  "system": false, "options": { "min": 0, "max": 2000000, "noDecimal": true } },
       {
-        "name": "fuel_type", "type": "select", "required": false,
+        "name": "fuel_type", "type": "select", "required": false, "system": false,
         "options": { "maxSelect": 1, "values": ["benzín","diesel","hybrid","elektro","LPG"] }
       },
       {
-        "name": "status", "type": "select", "required": true,
+        "name": "status", "type": "select", "required": true, "system": false,
         "options": { "maxSelect": 1, "values": ["OK","SERVIS NUTNÝ","NAPLÁNOVANÉ","ARCHÍV"] }
       },
       {
-        "name": "photo", "type": "file", "required": false,
+        "name": "photo", "type": "file", "required": false, "system": false,
         "options": {
           "maxSelect": 1,
           "maxSize": 10485760,
@@ -65,13 +66,13 @@
           "thumbs": ["200x200","800x0"]
         }
       },
-      { "name": "engine",       "type": "text", "required": false, "options": { "max": 120 } },
-      { "name": "transmission", "type": "text", "required": false, "options": { "max": 80 } },
-      { "name": "power",        "type": "text", "required": false, "options": { "max": 40 } },
-      { "name": "drive",        "type": "text", "required": false, "options": { "max": 40 } },
-      { "name": "oil_volume",   "type": "text", "required": false, "options": { "max": 40 } },
-      { "name": "tire_size",    "type": "text", "required": false, "options": { "max": 40 } },
-      { "name": "notes",        "type": "text", "required": false, "options": { "max": 4000 } }
+      { "name": "engine",       "type": "text", "required": false, "system": false, "options": { "max": 120 } },
+      { "name": "transmission", "type": "text", "required": false, "system": false, "options": { "max": 80 } },
+      { "name": "power",        "type": "text", "required": false, "system": false, "options": { "max": 40 } },
+      { "name": "drive",        "type": "text", "required": false, "system": false, "options": { "max": 40 } },
+      { "name": "oil_volume",   "type": "text", "required": false, "system": false, "options": { "max": 40 } },
+      { "name": "tire_size",    "type": "text", "required": false, "system": false, "options": { "max": 40 } },
+      { "name": "notes",        "type": "text", "required": false, "system": false, "options": { "max": 4000 } }
     ],
     "indexes": [
       "CREATE UNIQUE INDEX idx_vehicles_license_plate ON vehicles (license_plate)",
@@ -89,11 +90,12 @@
     "createRule": "",
     "updateRule": "",
     "deleteRule": "",
-    "schema": [
+    "fields": [
       {
         "name": "vehicle",
         "type": "relation",
         "required": true,
+        "system": false,
         "options": {
           "collectionId": "pbc_vehicles",
           "cascadeDelete": true,
@@ -101,18 +103,18 @@
           "maxSelect": 1
         }
       },
-      { "name": "date",               "type": "date",   "required": true,  "options": {} },
-      { "name": "mileage_at_service", "type": "number", "required": true,  "options": { "min": 0, "max": 2000000, "noDecimal": true } },
-      { "name": "service_type",       "type": "text",   "required": true,  "options": { "min": 1, "max": 80 } },
-      { "name": "title",              "type": "text",   "required": true,  "options": { "min": 1, "max": 120 } },
-      { "name": "description",        "type": "text",   "required": true,  "options": { "min": 1, "max": 4000 } },
-      { "name": "parts_replaced",     "type": "text",   "required": false, "options": { "max": 4000 } },
-      { "name": "price",              "type": "number", "required": false, "options": { "min": 0, "max": 1000000 } },
-      { "name": "technician",         "type": "text",   "required": false, "options": { "max": 120 } },
-      { "name": "next_service_km",    "type": "number", "required": false, "options": { "min": 0, "max": 2000000, "noDecimal": true } },
-      { "name": "next_service_date",  "type": "date",   "required": false, "options": {} },
+      { "name": "date",               "type": "date",   "required": true,  "system": false, "options": {} },
+      { "name": "mileage_at_service", "type": "number", "required": true,  "system": false, "options": { "min": 0, "max": 2000000, "noDecimal": true } },
+      { "name": "service_type",       "type": "text",   "required": true,  "system": false, "options": { "min": 1, "max": 80 } },
+      { "name": "title",              "type": "text",   "required": true,  "system": false, "options": { "min": 1, "max": 120 } },
+      { "name": "description",        "type": "text",   "required": true,  "system": false, "options": { "min": 1, "max": 4000 } },
+      { "name": "parts_replaced",     "type": "text",   "required": false, "system": false, "options": { "max": 4000 } },
+      { "name": "price",              "type": "number", "required": false, "system": false, "options": { "min": 0, "max": 1000000 } },
+      { "name": "technician",         "type": "text",   "required": false, "system": false, "options": { "max": 120 } },
+      { "name": "next_service_km",    "type": "number", "required": false, "system": false, "options": { "min": 0, "max": 2000000, "noDecimal": true } },
+      { "name": "next_service_date",  "type": "date",   "required": false, "system": false, "options": {} },
       {
-        "name": "photos", "type": "file", "required": false,
+        "name": "photos", "type": "file", "required": false, "system": false,
         "options": {
           "maxSelect": 10,
           "maxSize": 10485760,
@@ -136,11 +138,12 @@
     "createRule": "",
     "updateRule": "",
     "deleteRule": "",
-    "schema": [
+    "fields": [
       {
         "name": "vehicle",
         "type": "relation",
         "required": true,
+        "system": false,
         "options": {
           "collectionId": "pbc_vehicles",
           "cascadeDelete": true,
@@ -148,16 +151,16 @@
           "maxSelect": 1
         }
       },
-      { "name": "planned_date",    "type": "date",   "required": true,  "options": {} },
-      { "name": "planned_mileage", "type": "number", "required": false, "options": { "min": 0, "max": 2000000, "noDecimal": true } },
-      { "name": "task_type",       "type": "text",   "required": true,  "options": { "min": 1, "max": 80 } },
-      { "name": "description",     "type": "text",   "required": true,  "options": { "min": 1, "max": 4000 } },
+      { "name": "planned_date",    "type": "date",   "required": true,  "system": false, "options": {} },
+      { "name": "planned_mileage", "type": "number", "required": false, "system": false, "options": { "min": 0, "max": 2000000, "noDecimal": true } },
+      { "name": "task_type",       "type": "text",   "required": true,  "system": false, "options": { "min": 1, "max": 80 } },
+      { "name": "description",     "type": "text",   "required": true,  "system": false, "options": { "min": 1, "max": 4000 } },
       {
-        "name": "priority", "type": "select", "required": true,
+        "name": "priority", "type": "select", "required": true, "system": false,
         "options": { "maxSelect": 1, "values": ["Nízka","Stredná","Vysoká"] }
       },
       {
-        "name": "status", "type": "select", "required": true,
+        "name": "status", "type": "select", "required": true, "system": false,
         "options": { "maxSelect": 1, "values": ["Čakajúce","Splnené","Zrušené"] }
       }
     ],
