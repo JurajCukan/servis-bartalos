@@ -23,13 +23,7 @@ const newCustomerSchema = z.object({
   first_name: z.string().trim().min(1, "Toto pole je povinné").max(120),
   last_name: z.string().trim().min(1, "Toto pole je povinné").max(120),
   phone: z.string().trim().min(1, "Toto pole je povinné").max(40),
-  email: z
-    .string()
-    .trim()
-    .max(255)
-    .email("Zadajte platný email")
-    .optional()
-    .or(z.literal("")),
+  email: z.string().trim().max(255).email("Zadajte platný email").optional().or(z.literal("")),
   notes: z.string().trim().max(1000).optional().or(z.literal("")),
 });
 
@@ -47,9 +41,7 @@ export function CustomerStep({
   onCancel: () => void;
   onContinue: (r: CustomerResolution) => void;
 }) {
-  const [mode, setMode] = useState<Mode>(
-    initial?.kind === "new" ? "new" : "existing",
-  );
+  const [mode, setMode] = useState<Mode>(initial?.kind === "new" ? "new" : "existing");
   const [picked, setPicked] = useState<PickedCustomer | null>(
     initial?.kind === "existing" ? initial.customer : null,
   );
@@ -57,8 +49,8 @@ export function CustomerStep({
     first_name: initial?.kind === "new" ? initial.customer.first_name : "",
     last_name: initial?.kind === "new" ? initial.customer.last_name : "",
     phone: initial?.kind === "new" ? initial.customer.phone : "",
-    email: initial?.kind === "new" ? initial.customer.email ?? "" : "",
-    notes: initial?.kind === "new" ? initial.customer.notes ?? "" : "",
+    email: initial?.kind === "new" ? (initial.customer.email ?? "") : "",
+    notes: initial?.kind === "new" ? (initial.customer.notes ?? "") : "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pickerError, setPickerError] = useState<string | null>(null);
@@ -197,9 +189,7 @@ function ToggleBtn({
       type="button"
       onClick={onClick}
       className={`rounded px-3 py-1.5 text-xs font-medium transition ${
-        active
-          ? "bg-brand-accent text-white"
-          : "text-brand-fg-muted hover:text-brand-fg"
+        active ? "bg-brand-accent text-white" : "text-brand-fg-muted hover:text-brand-fg"
       }`}
     >
       {children}

@@ -100,10 +100,7 @@ export function VehicleForm({
           <Input className={inputCls} {...form.register("model")} />
         </Field>
         <Field label="ŠPZ" error={errors.license_plate?.message} required>
-          <Input
-            className={`${inputCls} uppercase`}
-            {...form.register("license_plate")}
-          />
+          <Input className={`${inputCls} uppercase`} {...form.register("license_plate")} />
         </Field>
         <Field label="Rok výroby" error={errors.year?.message}>
           <Input
@@ -118,11 +115,7 @@ export function VehicleForm({
         <Field label="VIN" error={errors.vin?.message}>
           <Input className={inputCls} {...form.register("vin")} />
         </Field>
-        <Field
-          label="Aktuálny nájazd (km)"
-          error={errors.current_mileage?.message}
-          required
-        >
+        <Field label="Aktuálny nájazd (km)" error={errors.current_mileage?.message} required>
           <Input
             type="number"
             inputMode="numeric"
@@ -152,9 +145,7 @@ export function VehicleForm({
         <Field label="Typ paliva" error={errors.fuel_type?.message}>
           <Select
             value={form.watch("fuel_type") || ""}
-            onValueChange={(v) =>
-              form.setValue("fuel_type", v, { shouldDirty: true })
-            }
+            onValueChange={(v) => form.setValue("fuel_type", v, { shouldDirty: true })}
           >
             <SelectTrigger className={inputCls}>
               <SelectValue placeholder="Vyberte typ paliva" />

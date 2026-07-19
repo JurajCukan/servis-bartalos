@@ -1,15 +1,5 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ScheduleTaskForm } from "./ScheduleTaskForm";
 
@@ -36,11 +26,7 @@ export function ScheduleServiceDialog({
             <SheetTitle className="text-brand-fg">Naplánovať servis</SheetTitle>
           </SheetHeader>
           <div className="mt-4">
-            <ScheduleTaskForm
-              vehicleId={vehicleId}
-              onCancel={close}
-              onSuccess={close}
-            />
+            <ScheduleTaskForm vehicleId={vehicleId} onCancel={close} onSuccess={close} />
           </div>
         </SheetContent>
       </Sheet>
@@ -53,11 +39,7 @@ export function ScheduleServiceDialog({
         <DialogHeader>
           <DialogTitle className="text-brand-fg">Naplánovať servis</DialogTitle>
         </DialogHeader>
-        <ScheduleTaskForm
-          vehicleId={vehicleId}
-          onCancel={close}
-          onSuccess={close}
-        />
+        <ScheduleTaskForm vehicleId={vehicleId} onCancel={close} onSuccess={close} />
       </DialogContent>
     </Dialog>
   );

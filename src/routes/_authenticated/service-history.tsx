@@ -63,10 +63,16 @@ function ServiceHistoryPage() {
           q={q}
           type={type}
           onQChange={(v) =>
-            navigate({ search: (prev: { q?: string; type?: string }) => ({ ...prev, q: v }), replace: true })
+            navigate({
+              search: (prev: { q?: string; type?: string }) => ({ ...prev, q: v }),
+              replace: true,
+            })
           }
           onTypeChange={(v) =>
-            navigate({ search: (prev: { q?: string; type?: string }) => ({ ...prev, type: v }), replace: true })
+            navigate({
+              search: (prev: { q?: string; type?: string }) => ({ ...prev, type: v }),
+              replace: true,
+            })
           }
         />
         {isLoading ? (

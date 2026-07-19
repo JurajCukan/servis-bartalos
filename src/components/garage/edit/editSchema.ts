@@ -8,13 +8,7 @@ export const editSchema = z.object({
   first_name: z.string().trim().min(1, "Toto pole je povinné").max(60),
   last_name: z.string().trim().min(1, "Toto pole je povinné").max(60),
   phone: z.string().trim().min(1, "Toto pole je povinné").max(40),
-  email: z
-    .string()
-    .trim()
-    .max(120)
-    .email("Zadajte platný e-mail")
-    .optional()
-    .or(z.literal("")),
+  email: z.string().trim().max(120).email("Zadajte platný e-mail").optional().or(z.literal("")),
   customer_notes: z.string().trim().max(2000).optional().or(z.literal("")),
 
   // vehicle
@@ -49,14 +43,7 @@ export const editSchema = z.object({
 export type EditFormInput = z.input<typeof editSchema>;
 export type EditFormValues = z.output<typeof editSchema>;
 
-export const FUEL_TYPES = [
-  "Benzín",
-  "Diesel",
-  "Hybrid",
-  "Elektro",
-  "LPG",
-  "CNG",
-] as const;
+export const FUEL_TYPES = ["Benzín", "Diesel", "Hybrid", "Elektro", "LPG", "CNG"] as const;
 
 export const inputCls =
   "bg-brand-bg border-brand-border text-brand-fg placeholder:text-brand-fg-subtle focus-visible:ring-brand-accent";

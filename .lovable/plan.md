@@ -1,6 +1,7 @@
 ## Výmena loga na verziu bez pozadia (vhodnú pre dark mode)
 
 ### Problém
+
 Aktuálne logo v sidebar footeri má biele/svetlé pozadie, ktoré v dark móde vytvára svetlú škvrnu. Nový upload (`autoservis_logo_bez_pozadia-Photoroom.png`) je skutočne transparentný a bude vyzerať dobre na oboch témach.
 
 ### Zmeny
@@ -19,4 +20,5 @@ Aktuálne logo v sidebar footeri má biele/svetlé pozadie, ktoré v dark móde 
    - Skontrolovať sidebar v dark aj light móde — logo musí byť čitateľné bez svetlého/tmavého pozadia okolo.
 
 ### Mimo scope
+
 - Žiadne zmeny farebných tokenov ani iných komponentov — logo je jediná zmena.

@@ -30,10 +30,7 @@ function randomId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-export async function uploadVehiclePhoto(
-  vehicleId: string,
-  file: File,
-): Promise<string> {
+export async function uploadVehiclePhoto(vehicleId: string, file: File): Promise<string> {
   const path = `${vehicleId}/main-${randomId()}.${extFromType(file.type)}`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
     contentType: file.type,
@@ -50,9 +47,7 @@ export async function deleteVehiclePhoto(path: string | null | undefined): Promi
 }
 
 export async function getVehiclePhotoSignedUrl(path: string): Promise<string | null> {
-  const { data, error } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrl(path, TTL);
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, TTL);
   if (error) {
     console.warn("Vehicle photo signed URL failed", error);
     return null;

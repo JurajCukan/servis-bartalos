@@ -35,10 +35,7 @@ export function DeleteServiceRecordButton({
       if (record.photo_paths?.length) {
         await deletePhotos(record.photo_paths);
       }
-      const { error } = await supabase
-        .from("service_records")
-        .delete()
-        .eq("id", record.id);
+      const { error } = await supabase.from("service_records").delete().eq("id", record.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -76,7 +73,9 @@ export function DeleteServiceRecordButton({
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent className="border-brand-border bg-brand-surface text-brand-fg">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-brand-fg">Odstrániť servisný záznam?</AlertDialogTitle>
+            <AlertDialogTitle className="text-brand-fg">
+              Odstrániť servisný záznam?
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-brand-muted">
               Táto akcia sa nedá vrátiť späť.
             </AlertDialogDescription>

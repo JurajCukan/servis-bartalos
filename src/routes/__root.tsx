@@ -46,9 +46,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-brand-bg px-4 text-brand-fg">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight">
-          Stránku sa nepodarilo načítať
-        </h1>
+        <h1 className="text-xl font-semibold tracking-tight">Stránku sa nepodarilo načítať</h1>
         <p className="mt-2 text-sm text-brand-fg-muted">
           Niečo sa pokazilo. Skúste to znova alebo sa vráťte do garáže.
         </p>

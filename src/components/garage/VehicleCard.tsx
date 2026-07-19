@@ -5,7 +5,6 @@ import { formatKm as formatMileage } from "@/lib/format";
 import { getVehiclePhotoSignedUrl } from "@/lib/vehiclePhoto";
 import type { VehicleWithCustomer } from "@/lib/queries/vehicles";
 
-
 export function VehicleCard({
   vehicle,
   onClick,

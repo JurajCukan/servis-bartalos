@@ -70,10 +70,7 @@ export function DeleteVehicleButton({
       if (srErr) throw srErr;
 
       // 4. delete vehicle (customer is intentionally kept)
-      const { error: vErr } = await supabase
-        .from("vehicles")
-        .delete()
-        .eq("id", vehicle.id);
+      const { error: vErr } = await supabase.from("vehicles").delete().eq("id", vehicle.id);
       if (vErr) throw vErr;
     },
     onSuccess: () => {

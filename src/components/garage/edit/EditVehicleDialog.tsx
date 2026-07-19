@@ -4,37 +4,19 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  deleteVehiclePhoto,
-  uploadVehiclePhoto,
-} from "@/lib/vehiclePhoto";
+import { deleteVehiclePhoto, uploadVehiclePhoto } from "@/lib/vehiclePhoto";
 import type { VehicleDetail } from "@/lib/queries/vehicles";
 
 import { CustomerEditFormSection } from "./CustomerEditFormSection";
 import { DeleteVehicleButton } from "./DeleteVehicleButton";
 import { VehicleEditFormSection } from "./VehicleEditFormSection";
 import { VehiclePhotoField, type PhotoAction } from "./VehiclePhotoField";
-import {
-  editSchema,
-  emptyToNull,
-  type EditFormInput,
-  type EditFormValues,
-} from "./editSchema";
+import { editSchema, emptyToNull, type EditFormInput, type EditFormValues } from "./editSchema";
 
 function buildDefaults(vehicle: VehicleDetail): EditFormInput {
   const c = vehicle.customer;
@@ -134,8 +116,7 @@ export function EditVehicleDialog({
         .update({
           brand: values.brand.trim(),
           model: values.model.trim(),
-          year:
-            values.year === "" || values.year == null ? null : Number(values.year),
+          year: values.year === "" || values.year == null ? null : Number(values.year),
           license_plate: plate,
           vin: emptyToNull(values.vin as string),
           current_mileage: Number(values.current_mileage),

@@ -4,11 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { FormField } from "./FormField";
 import { inputCls, type EditFormInput } from "./editSchema";
 
-export function CustomerEditFormSection({
-  form,
-}: {
-  form: UseFormReturn<EditFormInput>;
-}) {
+export function CustomerEditFormSection({ form }: { form: UseFormReturn<EditFormInput> }) {
   const errors = form.formState.errors;
   return (
     <section className="space-y-4">

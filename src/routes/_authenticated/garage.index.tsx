@@ -64,9 +64,7 @@ function GaragePage() {
         sorted.sort((a, b) => b.created_at.localeCompare(a.created_at));
         break;
       case "az":
-        sorted.sort((a, b) =>
-          `${a.brand} ${a.model}`.localeCompare(`${b.brand} ${b.model}`, "sk"),
-        );
+        sorted.sort((a, b) => `${a.brand} ${a.model}`.localeCompare(`${b.brand} ${b.model}`, "sk"));
         break;
       case "km_asc":
         sorted.sort((a, b) => a.current_mileage - b.current_mileage);
@@ -97,10 +95,7 @@ function GaragePage() {
         {isLoading ? (
           <DashboardLoadingSkeleton />
         ) : error ? (
-          <EmptyState
-            title="Nepodarilo sa načítať vozidlá"
-            description="Skúste obnoviť stránku."
-          />
+          <EmptyState title="Nepodarilo sa načítať vozidlá" description="Skúste obnoviť stránku." />
         ) : (
           <>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

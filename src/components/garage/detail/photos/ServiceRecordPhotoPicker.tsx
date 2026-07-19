@@ -2,12 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  ALLOWED_MIME,
-  MAX_PHOTOS_PER_RECORD,
-  getSignedUrls,
-  validateFiles,
-} from "@/lib/photos";
+import { ALLOWED_MIME, MAX_PHOTOS_PER_RECORD, getSignedUrls, validateFiles } from "@/lib/photos";
 
 export function ServiceRecordPhotoPicker({
   existingPaths,
@@ -115,9 +110,7 @@ export function ServiceRecordPhotoPicker({
               key={`e-${path}`}
               url={signedUrls[path]}
               label={`Fotka ${idx + 1}`}
-              onRemove={() =>
-                onExistingChange(existingPaths.filter((p) => p !== path))
-              }
+              onRemove={() => onExistingChange(existingPaths.filter((p) => p !== path))}
               disabled={disabled}
             />
           ))}
@@ -127,9 +120,7 @@ export function ServiceRecordPhotoPicker({
               url={pendingUrls[idx]}
               label={file.name}
               pending
-              onRemove={() =>
-                onPendingChange(pendingFiles.filter((_, i) => i !== idx))
-              }
+              onRemove={() => onPendingChange(pendingFiles.filter((_, i) => i !== idx))}
               disabled={disabled}
             />
           ))}

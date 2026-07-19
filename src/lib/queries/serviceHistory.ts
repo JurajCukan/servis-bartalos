@@ -38,8 +38,7 @@ export const serviceHistoryQuery = queryOptions({
     if (error) throw error;
     return (data ?? []).map((r) => ({
       ...(r as object),
-      photo_paths:
-        (r as { photo_paths?: string[] | null }).photo_paths ?? [],
+      photo_paths: (r as { photo_paths?: string[] | null }).photo_paths ?? [],
     })) as unknown as ServiceHistoryItem[];
   },
 });

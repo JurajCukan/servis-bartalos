@@ -8,13 +8,7 @@ const STYLES: Record<VehicleStatus, string> = {
   ARCHÍV: "bg-zinc-600/90 text-white",
 };
 
-export function StatusBadge({
-  status,
-  className,
-}: {
-  status: VehicleStatus;
-  className?: string;
-}) {
+export function StatusBadge({ status, className }: { status: VehicleStatus; className?: string }) {
   return (
     <span
       className={cn(

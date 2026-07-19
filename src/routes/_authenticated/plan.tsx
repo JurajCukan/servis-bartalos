@@ -59,7 +59,8 @@ function PlanPage() {
     for (const t of data ?? []) {
       if (t.status !== "Čakajúce") continue;
       const d = t.planned_date;
-      if (d <= today) dnes.push(t); // include overdue in today
+      if (d <= today)
+        dnes.push(t); // include overdue in today
       else if (d === tomorrow) zajtra.push(t);
       else if (d < weekEnd) tyzden.push(t);
       else neskor.push(t);
@@ -74,10 +75,7 @@ function PlanPage() {
   }, [data]);
 
   const total =
-    grouped.dnes.length +
-    grouped.zajtra.length +
-    grouped.tyzden.length +
-    grouped.neskor.length;
+    grouped.dnes.length + grouped.zajtra.length + grouped.tyzden.length + grouped.neskor.length;
 
   return (
     <AppShell>
@@ -86,10 +84,7 @@ function PlanPage() {
         {isLoading ? (
           <DashboardLoadingSkeleton />
         ) : error ? (
-          <EmptyState
-            title="Nepodarilo sa načítať plán"
-            description="Skúste obnoviť stránku."
-          />
+          <EmptyState title="Nepodarilo sa načítať plán" description="Skúste obnoviť stránku." />
         ) : total === 0 ? (
           <EmptyPlanState />
         ) : (

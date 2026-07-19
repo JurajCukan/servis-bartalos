@@ -60,7 +60,7 @@ export function VehiclePhotoField({
       ? previewUrl
       : showRemoved
         ? null
-        : signedUrl ?? currentLegacyUrl;
+        : (signedUrl ?? currentLegacyUrl);
 
   const handlePick = (files: FileList | null) => {
     const file = files?.[0];
@@ -81,11 +81,7 @@ export function VehiclePhotoField({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
         <div className="relative aspect-[16/10] w-full overflow-hidden rounded-md border border-brand-border bg-brand-bg sm:w-64">
           {displayUrl ? (
-            <img
-              src={displayUrl}
-              alt="Fotka vozidla"
-              className="h-full w-full object-cover"
-            />
+            <img src={displayUrl} alt="Fotka vozidla" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-brand-fg-subtle">
               <Car className="h-8 w-8" aria-hidden />
@@ -153,9 +149,7 @@ export function VehiclePhotoField({
           />
         </div>
       </div>
-      <p className="text-xs text-brand-fg-subtle">
-        JPG, PNG alebo WEBP, max 10 MB.
-      </p>
+      <p className="text-xs text-brand-fg-subtle">JPG, PNG alebo WEBP, max 10 MB.</p>
     </section>
   );
 }

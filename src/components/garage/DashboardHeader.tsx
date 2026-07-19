@@ -7,9 +7,7 @@ export function DashboardHeader({ onAddVehicle }: { onAddVehicle: () => void }) 
         <h1 className="text-2xl font-semibold tracking-tight text-brand-fg sm:text-3xl">
           Moja Garáž
         </h1>
-        <p className="text-sm text-brand-fg-muted">
-          Spravujte a sledujte stav vozidiel v servise.
-        </p>
+        <p className="text-sm text-brand-fg-muted">Spravujte a sledujte stav vozidiel v servise.</p>
       </div>
       <button
         type="button"

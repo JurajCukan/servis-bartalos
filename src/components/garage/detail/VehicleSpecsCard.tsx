@@ -11,9 +11,10 @@ const FIELDS: { label: string; key: keyof VehicleDetail }[] = [
 ];
 
 export function VehicleSpecsCard({ vehicle }: { vehicle: VehicleDetail }) {
-  const rows = FIELDS.map((f) => ({ label: f.label, value: vehicle[f.key] as string | null })).filter(
-    (r) => r.value && String(r.value).trim().length > 0,
-  );
+  const rows = FIELDS.map((f) => ({
+    label: f.label,
+    value: vehicle[f.key] as string | null,
+  })).filter((r) => r.value && String(r.value).trim().length > 0);
 
   return (
     <section className="rounded-xl border border-brand-border bg-brand-surface p-5">

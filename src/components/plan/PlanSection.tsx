@@ -1,13 +1,7 @@
 import type { PlannedTask } from "@/lib/queries/scheduledTasks";
 import { PlannedTaskCard } from "./PlannedTaskCard";
 
-export function PlanSection({
-  title,
-  tasks,
-}: {
-  title: string;
-  tasks: PlannedTask[];
-}) {
+export function PlanSection({ title, tasks }: { title: string; tasks: PlannedTask[] }) {
   if (tasks.length === 0) return null;
   return (
     <section className="space-y-3">

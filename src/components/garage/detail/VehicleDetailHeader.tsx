@@ -6,7 +6,6 @@ import { formatKm as formatMileage } from "@/lib/format";
 import { getVehiclePhotoSignedUrl } from "@/lib/vehiclePhoto";
 import type { VehicleDetail } from "@/lib/queries/vehicles";
 
-
 export function VehicleDetailHeader({
   vehicle,
   onAction,
@@ -36,7 +35,6 @@ export function VehicleDetailHeader({
   }, [vehicle.photo_path]);
 
   const imageUrl = signedUrl ?? (vehicle.photo_path ? null : vehicle.photo_url);
-
 
   return (
     <header className="flex flex-col gap-5">

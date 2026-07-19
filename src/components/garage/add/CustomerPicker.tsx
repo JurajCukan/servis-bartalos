@@ -33,9 +33,7 @@ export function CustomerPicker({
         .limit(20);
       if (q.length > 0) {
         const like = `%${q}%`;
-        req = req.or(
-          `first_name.ilike.${like},last_name.ilike.${like},phone.ilike.${like}`,
-        );
+        req = req.or(`first_name.ilike.${like},last_name.ilike.${like},phone.ilike.${like}`);
       }
       const { data, error } = await req;
       if (error) throw error;
@@ -93,7 +91,10 @@ export function CustomerPicker({
 
       {value && (
         <p className="text-xs text-brand-fg-muted">
-          Vybraný zákazník: <span className="text-brand-fg">{value.first_name} {value.last_name}</span>
+          Vybraný zákazník:{" "}
+          <span className="text-brand-fg">
+            {value.first_name} {value.last_name}
+          </span>
         </p>
       )}
     </div>

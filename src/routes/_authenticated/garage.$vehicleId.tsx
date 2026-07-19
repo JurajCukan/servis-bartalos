@@ -12,14 +12,16 @@ import { AddServiceRecordDialog } from "@/components/garage/detail/AddServiceRec
 import { ScheduleServiceDialog } from "@/components/garage/detail/ScheduleServiceDialog";
 import { EditVehicleDialog } from "@/components/garage/edit/EditVehicleDialog";
 import { EditServiceRecordDialog } from "@/components/garage/detail/EditServiceRecordDialog";
-import { vehicleDetailQuery, serviceHistoryQuery, type ServiceRecord } from "@/lib/queries/vehicles";
+import {
+  vehicleDetailQuery,
+  serviceHistoryQuery,
+  type ServiceRecord,
+} from "@/lib/queries/vehicles";
 
 export const Route = createFileRoute("/_authenticated/garage/$vehicleId")({
   head: () => ({ meta: [{ title: "Detail vozidla — Servisná knižka Bartalos" }] }),
   loader: async ({ params, context }) => {
-    const vehicle = await context.queryClient.ensureQueryData(
-      vehicleDetailQuery(params.vehicleId),
-    );
+    const vehicle = await context.queryClient.ensureQueryData(vehicleDetailQuery(params.vehicleId));
     if (!vehicle) throw notFound();
     context.queryClient.prefetchQuery(serviceHistoryQuery(params.vehicleId));
   },
@@ -46,7 +48,9 @@ export const Route = createFileRoute("/_authenticated/garage/$vehicleId")({
     <AppShell>
       <div className="mx-auto max-w-3xl rounded-xl border border-brand-border bg-brand-surface p-8 text-center">
         <h1 className="text-xl font-semibold text-brand-fg">Vozidlo sa nenašlo</h1>
-        <p className="mt-2 text-sm text-brand-fg-muted">Toto vozidlo neexistuje alebo bolo odstránené.</p>
+        <p className="mt-2 text-sm text-brand-fg-muted">
+          Toto vozidlo neexistuje alebo bolo odstránené.
+        </p>
         <Link
           to="/garage"
           className="mt-6 inline-block rounded-md bg-brand-accent px-4 py-2 text-sm font-semibold text-white"
@@ -107,11 +111,7 @@ function VehicleDetailPage() {
         onOpenChange={setScheduleOpen}
         vehicleId={vehicleId}
       />
-      <EditVehicleDialog
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        vehicle={vehicle}
-      />
+      <EditVehicleDialog open={editOpen} onOpenChange={setEditOpen} vehicle={vehicle} />
       <EditServiceRecordDialog
         open={!!editingRecord}
         onOpenChange={(o) => !o && setEditingRecord(null)}
