@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import pb from "@/lib/pocketbase";
+import { compressImage } from "@/lib/imageCompression";
 import type { VehicleDetail } from "@/lib/queries/vehicles";
 
 import { CustomerEditFormSection } from "./CustomerEditFormSection";
@@ -153,8 +154,9 @@ export function EditVehicleDialog({
       let photoWarning: string | null = null;
       if (photoAction === "replace" && pendingPhoto) {
         try {
+          const compressed = await compressImage(pendingPhoto);
           const fd = new FormData();
-          fd.append("photo", pendingPhoto);
+          fd.append("photo", compressed);
           await pb.collection("vehicles").update(vehicle.id, fd);
         } catch (e) {
           console.warn("Vehicle photo replace failed", e);

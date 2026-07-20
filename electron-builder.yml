@@ -6,11 +6,14 @@ files:
   - dist/**
   - electron/dist/**
   - pocketbase/pocketbase.exe
+  - pocketbase/pb_schema.json
 asar: true
 asarUnpack:
   - "pocketbase/pocketbase.exe"
+  - "pocketbase/pb_schema.json"
 win:
   target: nsis
+  icon: build/icon.png
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: false

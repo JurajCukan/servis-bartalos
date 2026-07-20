@@ -1,32 +1,41 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, dialog, session } from "electron";
 import path from "path";
+import fs from "fs";
 import { spawn, ChildProcess } from "child_process";
 import http from "http";
-import { fileURLToPath } from "url";
 import { initializeAutoUpdater } from "./updater.js";
-
-// Workaround for __dirname in ESM if type is module, but since we are compiling to CommonJS in tsconfig.electron.json,
-// standard CommonJS __dirname and require are available and correct!
-// However, since tsconfig.electron.json module is commonjs, __dirname is safe.
 
 let pbProcess: ChildProcess | null = null;
 let mainWindow: BrowserWindow | null = null;
 
 const isDev = !app.isPackaged;
 
-function startPocketBase() {
-  const pocketbasePath = app.isPackaged
+function getPocketBasePath(): string {
+  return app.isPackaged
     ? path.join(process.resourcesPath, "app.asar.unpacked", "pocketbase", "pocketbase.exe")
     : path.join(app.getAppPath(), "pocketbase", "pocketbase.exe");
+}
 
-  const dataDir = path.join(app.getPath("userData"), "pocketbase_data");
+function getDataDir(): string {
+  return path.join(app.getPath("userData"), "pocketbase_data");
+}
+
+function getSchemaPath(): string {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, "app.asar.unpacked", "pocketbase", "pb_schema.json")
+    : path.join(app.getAppPath(), "pocketbase", "pb_schema.json");
+}
+
+function startPocketBase() {
+  const pocketbasePath = getPocketBasePath();
+  const dataDir = getDataDir();
 
   console.log(`[main] Spawning PocketBase from: ${pocketbasePath}`);
   console.log(`[main] Storing data in: ${dataDir}`);
 
   pbProcess = spawn(
     pocketbasePath,
-    ["serve", "--http=127.0.0.1:8090", `--dir=${dataDir}`],
+    ["serve", "--http=127.0.0.1:8090", `--dir=${dataDir}`, "--automigrate"],
     { stdio: "ignore" }
   );
 
@@ -50,7 +59,7 @@ function stopPocketBase() {
 function checkPocketBaseReady(callback: () => void) {
   const checkUrl = "http://127.0.0.1:8090/api/health";
   const interval = 100;
-  
+
   const check = () => {
     http
       .get(checkUrl, (res) => {
@@ -69,6 +78,96 @@ function checkPocketBaseReady(callback: () => void) {
   };
 
   check();
+}
+
+/**
+ * Import pb_schema.json into PocketBase on first run.
+ * Uses the PocketBase collections import API endpoint.
+ */
+async function importSchemaIfNeeded(): Promise<void> {
+  const dataDir = getDataDir();
+  const markerFile = path.join(dataDir, ".schema_imported");
+
+  // Skip if schema was already imported
+  if (fs.existsSync(markerFile)) {
+    console.log("[main] Schema already imported, skipping.");
+    return;
+  }
+
+  const schemaPath = getSchemaPath();
+  if (!fs.existsSync(schemaPath)) {
+    console.error("[main] pb_schema.json not found at:", schemaPath);
+    return;
+  }
+
+  console.log("[main] First run detected — importing schema...");
+
+  try {
+    const schemaData = fs.readFileSync(schemaPath, "utf-8");
+    const collections = JSON.parse(schemaData);
+
+    const postData = JSON.stringify({ collections, deleteMissing: false });
+
+    await new Promise<void>((resolve, reject) => {
+      const req = http.request(
+        {
+          hostname: "127.0.0.1",
+          port: 8090,
+          path: "/api/collections/import",
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Content-Length": Buffer.byteLength(postData),
+          },
+        },
+        (res) => {
+          let body = "";
+          res.on("data", (chunk) => (body += chunk));
+          res.on("end", () => {
+            if (res.statusCode === 200 || res.statusCode === 204) {
+              console.log("[main] Schema imported successfully.");
+              // Ensure data directory exists and write marker
+              fs.mkdirSync(dataDir, { recursive: true });
+              fs.writeFileSync(markerFile, new Date().toISOString(), "utf-8");
+              resolve();
+            } else {
+              console.error(`[main] Schema import failed (${res.statusCode}):`, body);
+              // Still resolve — don't block app start over a schema issue
+              resolve();
+            }
+          });
+        }
+      );
+      req.on("error", (err) => {
+        console.error("[main] Schema import request error:", err);
+        resolve(); // Don't block app start
+      });
+      req.write(postData);
+      req.end();
+    });
+  } catch (err) {
+    console.error("[main] Error during schema import:", err);
+  }
+}
+
+/**
+ * In production mode, block requests to the PocketBase admin UI (/_/ paths).
+ * Dev mode keeps admin accessible for debugging.
+ */
+function blockAdminUIInProduction() {
+  if (isDev) {
+    console.log("[main] Dev mode — PocketBase admin UI accessible at http://127.0.0.1:8090/_/");
+    return;
+  }
+
+  session.defaultSession.webRequest.onBeforeRequest(
+    { urls: ["http://127.0.0.1:8090/_/*"] },
+    (details, callback) => {
+      console.log(`[main] Blocked admin UI request: ${details.url}`);
+      callback({ cancel: true });
+    }
+  );
+  console.log("[main] Production mode — PocketBase admin UI blocked.");
 }
 
 function createWindow() {
@@ -115,9 +214,11 @@ if (!gotTheLock) {
     }
   });
 
-  app.whenReady().then(() => {
+  app.whenReady().then(async () => {
+    blockAdminUIInProduction();
     startPocketBase();
-    checkPocketBaseReady(() => {
+    checkPocketBaseReady(async () => {
+      await importSchemaIfNeeded();
       createWindow();
     });
   });
@@ -134,7 +235,8 @@ app.on("will-quit", () => {
   stopPocketBase();
 });
 
-// IPC communication handlers for updates
+// ─── IPC: Updates ────────────────────────────────────────────────────────────
+
 ipcMain.on("check-for-updates", () => {
   console.log("[main] Manual check for updates requested.");
 });
@@ -142,7 +244,6 @@ ipcMain.on("check-for-updates", () => {
 ipcMain.on("install-update", () => {
   console.log("[main] Installing update and quitting...");
   stopPocketBase();
-  // Wait a split second to let pocketbase clean up
   setTimeout(() => {
     const { autoUpdater } = require("electron-updater");
     autoUpdater.quitAndInstall();
@@ -151,4 +252,26 @@ ipcMain.on("install-update", () => {
 
 ipcMain.handle("get-app-version", () => {
   return app.getVersion();
+});
+
+// ─── IPC: File dialogs for Export/Import ─────────────────────────────────────
+
+ipcMain.handle("show-save-dialog", async (_event, options: Electron.SaveDialogOptions) => {
+  if (!mainWindow) return { canceled: true, filePath: undefined };
+  return dialog.showSaveDialog(mainWindow, options);
+});
+
+ipcMain.handle("show-open-dialog", async (_event, options: Electron.OpenDialogOptions) => {
+  if (!mainWindow) return { canceled: true, filePaths: [] };
+  return dialog.showOpenDialog(mainWindow, options);
+});
+
+ipcMain.handle("write-file", async (_event, filePath: string, data: string, encoding?: string) => {
+  fs.writeFileSync(filePath, Buffer.from(data, (encoding as BufferEncoding) || "base64"));
+  return true;
+});
+
+ipcMain.handle("read-file", async (_event, filePath: string) => {
+  const buffer = fs.readFileSync(filePath);
+  return buffer.toString("base64");
 });

@@ -382,7 +382,7 @@
         "system": false,
         "options": {
           "maxSelect": 1,
-          "values": ["Čakajúce", "Splnené", "Zrušené"]
+          "values": ["Čakajúce", "Dokončené", "Zrušené"]
         }
       }
     ],

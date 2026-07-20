@@ -6,6 +6,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 
 import pb from "@/lib/pocketbase";
+import { compressImages } from "@/lib/imageCompression";
 import { ServiceRecordPhotoPicker, type ExistingPhoto } from "./photos/ServiceRecordPhotoPicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -277,9 +278,10 @@ export function ServiceRecordForm({
       let photoFailedCount = 0;
       if (hasPhotoChanges) {
         try {
+          const compressedFiles = await compressImages(pendingFiles);
           const fd = new FormData();
           for (const f of removed) fd.append("photos-", f);
-          for (const file of pendingFiles) fd.append("photos", file);
+          for (const file of compressedFiles) fd.append("photos", file);
           await pb.collection("service_records").update(recordId, fd);
         } catch (e) {
           console.warn("Photo update failed", e);
