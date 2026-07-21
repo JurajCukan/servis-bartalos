@@ -33,20 +33,16 @@ export function DeleteVehicleButton({
   const mutation = useMutation({
     mutationFn: async () => {
       // Best-effort: PocketBase will auto-delete attached files when records are deleted.
-      const scheduled = await pb
-        .collection("scheduled_tasks")
-        .getFullList<RecordModel>({
-          filter: pb.filter("vehicle = {:vid}", { vid: vehicle.id }),
-        });
+      const scheduled = await pb.collection("scheduled_tasks").getFullList<RecordModel>({
+        filter: pb.filter("vehicle = {:vid}", { vid: vehicle.id }),
+      });
       for (const t of scheduled) {
         await pb.collection("scheduled_tasks").delete(t.id);
       }
 
-      const records = await pb
-        .collection("service_records")
-        .getFullList<RecordModel>({
-          filter: pb.filter("vehicle = {:vid}", { vid: vehicle.id }),
-        });
+      const records = await pb.collection("service_records").getFullList<RecordModel>({
+        filter: pb.filter("vehicle = {:vid}", { vid: vehicle.id }),
+      });
       for (const r of records) {
         await pb.collection("service_records").delete(r.id);
       }

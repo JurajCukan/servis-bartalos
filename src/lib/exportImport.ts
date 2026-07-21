@@ -124,7 +124,10 @@ async function downloadFile(
   recordId: string,
   filename: string,
 ): Promise<string> {
-  const url = fileUrl({ id: recordId, collectionId: "", collectionName: collection } as RecordModel, filename);
+  const url = fileUrl(
+    { id: recordId, collectionId: "", collectionName: collection } as RecordModel,
+    filename,
+  );
   const response = await fetch(url);
   const blob = await response.blob();
   return new Promise<string>((resolve) => {
@@ -245,9 +248,7 @@ export async function exportData(onProgress?: ProgressCallback): Promise<void> {
   const result = await window.electronAPI.showSaveDialog({
     title: "Exportovať údaje",
     defaultPath: `servis-bartalos-export-${timestamp}`,
-    filters: [
-      { name: "Servisná knižka export", extensions: ["json"] },
-    ],
+    filters: [{ name: "Servisná knižka export", extensions: ["json"] }],
   });
 
   if (result.canceled || !result.filePath) return;
@@ -306,9 +307,7 @@ export async function importData(onProgress?: ProgressCallback): Promise<{ impor
 
   const result = await window.electronAPI.showOpenDialog({
     title: "Importovať údaje",
-    filters: [
-      { name: "Servisná knižka export", extensions: ["json"] },
-    ],
+    filters: [{ name: "Servisná knižka export", extensions: ["json"] }],
     properties: ["openFile"],
   });
 
@@ -334,7 +333,9 @@ export async function importData(onProgress?: ProgressCallback): Promise<{ impor
   for (const customer of bundle.customers) {
     const oldId = customer.id as string;
     const { id, created, updated, ...data } = customer;
-    void id; void created; void updated;
+    void id;
+    void created;
+    void updated;
     try {
       const created = await pb.collection("customers").create(data);
       idMap[oldId] = created.id;
@@ -349,7 +350,9 @@ export async function importData(onProgress?: ProgressCallback): Promise<{ impor
   for (const vehicle of bundle.vehicles) {
     const oldId = vehicle.id as string;
     const { id, created, updated, photo, ...data } = vehicle;
-    void id; void created; void updated;
+    void id;
+    void created;
+    void updated;
     // Re-link customer
     if (data.customer && idMap[data.customer as string]) {
       data.customer = idMap[data.customer as string];
@@ -369,7 +372,9 @@ export async function importData(onProgress?: ProgressCallback): Promise<{ impor
   for (const sr of bundle.service_records) {
     const oldId = sr.id as string;
     const { id, created, updated, photos, ...data } = sr;
-    void id; void created; void updated;
+    void id;
+    void created;
+    void updated;
     if (data.vehicle && idMap[data.vehicle as string]) {
       data.vehicle = idMap[data.vehicle as string];
     }
@@ -387,7 +392,9 @@ export async function importData(onProgress?: ProgressCallback): Promise<{ impor
   for (const task of bundle.scheduled_tasks) {
     const oldId = task.id as string;
     const { id, created, updated, ...data } = task;
-    void id; void created; void updated;
+    void id;
+    void created;
+    void updated;
     if (data.vehicle && idMap[data.vehicle as string]) {
       data.vehicle = idMap[data.vehicle as string];
     }

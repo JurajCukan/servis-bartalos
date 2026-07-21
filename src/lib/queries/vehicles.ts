@@ -202,12 +202,10 @@ export const serviceHistoryQuery = (vehicleId: string) =>
   queryOptions({
     queryKey: ["vehicle", vehicleId, "service-records"],
     queryFn: async (): Promise<ServiceRecord[]> => {
-      const list = await pb
-        .collection("service_records")
-        .getFullList<RecordModel>({
-          filter: pb.filter("vehicle = {:vid}", { vid: vehicleId }),
-          sort: "-date,-created",
-        });
+      const list = await pb.collection("service_records").getFullList<RecordModel>({
+        filter: pb.filter("vehicle = {:vid}", { vid: vehicleId }),
+        sort: "-date,-created",
+      });
       return list.map(mapServiceRecord);
     },
   });

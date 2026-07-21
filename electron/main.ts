@@ -4,6 +4,7 @@ import fs from "fs";
 import { spawn, ChildProcess } from "child_process";
 import http from "http";
 import { initializeAutoUpdater } from "./updater.js";
+import { autoUpdater } from "electron-updater";
 
 let pbProcess: ChildProcess | null = null;
 let mainWindow: BrowserWindow | null = null;
@@ -36,7 +37,7 @@ function startPocketBase() {
   pbProcess = spawn(
     pocketbasePath,
     ["serve", "--http=127.0.0.1:8090", `--dir=${dataDir}`, "--automigrate"],
-    { stdio: "ignore" }
+    { stdio: "ignore" },
   );
 
   pbProcess.on("error", (err) => {
@@ -136,7 +137,7 @@ async function importSchemaIfNeeded(): Promise<void> {
               resolve();
             }
           });
-        }
+        },
       );
       req.on("error", (err) => {
         console.error("[main] Schema import request error:", err);
@@ -165,7 +166,7 @@ function blockAdminUIInProduction() {
     (details, callback) => {
       console.log(`[main] Blocked admin UI request: ${details.url}`);
       callback({ cancel: true });
-    }
+    },
   );
   console.log("[main] Production mode — PocketBase admin UI blocked.");
 }
@@ -245,7 +246,6 @@ ipcMain.on("install-update", () => {
   console.log("[main] Installing update and quitting...");
   stopPocketBase();
   setTimeout(() => {
-    const { autoUpdater } = require("electron-updater");
     autoUpdater.quitAndInstall();
   }, 500);
 });

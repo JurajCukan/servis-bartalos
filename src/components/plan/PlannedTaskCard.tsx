@@ -14,9 +14,9 @@ const PRIORITY_STYLES: Record<TaskPriority, string> = {
 };
 
 const STATUS_STYLES: Record<TaskStatus, string> = {
-  "Čakajúce": "bg-brand-surface text-brand-fg-muted border-brand-border",
-  "Dokončené": "bg-emerald-500/15 text-emerald-300 border-emerald-500/40",
-  "Zrušené": "bg-brand-surface text-brand-fg-muted border-brand-border",
+  Čakajúce: "bg-brand-surface text-brand-fg-muted border-brand-border",
+  Dokončené: "bg-emerald-500/15 text-emerald-300 border-emerald-500/40",
+  Zrušené: "bg-brand-surface text-brand-fg-muted border-brand-border",
 };
 
 export function PlannedTaskCard({ task }: { task: PlannedTask }) {
@@ -39,9 +39,7 @@ export function PlannedTaskCard({ task }: { task: PlannedTask }) {
   });
 
   const v = task.vehicle;
-  const customer = v?.customer
-    ? `${v.customer.first_name} ${v.customer.last_name}`
-    : "—";
+  const customer = v?.customer ? `${v.customer.first_name} ${v.customer.last_name}` : "—";
   const busy = updateStatus.isPending;
 
   return (
@@ -80,9 +78,7 @@ export function PlannedTaskCard({ task }: { task: PlannedTask }) {
         <p className="break-words text-brand-fg-muted">{customer}</p>
       </div>
 
-      <p className="whitespace-pre-wrap break-words text-sm text-brand-fg">
-        {task.description}
-      </p>
+      <p className="whitespace-pre-wrap break-words text-sm text-brand-fg">{task.description}</p>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-brand-fg-muted">
         <span className="inline-flex items-center gap-1.5">

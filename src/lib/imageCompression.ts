@@ -31,7 +31,7 @@ export async function compressImage(file: File): Promise<File> {
 
     const ratio = ((1 - compressedFile.size / file.size) * 100).toFixed(0);
     console.log(
-      `[compress] ${file.name} (${(file.size / 1024).toFixed(0)} KB) → ${compressedFile.name} (${(compressedFile.size / 1024).toFixed(0)} KB) — ${ratio}% smaller`
+      `[compress] ${file.name} (${(file.size / 1024).toFixed(0)} KB) → ${compressedFile.name} (${(compressedFile.size / 1024).toFixed(0)} KB) — ${ratio}% smaller`,
     );
 
     return compressedFile;

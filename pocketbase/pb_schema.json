@@ -46,9 +46,7 @@
         "options": { "max": 4000 }
       }
     ],
-    "indexes": [
-      "CREATE INDEX idx_customers_last_name ON customers (last_name)"
-    ]
+    "indexes": ["CREATE INDEX idx_customers_last_name ON customers (last_name)"]
   },
   {
     "id": "pbc_vehicles",

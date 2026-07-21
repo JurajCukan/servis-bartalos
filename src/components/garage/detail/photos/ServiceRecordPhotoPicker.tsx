@@ -2,11 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  ALLOWED_MIME,
-  MAX_PHOTOS_PER_RECORD,
-  validateFiles,
-} from "@/lib/photos";
+import { ALLOWED_MIME, MAX_PHOTOS_PER_RECORD, validateFiles } from "@/lib/photos";
 
 export type ExistingPhoto = { filename: string; url: string };
 
@@ -109,9 +105,7 @@ export function ServiceRecordPhotoPicker({
               url={pendingUrls[idx]}
               label={file.name}
               pending
-              onRemove={() =>
-                onPendingChange(pendingFiles.filter((_, i) => i !== idx))
-              }
+              onRemove={() => onPendingChange(pendingFiles.filter((_, i) => i !== idx))}
               disabled={disabled}
             />
           ))}

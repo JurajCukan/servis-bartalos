@@ -44,7 +44,9 @@ export function ServiceHistoryItem({ item }: { item: Item }) {
             </span>
           </div>
           {item.description ? (
-            <p className="line-clamp-2 break-words text-sm text-brand-fg-muted">{item.description}</p>
+            <p className="line-clamp-2 break-words text-sm text-brand-fg-muted">
+              {item.description}
+            </p>
           ) : null}
           {item.photo_urls && item.photo_urls.length > 0 ? (
             <div className="mt-1">

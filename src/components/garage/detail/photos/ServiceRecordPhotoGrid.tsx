@@ -37,12 +37,7 @@ export function ServiceRecordPhotoGrid({ urls }: { urls: string[] }) {
           </button>
         ))}
       </div>
-      <PhotoPreviewDialog
-        urls={urls}
-        startIndex={startIndex}
-        open={open}
-        onOpenChange={setOpen}
-      />
+      <PhotoPreviewDialog urls={urls} startIndex={startIndex} open={open} onOpenChange={setOpen} />
     </div>
   );
 }

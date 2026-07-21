@@ -4,18 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import pb from "@/lib/pocketbase";
@@ -26,12 +16,7 @@ import { CustomerEditFormSection } from "./CustomerEditFormSection";
 import { DeleteVehicleButton } from "./DeleteVehicleButton";
 import { VehicleEditFormSection } from "./VehicleEditFormSection";
 import { VehiclePhotoField, type PhotoAction } from "./VehiclePhotoField";
-import {
-  editSchema,
-  emptyToNull,
-  type EditFormInput,
-  type EditFormValues,
-} from "./editSchema";
+import { editSchema, emptyToNull, type EditFormInput, type EditFormValues } from "./editSchema";
 
 function buildDefaults(vehicle: VehicleDetail): EditFormInput {
   const c = vehicle.customer;
@@ -96,14 +81,12 @@ export function EditVehicleDialog({
 
       if (plate !== vehicle.license_plate) {
         try {
-          const dup = await pb
-            .collection("vehicles")
-            .getFirstListItem(
-              pb.filter("license_plate = {:p} && id != {:id}", {
-                p: plate,
-                id: vehicle.id,
-              }),
-            );
+          const dup = await pb.collection("vehicles").getFirstListItem(
+            pb.filter("license_plate = {:p} && id != {:id}", {
+              p: plate,
+              id: vehicle.id,
+            }),
+          );
           if (dup) {
             form.setError("license_plate", {
               type: "manual",
@@ -133,8 +116,7 @@ export function EditVehicleDialog({
       const vehiclePayload: Record<string, unknown> = {
         brand: values.brand.trim(),
         model: values.model.trim(),
-        year:
-          values.year === "" || values.year == null ? null : Number(values.year),
+        year: values.year === "" || values.year == null ? null : Number(values.year),
         license_plate: plate,
         vin: emptyToNull(values.vin as string),
         current_mileage: Number(values.current_mileage),

@@ -6,10 +6,7 @@ import pb from "@/lib/pocketbase";
  * Subscribe to PocketBase realtime events on a collection and invalidate
  * the given React Query keys when anything changes.
  */
-export function usePocketBaseRealtime(
-  collection: string,
-  invalidateKeys: QueryKey[],
-) {
+export function usePocketBaseRealtime(collection: string, invalidateKeys: QueryKey[]) {
   const queryClient = useQueryClient();
 
   useEffect(() => {

@@ -94,10 +94,7 @@ const schema = z
     service_type: z
       .string()
       .min(1, "Toto pole je povinné")
-      .refine(
-        (v) => (SERVICE_TYPES as readonly string[]).includes(v),
-        "Zadajte platný údaj",
-      ),
+      .refine((v) => (SERVICE_TYPES as readonly string[]).includes(v), "Zadajte platný údaj"),
     title: z
       .string()
       .trim()
@@ -126,16 +123,10 @@ const schema = z
       .string()
       .optional()
       .or(z.literal(""))
-      .refine(
-        (s) => !s || (isValidDateStr(s) && s <= MAX_NEXT_DATE),
-        "Zadajte platný dátum",
-      ),
+      .refine((s) => !s || (isValidDateStr(s) && s <= MAX_NEXT_DATE), "Zadajte platný dátum"),
   })
   .superRefine((val, ctx) => {
-    if (
-      typeof val.next_service_km === "number" &&
-      val.next_service_km <= val.mileage_at_service
-    ) {
+    if (typeof val.next_service_km === "number" && val.next_service_km <= val.mileage_at_service) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["next_service_km"],
@@ -292,9 +283,7 @@ export function ServiceRecordForm({
       let mileageUpdated = false;
       if (newMileage > currentMileage) {
         try {
-          await pb
-            .collection("vehicles")
-            .update(vehicleId, { current_mileage: newMileage });
+          await pb.collection("vehicles").update(vehicleId, { current_mileage: newMileage });
           mileageUpdated = true;
         } catch (e) {
           console.warn("Mileage update failed", e);
@@ -357,11 +346,7 @@ export function ServiceRecordForm({
           <Input type="date" className={inputCls} {...form.register("date")} />
         </Field>
 
-        <Field
-          label="Nájazd pri servise (km)"
-          error={errors.mileage_at_service?.message}
-          required
-        >
+        <Field label="Nájazd pri servise (km)" error={errors.mileage_at_service?.message} required>
           <Input
             type="number"
             inputMode="numeric"
@@ -404,11 +389,21 @@ export function ServiceRecordForm({
       </Field>
 
       <Field label="Popis" error={errors.description?.message} required>
-        <Textarea rows={4} maxLength={MAX_LONG} className={inputCls} {...form.register("description")} />
+        <Textarea
+          rows={4}
+          maxLength={MAX_LONG}
+          className={inputCls}
+          {...form.register("description")}
+        />
       </Field>
 
       <Field label="Vymenené diely" error={errors.parts_replaced?.message}>
-        <Textarea rows={3} maxLength={MAX_LONG} className={inputCls} {...form.register("parts_replaced")} />
+        <Textarea
+          rows={3}
+          maxLength={MAX_LONG}
+          className={inputCls}
+          {...form.register("parts_replaced")}
+        />
       </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -442,7 +437,12 @@ export function ServiceRecordForm({
         </Field>
 
         <Field label="Ďalší servis dátum" error={errors.next_service_date?.message}>
-          <Input type="date" max={MAX_NEXT_DATE} className={inputCls} {...form.register("next_service_date")} />
+          <Input
+            type="date"
+            max={MAX_NEXT_DATE}
+            className={inputCls}
+            {...form.register("next_service_date")}
+          />
         </Field>
       </div>
 

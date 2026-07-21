@@ -23,7 +23,9 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow) {
   });
 
   autoUpdater.on("download-progress", (progressObj) => {
-    console.log(`[Updater] Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent}%`);
+    console.log(
+      `[Updater] Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent}%`,
+    );
   });
 
   autoUpdater.on("update-downloaded", (info) => {

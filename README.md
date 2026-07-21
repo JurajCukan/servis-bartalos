@@ -41,12 +41,12 @@ Všetky údaje sú uložené **lokálne na zariadení** — nepotrebujete intern
 
 ## 💻 Systémové požiadavky
 
-| Požiadavka | Minimum |
-|---|---|
-| Operačný systém | Windows 10 (64-bit) alebo novší |
-| RAM | 4 GB |
-| Voľné miesto na disku | 200 MB (+ miesto pre fotografie) |
-| Internet | **Nie je potrebný** (iba na stiahnutie inštalačky a aktualizácií) |
+| Požiadavka            | Minimum                                                           |
+| --------------------- | ----------------------------------------------------------------- |
+| Operačný systém       | Windows 10 (64-bit) alebo novší                                   |
+| RAM                   | 4 GB                                                              |
+| Voľné miesto na disku | 200 MB (+ miesto pre fotografie)                                  |
+| Internet              | **Nie je potrebný** (iba na stiahnutie inštalačky a aktualizácií) |
 
 ---
 
@@ -57,14 +57,17 @@ Táto sekcia je pre koncového používateľa, ktorý chce aplikáciu nainštalo
 ### Krok 1 — Stiahnite inštalačku z GitHub
 
 1. Otvorte stránku **Releases** tohto repozitára:
+
    ```
    https://github.com/JurajCukan/servis-bartalos/releases
    ```
 
 2. Pri najnovšej verzii (napr. `v1.1.0`) kliknite na súbor:
+
    ```
    Servisná knižka Bartalos Setup X.X.X.exe
    ```
+
    kde `X.X.X` je číslo verzie.
 
 3. Počkajte na dokončenie sťahovania (~95 MB).
@@ -144,6 +147,7 @@ npm run dev
 ```
 
 Tento príkaz:
+
 1. Skompiluje Electron TypeScript súbory (`predev`)
 2. Spustí Vite dev server na `http://127.0.0.1:5173`
 3. Spustí Electron, ktorý:
@@ -173,11 +177,13 @@ npm run build
 ```
 
 Tento príkaz postupne:
+
 1. Zostaví frontend (`vite build` → `dist/`)
 2. Skompiluje Electron (`tsc` → `electron/dist/`)
 3. Vytvorí Windows inštalačku (`electron-builder` → `release/`)
 
 Po dokončení nájdete inštalačku v:
+
 ```
 release/Servisná knižka Bartalos Setup X.X.X.exe
 ```
@@ -204,6 +210,7 @@ Aplikácia umožňuje prenášať údaje medzi zariadeniami.
 4. Vyberte cestu na uloženie súboru
 
 Export vytvorí:
+
 - **`.json` súbor** — hlavný exportný súbor (obsahuje všetky záznamy + fotografie v base64)
 - **`_customers.csv`** — zákazníci (pre čítanie v Exceli)
 - **`_vehicles.csv`** — vozidlá
@@ -269,27 +276,27 @@ servis-bartalos/
 
 ### Databázové kolekcie
 
-| Kolekcia | Popis | Vzťahy |
-|---|---|---|
-| `customers` | Zákazníci | — |
-| `vehicles` | Vozidlá s fotografiou | → `customers` (cascade delete) |
-| `service_records` | Servisné záznamy s fotografiami (max 10) | → `vehicles` (cascade delete) |
-| `scheduled_tasks` | Plánované úlohy | → `vehicles` (cascade delete) |
+| Kolekcia          | Popis                                    | Vzťahy                         |
+| ----------------- | ---------------------------------------- | ------------------------------ |
+| `customers`       | Zákazníci                                | —                              |
+| `vehicles`        | Vozidlá s fotografiou                    | → `customers` (cascade delete) |
+| `service_records` | Servisné záznamy s fotografiami (max 10) | → `vehicles` (cascade delete)  |
+| `scheduled_tasks` | Plánované úlohy                          | → `vehicles` (cascade delete)  |
 
 ---
 
 ## ❓ Riešenie problémov
 
-| Problém | Riešenie |
-|---|---|
-| Windows SmartScreen blokuje inštaláciu | Kliknite **Ďalšie informácie** → **Napriek tomu spustiť** |
-| Aplikácia sa nespustí / prázdne okno | Skontrolujte, či nie je iný PocketBase proces na porte 8090: `netstat -ano \| findstr 8090` |
+| Problém                                     | Riešenie                                                                                                                                        |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Windows SmartScreen blokuje inštaláciu      | Kliknite **Ďalšie informácie** → **Napriek tomu spustiť**                                                                                       |
+| Aplikácia sa nespustí / prázdne okno        | Skontrolujte, či nie je iný PocketBase proces na porte 8090: `netstat -ano \| findstr 8090`                                                     |
 | PocketBase status v nastaveniach je červený | Reštartujte aplikáciu. Ak pretrváva, vymažte priečinok `%APPDATA%\servisna-knizka-bartalos\pocketbase_data` a spustite znova (⚠️ stratíte dáta) |
-| Fotografie sa nenahrávajú | Skontrolujte, či má disk dostatok miesta. Max veľkosť fotky: 10 MB |
-| Import hlási chybu | Skontrolujte, či importujete `.json` súbor (nie `.csv`). CSV súbory sú iba na čítanie |
-| Chcem zálohovať dáta | Skopírujte priečinok `%APPDATA%\servisna-knizka-bartalos\pocketbase_data\` na externý disk, alebo použite funkciu **Export** v nastaveniach |
-| Aplikácia beží pomaly | Skúste reštartovať aplikáciu. Veľký počet fotografií vo vysokom rozlíšení môže spomaliť načítanie |
-| Chcem odinštalovať | Štart menu → „Pridať alebo odobrať programy" → Servisná knižka Bartalos → Odinštalovať |
+| Fotografie sa nenahrávajú                   | Skontrolujte, či má disk dostatok miesta. Max veľkosť fotky: 10 MB                                                                              |
+| Import hlási chybu                          | Skontrolujte, či importujete `.json` súbor (nie `.csv`). CSV súbory sú iba na čítanie                                                           |
+| Chcem zálohovať dáta                        | Skopírujte priečinok `%APPDATA%\servisna-knizka-bartalos\pocketbase_data\` na externý disk, alebo použite funkciu **Export** v nastaveniach     |
+| Aplikácia beží pomaly                       | Skúste reštartovať aplikáciu. Veľký počet fotografií vo vysokom rozlíšení môže spomaliť načítanie                                               |
+| Chcem odinštalovať                          | Štart menu → „Pridať alebo odobrať programy" → Servisná knižka Bartalos → Odinštalovať                                                          |
 
 ### Dáta a zálohovanie
 
@@ -305,4 +312,4 @@ Súkromný projekt. Všetky práva vyhradené.
 
 ---
 
-*Vytvorené s ❤️ pre Autoservis Bartalos*
+_Vytvorené s ❤️ pre Autoservis Bartalos_

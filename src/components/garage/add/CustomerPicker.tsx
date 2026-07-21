@@ -29,17 +29,12 @@ export function CustomerPicker({
     queryFn: async (): Promise<PickedCustomer[]> => {
       const filter =
         q.length > 0
-          ? pb.filter(
-              'first_name ~ {:q} || last_name ~ {:q} || phone ~ {:q}',
-              { q },
-            )
+          ? pb.filter("first_name ~ {:q} || last_name ~ {:q} || phone ~ {:q}", { q })
           : "";
-      const list = await pb
-        .collection("customers")
-        .getList<RecordModel>(1, 20, {
-          sort: "last_name",
-          filter,
-        });
+      const list = await pb.collection("customers").getList<RecordModel>(1, 20, {
+        sort: "last_name",
+        filter,
+      });
       return list.items.map((r) => ({
         id: r.id,
         first_name: r.first_name ?? "",
@@ -99,7 +94,10 @@ export function CustomerPicker({
 
       {value && (
         <p className="text-xs text-brand-fg-muted">
-          Vybraný zákazník: <span className="text-brand-fg">{value.first_name} {value.last_name}</span>
+          Vybraný zákazník:{" "}
+          <span className="text-brand-fg">
+            {value.first_name} {value.last_name}
+          </span>
         </p>
       )}
     </div>

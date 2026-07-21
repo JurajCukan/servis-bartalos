@@ -79,7 +79,9 @@ export function VehicleDetailHeader({
             </div>
             <div>
               <dt className="text-brand-fg-muted">ŠPZ</dt>
-              <dd className="mt-0.5 font-mono font-medium text-brand-fg">{vehicle.license_plate}</dd>
+              <dd className="mt-0.5 font-mono font-medium text-brand-fg">
+                {vehicle.license_plate}
+              </dd>
             </div>
             <div>
               <dt className="text-brand-fg-muted">Nájazd</dt>

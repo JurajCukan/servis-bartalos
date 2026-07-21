@@ -31,9 +31,7 @@ function mapTask(r: RecordModel): PlannedTask {
     vehicle_id: r.vehicle,
     planned_date: String(r.planned_date ?? "").slice(0, 10),
     planned_mileage:
-      r.planned_mileage == null || r.planned_mileage === ""
-        ? null
-        : Number(r.planned_mileage),
+      r.planned_mileage == null || r.planned_mileage === "" ? null : Number(r.planned_mileage),
     task_type: r.task_type ?? null,
     description: r.description ?? "",
     priority: (r.priority as TaskPriority) ?? "Stredná",
@@ -71,12 +69,10 @@ export const vehicleScheduledTasksQuery = (vehicleId: string) =>
   queryOptions({
     queryKey: ["scheduled-tasks", "vehicle", vehicleId],
     queryFn: async (): Promise<PlannedTask[]> => {
-      const list = await pb
-        .collection("scheduled_tasks")
-        .getFullList<RecordModel>({
-          filter: pb.filter("vehicle = {:vid}", { vid: vehicleId }),
-          sort: "planned_date",
-        });
+      const list = await pb.collection("scheduled_tasks").getFullList<RecordModel>({
+        filter: pb.filter("vehicle = {:vid}", { vid: vehicleId }),
+        sort: "planned_date",
+      });
       return list.map(mapTask);
     },
   });

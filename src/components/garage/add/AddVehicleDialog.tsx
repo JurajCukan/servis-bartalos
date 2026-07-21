@@ -4,18 +4,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import type { ClientResponseError, RecordModel } from "pocketbase";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import pb from "@/lib/pocketbase";
 
@@ -83,9 +73,7 @@ export function AddVehicleDialog({
       try {
         const existing = await pb
           .collection("vehicles")
-          .getFirstListItem<RecordModel>(
-            pb.filter("license_plate = {:plate}", { plate }),
-          );
+          .getFirstListItem<RecordModel>(pb.filter("license_plate = {:plate}", { plate }));
         if (existing) throw new DuplicatePlateError(existing.id);
       } catch (err) {
         const e = err as ClientResponseError;
@@ -101,10 +89,7 @@ export function AddVehicleDialog({
       form.append("customer", customerId);
       form.append("brand", vehicle.brand.trim());
       form.append("model", vehicle.model.trim());
-      form.append(
-        "year",
-        vehicle.year === "" || vehicle.year == null ? "" : String(vehicle.year),
-      );
+      form.append("year", vehicle.year === "" || vehicle.year == null ? "" : String(vehicle.year));
       form.append("vin", emptyToNull(vehicle.vin as string | undefined) ?? "");
       form.append("license_plate", plate);
       form.append("current_mileage", String(vehicle.current_mileage));

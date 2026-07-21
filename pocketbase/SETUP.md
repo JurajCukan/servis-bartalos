@@ -153,9 +153,9 @@ Všetky kolekcie sú **verejné, bez prihlásenia**. Ktokoľvek, kto má prístu
 
 ## Riešenie problémov
 
-| Problém | Riešenie |
-| --- | --- |
+| Problém                                                        | Riešenie                                                                                              |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | V aplikácii sa zobrazuje ⚠️ "Nie je možné pripojiť k databáze" | Skontrolujte, či beží `pocketbase.exe`, či sedí IP v `.env`, a či je port 8090 povolený vo firewalle. |
-| Iné zariadenie sa nedostane na admin UI | Skúste `ping 192.168.1.42` z toho zariadenia. Ak ping prejde, problém je vo firewalle Windows. |
-| Po reštarte PC sa server nespustil sám | Vytvorte úlohu v Task Scheduler (krok 2, tip). |
-| Stratené dáta | Obnovte priečinok `pb_data` zo zálohy. |
+| Iné zariadenie sa nedostane na admin UI                        | Skúste `ping 192.168.1.42` z toho zariadenia. Ak ping prejde, problém je vo firewalle Windows.        |
+| Po reštarte PC sa server nespustil sám                         | Vytvorte úlohu v Task Scheduler (krok 2, tip).                                                        |
+| Stratené dáta                                                  | Obnovte priečinok `pb_data` zo zálohy.                                                                |
