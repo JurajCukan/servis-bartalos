@@ -1,10 +1,9 @@
 {
   "name": "servis-bartalos",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": "Juraj Cukan",
   "description": "Servisná knižka Bartalos",
-  "type": "module",
   "main": "electron/dist/main.js",
   "scripts": {
     "predev": "npm run build:electron",
