@@ -21,31 +21,40 @@ function getDataDir(): string {
   return path.join(app.getPath("userData"), "pocketbase_data");
 }
 
-function getMigrationsDir(): string {
+function getInitialDataDir(): string {
   return app.isPackaged
-    ? path.join(process.resourcesPath, "app.asar.unpacked", "pocketbase", "pb_migrations")
-    : path.join(app.getAppPath(), "pocketbase", "pb_migrations");
+    ? path.join(process.resourcesPath, "app.asar.unpacked", "pocketbase", "initial_pb_data")
+    : path.join(app.getAppPath(), "pocketbase", "initial_pb_data");
 }
 
-function copyMigrationsIfNeeded(dataDir: string) {
-  try {
-    const srcMigrations = getMigrationsDir();
-    const destMigrations = path.join(dataDir, "pb_migrations");
+function copyFolderRecursiveSync(src: string, dest: string) {
+  if (!fs.existsSync(src)) return;
+  fs.mkdirSync(dest, { recursive: true });
+  const entries = fs.readdirSync(src, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyFolderRecursiveSync(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
 
-    if (fs.existsSync(srcMigrations)) {
-      fs.mkdirSync(destMigrations, { recursive: true });
-      const files = fs.readdirSync(srcMigrations);
-      for (const file of files) {
-        const srcFile = path.join(srcMigrations, file);
-        const destFile = path.join(destMigrations, file);
-        if (!fs.existsSync(destFile)) {
-          fs.copyFileSync(srcFile, destFile);
-          console.log(`[main] Copied migration file ${file} to ${destMigrations}`);
-        }
+function seedDatabaseIfNeeded(dataDir: string) {
+  try {
+    const dbFile = path.join(dataDir, "data.db");
+    if (!fs.existsSync(dbFile)) {
+      const initialDataDir = getInitialDataDir();
+      if (fs.existsSync(initialDataDir)) {
+        console.log(`[main] Copying initial_pb_data seed from ${initialDataDir} to ${dataDir}...`);
+        fs.mkdirSync(dataDir, { recursive: true });
+        copyFolderRecursiveSync(initialDataDir, dataDir);
       }
     }
   } catch (err) {
-    console.error("[main] Failed to copy pb_migrations:", err);
+    console.error("[main] Failed to seed database:", err);
   }
 }
 
@@ -53,14 +62,14 @@ function startPocketBase() {
   const pocketbasePath = getPocketBasePath();
   const dataDir = getDataDir();
 
-  copyMigrationsIfNeeded(dataDir);
+  seedDatabaseIfNeeded(dataDir);
 
   console.log(`[main] Spawning PocketBase from: ${pocketbasePath}`);
   console.log(`[main] Storing data in: ${dataDir}`);
 
   pbProcess = spawn(
     pocketbasePath,
-    ["serve", "--http=127.0.0.1:8090", `--dir=${dataDir}`, "--automigrate"],
+    ["serve", "--http=127.0.0.1:8090", `--dir=${dataDir}`],
     { stdio: "ignore" },
   );
 
@@ -84,6 +93,8 @@ function stopPocketBase() {
 function checkPocketBaseReady(callback: () => void) {
   const checkUrl = "http://127.0.0.1:8090/api/health";
   const interval = 100;
+  const maxRetries = 100; // 10s max wait
+  let retries = 0;
 
   const check = () => {
     http
@@ -92,14 +103,26 @@ function checkPocketBaseReady(callback: () => void) {
           console.log("[main] PocketBase is healthy and ready!");
           callback();
         } else {
-          console.log(`[main] PocketBase returned status ${res.statusCode}, retrying...`);
-          setTimeout(check, interval);
+          retry();
         }
       })
       .on("error", () => {
-        console.log("[main] PocketBase not ready yet, retrying...");
-        setTimeout(check, interval);
+        retry();
       });
+  };
+
+  const retry = () => {
+    retries++;
+    if (retries > maxRetries) {
+      console.error("[main] PocketBase health check timed out after 10 seconds.");
+      dialog.showErrorBox(
+        "Chyba spustenia databázy",
+        "Aplikácia nemohla nadviazať spojenie s lokálnou databázou PocketBase (http://127.0.0.1:8090).\nSkontrolujte, či port 8090 neblokuje iný spustený program.",
+      );
+      callback();
+    } else {
+      setTimeout(check, interval);
+    }
   };
 
   check();
@@ -145,7 +168,7 @@ function createWindow() {
     mainWindow.loadURL("http://127.0.0.1:5173");
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
+    mainWindow.loadFile(path.join(app.getAppPath(), "dist/index.html"));
   }
 
   mainWindow.on("closed", () => {
