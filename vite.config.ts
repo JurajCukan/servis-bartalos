@@ -11,27 +11,6 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
-    chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes("node_modules")) {
-            if (id.includes("react") || id.includes("tanstack")) {
-              return "vendor-core";
-            }
-            if (
-              id.includes("lucide-react") ||
-              id.includes("@radix-ui") ||
-              id.includes("recharts")
-            ) {
-              return "vendor-ui";
-            }
-            if (id.includes("pocketbase")) {
-              return "vendor-pocketbase";
-            }
-          }
-        },
-      },
-    },
+    chunkSizeWarningLimit: 2000,
   },
 });
