@@ -15,7 +15,7 @@ type UpdateState =
   | { status: "error"; message: string };
 
 export function UpdateSettingCard() {
-  const [appVersion, setAppVersion] = useState<string>("v1.1.7");
+  const [appVersion, setAppVersion] = useState<string>("v1.1.8");
   const [state, setState] = useState<UpdateState>({ status: "idle" });
 
   const isElectron = typeof window !== "undefined" && !!window.electronAPI;
