@@ -11,7 +11,7 @@ type Status =
   | { kind: "error"; message: string };
 
 const PB_URL =
-  (import.meta.env.VITE_POCKETBASE_URL as string | undefined) || "http://localhost:8090";
+  (import.meta.env.VITE_POCKETBASE_URL as string | undefined) || "http://127.0.0.1:8090";
 
 export function PocketBaseStatusCard() {
   const [status, setStatus] = useState<Status>({ kind: "idle" });

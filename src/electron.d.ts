@@ -3,8 +3,16 @@ export interface IElectronAPI {
   checkForUpdates: () => void;
   installUpdate: () => void;
   getAppVersion: () => Promise<string>;
-  onUpdateAvailable: (callback: () => void) => () => void;
-  onUpdateDownloaded: (callback: () => void) => () => void;
+  onUpdateChecking: (callback: () => void) => () => void;
+  onUpdateAvailable: (
+    callback: (info: { version: string; releaseNotes?: string }) => void,
+  ) => () => void;
+  onUpdateNotAvailable: (callback: () => void) => () => void;
+  onDownloadProgress: (
+    callback: (progress: { percent: number; bytesPerSecond: number }) => void,
+  ) => () => void;
+  onUpdateDownloaded: (callback: (info: { version: string }) => void) => () => void;
+  onUpdateError: (callback: (err: { message: string }) => void) => () => void;
 
   // File dialogs for Export/Import
   showSaveDialog: (options: {

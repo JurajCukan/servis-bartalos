@@ -216,6 +216,9 @@ app.on("will-quit", () => {
 
 ipcMain.on("check-for-updates", () => {
   console.log("[main] Manual check for updates requested.");
+  autoUpdater.checkForUpdates().catch((err) => {
+    console.error("[main] Failed to check for updates manually:", err);
+  });
 });
 
 ipcMain.on("install-update", () => {

@@ -4,16 +4,37 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // ─── Updates ───────────────────────────────────────────────────────────────
   checkForUpdates: () => ipcRenderer.send("check-for-updates"),
   installUpdate: () => ipcRenderer.send("install-update"),
-  getAppVersion: () => ipcRenderer.invoke("get-app-version"),
-  onUpdateAvailable: (callback: () => void) => {
-    const subscription = () => callback();
-    ipcRenderer.on("update-available", subscription);
-    return () => ipcRenderer.removeListener("update-available", subscription);
+  getAppVersion: () => ipcRenderer.invoke("get-app-version") as Promise<string>,
+
+  onUpdateChecking: (callback: () => void) => {
+    const sub = () => callback();
+    ipcRenderer.on("update-checking", sub);
+    return () => ipcRenderer.removeListener("update-checking", sub);
   },
-  onUpdateDownloaded: (callback: () => void) => {
-    const subscription = () => callback();
-    ipcRenderer.on("update-downloaded", subscription);
-    return () => ipcRenderer.removeListener("update-downloaded", subscription);
+  onUpdateAvailable: (callback: (info: { version: string; releaseNotes?: string }) => void) => {
+    const sub = (_: unknown, info: { version: string; releaseNotes?: string }) => callback(info);
+    ipcRenderer.on("update-available", sub);
+    return () => ipcRenderer.removeListener("update-available", sub);
+  },
+  onUpdateNotAvailable: (callback: () => void) => {
+    const sub = () => callback();
+    ipcRenderer.on("update-not-available", sub);
+    return () => ipcRenderer.removeListener("update-not-available", sub);
+  },
+  onDownloadProgress: (callback: (progress: { percent: number; bytesPerSecond: number }) => void) => {
+    const sub = (_: unknown, p: { percent: number; bytesPerSecond: number }) => callback(p);
+    ipcRenderer.on("download-progress", sub);
+    return () => ipcRenderer.removeListener("download-progress", sub);
+  },
+  onUpdateDownloaded: (callback: (info: { version: string }) => void) => {
+    const sub = (_: unknown, info: { version: string }) => callback(info);
+    ipcRenderer.on("update-downloaded", sub);
+    return () => ipcRenderer.removeListener("update-downloaded", sub);
+  },
+  onUpdateError: (callback: (err: { message: string }) => void) => {
+    const sub = (_: unknown, err: { message: string }) => callback(err);
+    ipcRenderer.on("update-error", sub);
+    return () => ipcRenderer.removeListener("update-error", sub);
   },
 
   // ─── File dialogs for Export/Import ────────────────────────────────────────
