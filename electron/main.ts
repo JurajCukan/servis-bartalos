@@ -21,15 +21,39 @@ function getDataDir(): string {
   return path.join(app.getPath("userData"), "pocketbase_data");
 }
 
-function getSchemaPath(): string {
+function getMigrationsDir(): string {
   return app.isPackaged
-    ? path.join(process.resourcesPath, "app.asar.unpacked", "pocketbase", "pb_schema.json")
-    : path.join(app.getAppPath(), "pocketbase", "pb_schema.json");
+    ? path.join(process.resourcesPath, "app.asar.unpacked", "pocketbase", "pb_migrations")
+    : path.join(app.getAppPath(), "pocketbase", "pb_migrations");
+}
+
+function copyMigrationsIfNeeded(dataDir: string) {
+  try {
+    const srcMigrations = getMigrationsDir();
+    const destMigrations = path.join(dataDir, "pb_migrations");
+
+    if (fs.existsSync(srcMigrations)) {
+      fs.mkdirSync(destMigrations, { recursive: true });
+      const files = fs.readdirSync(srcMigrations);
+      for (const file of files) {
+        const srcFile = path.join(srcMigrations, file);
+        const destFile = path.join(destMigrations, file);
+        if (!fs.existsSync(destFile)) {
+          fs.copyFileSync(srcFile, destFile);
+          console.log(`[main] Copied migration file ${file} to ${destMigrations}`);
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[main] Failed to copy pb_migrations:", err);
+  }
 }
 
 function startPocketBase() {
   const pocketbasePath = getPocketBasePath();
   const dataDir = getDataDir();
+
+  copyMigrationsIfNeeded(dataDir);
 
   console.log(`[main] Spawning PocketBase from: ${pocketbasePath}`);
   console.log(`[main] Storing data in: ${dataDir}`);
@@ -79,76 +103,6 @@ function checkPocketBaseReady(callback: () => void) {
   };
 
   check();
-}
-
-/**
- * Import pb_schema.json into PocketBase on first run.
- * Uses the PocketBase collections import API endpoint.
- */
-async function importSchemaIfNeeded(): Promise<void> {
-  const dataDir = getDataDir();
-  const markerFile = path.join(dataDir, ".schema_imported");
-
-  // Skip if schema was already imported
-  if (fs.existsSync(markerFile)) {
-    console.log("[main] Schema already imported, skipping.");
-    return;
-  }
-
-  const schemaPath = getSchemaPath();
-  if (!fs.existsSync(schemaPath)) {
-    console.error("[main] pb_schema.json not found at:", schemaPath);
-    return;
-  }
-
-  console.log("[main] First run detected — importing schema...");
-
-  try {
-    const schemaData = fs.readFileSync(schemaPath, "utf-8");
-    const collections = JSON.parse(schemaData);
-
-    const postData = JSON.stringify({ collections, deleteMissing: false });
-
-    await new Promise<void>((resolve, reject) => {
-      const req = http.request(
-        {
-          hostname: "127.0.0.1",
-          port: 8090,
-          path: "/api/collections/import",
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "Content-Length": Buffer.byteLength(postData),
-          },
-        },
-        (res) => {
-          let body = "";
-          res.on("data", (chunk) => (body += chunk));
-          res.on("end", () => {
-            if (res.statusCode === 200 || res.statusCode === 204) {
-              console.log("[main] Schema imported successfully.");
-              // Ensure data directory exists and write marker
-              fs.mkdirSync(dataDir, { recursive: true });
-              fs.writeFileSync(markerFile, new Date().toISOString(), "utf-8");
-              resolve();
-            } else {
-              console.error(`[main] Schema import failed (${res.statusCode}):`, body);
-              // Still resolve — don't block app start over a schema issue
-              resolve();
-            }
-          });
-        },
-      );
-      req.on("error", (err) => {
-        console.error("[main] Schema import request error:", err);
-        resolve(); // Don't block app start
-      });
-      req.write(postData);
-      req.end();
-    });
-  } catch (err) {
-    console.error("[main] Error during schema import:", err);
-  }
 }
 
 /**
@@ -218,8 +172,7 @@ if (!gotTheLock) {
   app.whenReady().then(async () => {
     blockAdminUIInProduction();
     startPocketBase();
-    checkPocketBaseReady(async () => {
-      await importSchemaIfNeeded();
+    checkPocketBaseReady(() => {
       createWindow();
     });
   });
