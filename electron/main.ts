@@ -90,7 +90,7 @@ function stopPocketBase() {
   }
 }
 
-function checkPocketBaseReady(callback: () => void) {
+function checkPocketBaseReady(callback: () => void, checkCollections = true) {
   const checkUrl = "http://127.0.0.1:8090/api/health";
   const interval = 100;
   const maxRetries = 100; // 10s max wait
@@ -101,7 +101,11 @@ function checkPocketBaseReady(callback: () => void) {
       .get(checkUrl, (res) => {
         if (res.statusCode === 200) {
           console.log("[main] PocketBase is healthy and ready!");
-          callback();
+          if (checkCollections) {
+            verifyAndRepairCollections(callback);
+          } else {
+            callback();
+          }
         } else {
           retry();
         }
@@ -126,6 +130,33 @@ function checkPocketBaseReady(callback: () => void) {
   };
 
   check();
+}
+
+function verifyAndRepairCollections(callback: () => void) {
+  const checkCollUrl = "http://127.0.0.1:8090/api/collections/customers/records";
+  http
+    .get(checkCollUrl, (res) => {
+      if (res.statusCode === 404) {
+        console.warn("[main] Collection 'customers' returned 404 — data.db is unseeded. Auto-repairing...");
+        stopPocketBase();
+        const dataDir = getDataDir();
+        try {
+          fs.rmSync(dataDir, { recursive: true, force: true });
+        } catch (e) {
+          console.error("[main] Failed to clear dataDir:", e);
+        }
+        seedDatabaseIfNeeded(dataDir);
+        startPocketBase();
+        checkPocketBaseReady(callback, false);
+      } else {
+        console.log("[main] Database collections verified successfully.");
+        callback();
+      }
+    })
+    .on("error", (err) => {
+      console.error("[main] Error checking collection health:", err);
+      callback();
+    });
 }
 
 /**

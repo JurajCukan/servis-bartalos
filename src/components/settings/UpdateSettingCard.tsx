@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { RefreshCw, Download, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
+import { RefreshCw, Download, CheckCircle2, AlertCircle, Sparkles, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -15,7 +15,7 @@ type UpdateState =
   | { status: "error"; message: string };
 
 export function UpdateSettingCard() {
-  const [appVersion, setAppVersion] = useState<string>("v1.1.6");
+  const [appVersion, setAppVersion] = useState<string>("v1.1.7");
   const [state, setState] = useState<UpdateState>({ status: "idle" });
 
   const isElectron = typeof window !== "undefined" && !!window.electronAPI;
@@ -74,6 +74,8 @@ export function UpdateSettingCard() {
     if (!isElectron) return;
     window.electronAPI.installUpdate();
   };
+
+  const isPrivateRepoError = state.status === "error" && state.message.includes("404");
 
   return (
     <Card className="border-brand-border bg-brand-surface text-brand-fg">
@@ -136,9 +138,30 @@ export function UpdateSettingCard() {
         )}
 
         {state.status === "error" && (
-          <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>Nepodarilo sa skontrolovať aktualizácie: {state.message}</span>
+          <div className="flex flex-col gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold">Nepodarilo sa skontrolovať aktualizácie</p>
+                {isPrivateRepoError ? (
+                  <p className="mt-1 text-xs text-red-300">
+                    GitHub repozitár je nastavený ako <strong>Súkromný (Private)</strong>. Aby automatické aktualizácie fungovali, nastavte na GitHube <em>Settings &rarr; Change visibility &rarr; Public</em>.
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs text-red-300">{state.message}</p>
+                )}
+              </div>
+            </div>
+            <div className="pt-1">
+              <a
+                href="https://github.com/JurajCukan/servis-bartalos/releases"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs underline hover:text-red-300"
+              >
+                Otvoriť GitHub Releases stránku <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
           </div>
         )}
 
