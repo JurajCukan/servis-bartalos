@@ -5,6 +5,8 @@ directories:
 files:
   - dist/**
   - electron/dist/**
+  - node_modules/**
+  - package.json
 asar: true
 asarUnpack:
   - "**/*.node"

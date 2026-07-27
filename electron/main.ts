@@ -2,6 +2,24 @@ import { app, BrowserWindow, ipcMain, dialog, protocol, net } from "electron";
 import path from "path";
 import fs from "fs";
 import { pathToFileURL } from "url";
+
+const logFile = "C:\\projekty\\servis-bartalos\\debug_startup.log";
+try {
+  fs.appendFileSync(logFile, `\n=== STARTUP ${new Date().toISOString()} ===\n`);
+  fs.appendFileSync(logFile, `app.getPath("userData") = ${app.getPath("userData")}\n`);
+} catch (e: any) {
+  // ignore
+}
+
+process.on("uncaughtException", (err) => {
+  try { fs.appendFileSync(logFile, `[UNCAUGHT] ${err?.stack || err}\n`); } catch (_) {}
+  dialog.showErrorBox("Chyba aplikácie", `Aplikácia spadla pri spúšťaní:\n${err?.message || err}`);
+});
+
+process.on("unhandledRejection", (reason) => {
+  try { fs.appendFileSync(logFile, `[REJECTION] ${reason}\n`); } catch (_) {}
+});
+
 import { initializeAutoUpdater } from "./updater.js";
 import { autoUpdater } from "electron-updater";
 import {
