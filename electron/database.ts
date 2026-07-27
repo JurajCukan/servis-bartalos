@@ -18,7 +18,24 @@ export function initDatabase(userDataPath: string): void {
   const dbPath = path.join(userDataPath, "servis.db");
   console.log(`[database] Opening SQLite database at: ${dbPath}`);
 
-  db = new Database(dbPath);
+  // Resolve native binding path explicitly when packaged to avoid ASAR crash
+  let nativeBinding;
+  if (process.versions.electron) {
+    const { app } = require("electron");
+    if (app.isPackaged) {
+      nativeBinding = path.join(
+        app.getAppPath().replace("app.asar", "app.asar.unpacked"),
+        "node_modules",
+        "better-sqlite3",
+        "build",
+        "Release",
+        "better_sqlite3.node"
+      );
+      console.log(`[database] Using native binding: ${nativeBinding}`);
+    }
+  }
+
+  db = new Database(dbPath, nativeBinding ? { nativeBinding } : undefined);
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");
 

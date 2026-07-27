@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog, protocol, net } from "electron";
 import path from "path";
 import fs from "fs";
 import { pathToFileURL } from "url";
+import { exec } from "child_process";
 
 const logFile = "C:\\projekty\\servis-bartalos\\debug_startup.log";
 try {
@@ -99,6 +100,13 @@ if (!gotTheLock) {
   });
 
   app.whenReady().then(() => {
+    // Kill leftover PocketBase processes from v1.0.0 silently
+    if (process.platform === "win32") {
+      exec("taskkill /f /im pocketbase.exe", () => {
+        // Ignore errors if it wasn't running
+      });
+    }
+
     const userDataDir = getUserDataDir();
     console.log(`[main] User data directory: ${userDataDir}`);
 
