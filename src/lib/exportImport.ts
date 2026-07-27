@@ -1,6 +1,3 @@
-import pb, { fileUrl } from "@/lib/pocketbase";
-import type { RecordModel } from "pocketbase";
-
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type ProgressCallback = (message: string, percent: number) => void;
@@ -51,95 +48,6 @@ function recordsToCsv(records: Record<string, unknown>[]): string {
   return lines.join("\n");
 }
 
-function parseCsv(csv: string): Record<string, string>[] {
-  const lines = csv.split(/\r?\n/).filter((l) => l.trim().length > 0);
-  if (lines.length < 2) return [];
-
-  function parseLine(line: string): string[] {
-    const fields: string[] = [];
-    let current = "";
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (inQuotes) {
-        if (ch === '"') {
-          if (i + 1 < line.length && line[i + 1] === '"') {
-            current += '"';
-            i++;
-          } else {
-            inQuotes = false;
-          }
-        } else {
-          current += ch;
-        }
-      } else {
-        if (ch === '"') {
-          inQuotes = true;
-        } else if (ch === ",") {
-          fields.push(current);
-          current = "";
-        } else {
-          current += ch;
-        }
-      }
-    }
-    fields.push(current);
-    return fields;
-  }
-
-  const headers = parseLine(lines[0]);
-  const records: Record<string, string>[] = [];
-  for (let i = 1; i < lines.length; i++) {
-    const values = parseLine(lines[i]);
-    const rec: Record<string, string> = {};
-    headers.forEach((h, j) => {
-      rec[h] = values[j] ?? "";
-    });
-    records.push(rec);
-  }
-  return records;
-}
-
-// ─── Fetch helpers ───────────────────────────────────────────────────────────
-
-async function fetchAll(collection: string): Promise<RecordModel[]> {
-  return pb.collection(collection).getFullList({ batch: 200 });
-}
-
-function stripSystemFields(record: RecordModel): Record<string, unknown> {
-  // Keep id but remove PocketBase system metadata fields
-  const { collectionId, collectionName, expand, ...rest } = record as Record<string, unknown> & {
-    collectionId?: string;
-    collectionName?: string;
-    expand?: unknown;
-  };
-  void collectionId;
-  void collectionName;
-  void expand;
-  return rest;
-}
-
-async function downloadFile(
-  collection: string,
-  recordId: string,
-  filename: string,
-): Promise<string> {
-  const url = fileUrl(
-    { id: recordId, collectionId: "", collectionName: collection } as RecordModel,
-    filename,
-  );
-  const response = await fetch(url);
-  const blob = await response.blob();
-  return new Promise<string>((resolve) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64 = (reader.result as string).split(",")[1] ?? "";
-      resolve(base64);
-    };
-    reader.readAsDataURL(blob);
-  });
-}
-
 // ─── EXPORT ──────────────────────────────────────────────────────────────────
 
 export async function exportData(onProgress?: ProgressCallback): Promise<void> {
@@ -148,100 +56,16 @@ export async function exportData(onProgress?: ProgressCallback): Promise<void> {
     throw new Error("Export je dostupný iba v desktopovej aplikácii.");
   }
 
-  onProgress?.("Načítavam zákazníkov…", 5);
-  const customers = await fetchAll("customers");
-
-  onProgress?.("Načítavam vozidlá…", 15);
-  const vehicles = await fetchAll("vehicles");
-
-  onProgress?.("Načítavam servisné záznamy…", 25);
-  const serviceRecords = await fetchAll("service_records");
-
-  onProgress?.("Načítavam plánované úlohy…", 35);
-  const scheduledTasks = await fetchAll("scheduled_tasks");
-
-  // Download all media files
-  onProgress?.("Sťahujem fotografie…", 40);
-  const media: MediaEntry[] = [];
-  let mediaTotal = 0;
-  let mediaDone = 0;
-
-  // Count total media files
-  for (const v of vehicles) {
-    if (v.photo) mediaTotal++;
-  }
-  for (const sr of serviceRecords) {
-    if (Array.isArray(sr.photos)) mediaTotal += sr.photos.length;
-  }
-
-  // Download vehicle photos
-  for (const v of vehicles) {
-    if (v.photo && typeof v.photo === "string") {
-      try {
-        const data = await downloadFile("vehicles", v.id, v.photo);
-        media.push({
-          collection: "vehicles",
-          recordId: v.id,
-          field: "photo",
-          filename: v.photo,
-          data,
-        });
-      } catch (e) {
-        console.warn(`Failed to download vehicle photo ${v.photo}:`, e);
-      }
-      mediaDone++;
-      const pct = 40 + Math.round((mediaDone / Math.max(mediaTotal, 1)) * 40);
-      onProgress?.(`Sťahujem fotografie (${mediaDone}/${mediaTotal})…`, pct);
-    }
-  }
-
-  // Download service record photos
-  for (const sr of serviceRecords) {
-    if (Array.isArray(sr.photos)) {
-      for (const photo of sr.photos) {
-        try {
-          const data = await downloadFile("service_records", sr.id, photo);
-          media.push({
-            collection: "service_records",
-            recordId: sr.id,
-            field: "photos",
-            filename: photo,
-            data,
-          });
-        } catch (e) {
-          console.warn(`Failed to download service record photo ${photo}:`, e);
-        }
-        mediaDone++;
-        const pct = 40 + Math.round((mediaDone / Math.max(mediaTotal, 1)) * 40);
-        onProgress?.(`Sťahujem fotografie (${mediaDone}/${mediaTotal})…`, pct);
-      }
-    }
-  }
+  onProgress?.("Pripravujem export (získavam dáta z databázy)…", 25);
+  
+  const bundle = (await window.electronAPI.db.exportAllData()) as ExportBundle;
 
   onProgress?.("Pripravujem CSV súbory…", 85);
 
-  // Build CSV content for each collection
-  const customersClean = customers.map(stripSystemFields);
-  const vehiclesClean = vehicles.map(stripSystemFields);
-  const serviceRecordsClean = serviceRecords.map(stripSystemFields);
-  const scheduledTasksClean = scheduledTasks.map(stripSystemFields);
-
-  const customersCsv = recordsToCsv(customersClean);
-  const vehiclesCsv = recordsToCsv(vehiclesClean);
-  const serviceRecordsCsv = recordsToCsv(serviceRecordsClean);
-  const scheduledTasksCsv = recordsToCsv(scheduledTasksClean);
-
-  // Build the export bundle as JSON (includes CSV data + media)
-  const bundle: ExportBundle = {
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    appVersion: await getAppVersion(),
-    customers: customersClean,
-    vehicles: vehiclesClean,
-    service_records: serviceRecordsClean,
-    scheduled_tasks: scheduledTasksClean,
-    media,
-  };
+  const customersCsv = recordsToCsv(bundle.customers);
+  const vehiclesCsv = recordsToCsv(bundle.vehicles);
+  const serviceRecordsCsv = recordsToCsv(bundle.service_records);
+  const scheduledTasksCsv = recordsToCsv(bundle.scheduled_tasks);
 
   // Ask user where to save
   const timestamp = new Date().toISOString().slice(0, 10);
@@ -315,7 +139,7 @@ export async function importData(onProgress?: ProgressCallback): Promise<{ impor
     return { imported: 0 };
   }
 
-  onProgress?.("Čítam exportný súbor…", 5);
+  onProgress?.("Čítam exportný súbor…", 20);
 
   const base64 = await window.electronAPI.readFile(result.filePaths[0]);
   const jsonStr = decodeURIComponent(escape(atob(base64)));
@@ -325,146 +149,10 @@ export async function importData(onProgress?: ProgressCallback): Promise<{ impor
     throw new Error(`Nepodporovaná verzia exportu: ${bundle.version}`);
   }
 
-  let totalImported = 0;
-  const idMap: Record<string, string> = {}; // oldId -> newId
+  onProgress?.("Importujem dáta a fotografie…", 50);
 
-  // 1. Import customers
-  onProgress?.("Importujem zákazníkov…", 10);
-  for (const customer of bundle.customers) {
-    const oldId = customer.id as string;
-    const { id, created, updated, ...data } = customer;
-    void id;
-    void created;
-    void updated;
-    try {
-      const created = await pb.collection("customers").create(data);
-      idMap[oldId] = created.id;
-      totalImported++;
-    } catch (e) {
-      console.warn(`Failed to import customer ${oldId}:`, e);
-    }
-  }
-
-  // 2. Import vehicles (re-link customer relation)
-  onProgress?.("Importujem vozidlá…", 30);
-  for (const vehicle of bundle.vehicles) {
-    const oldId = vehicle.id as string;
-    const { id, created, updated, photo, ...data } = vehicle;
-    void id;
-    void created;
-    void updated;
-    // Re-link customer
-    if (data.customer && idMap[data.customer as string]) {
-      data.customer = idMap[data.customer as string];
-    }
-    // Don't include photo filename — will upload separately
-    try {
-      const created = await pb.collection("vehicles").create(data);
-      idMap[oldId] = created.id;
-      totalImported++;
-    } catch (e) {
-      console.warn(`Failed to import vehicle ${oldId}:`, e);
-    }
-  }
-
-  // 3. Import service_records (re-link vehicle relation)
-  onProgress?.("Importujem servisné záznamy…", 50);
-  for (const sr of bundle.service_records) {
-    const oldId = sr.id as string;
-    const { id, created, updated, photos, ...data } = sr;
-    void id;
-    void created;
-    void updated;
-    if (data.vehicle && idMap[data.vehicle as string]) {
-      data.vehicle = idMap[data.vehicle as string];
-    }
-    try {
-      const created = await pb.collection("service_records").create(data);
-      idMap[oldId] = created.id;
-      totalImported++;
-    } catch (e) {
-      console.warn(`Failed to import service record ${oldId}:`, e);
-    }
-  }
-
-  // 4. Import scheduled_tasks (re-link vehicle relation)
-  onProgress?.("Importujem plánované úlohy…", 65);
-  for (const task of bundle.scheduled_tasks) {
-    const oldId = task.id as string;
-    const { id, created, updated, ...data } = task;
-    void id;
-    void created;
-    void updated;
-    if (data.vehicle && idMap[data.vehicle as string]) {
-      data.vehicle = idMap[data.vehicle as string];
-    }
-    try {
-      const created = await pb.collection("scheduled_tasks").create(data);
-      idMap[oldId] = created.id;
-      totalImported++;
-    } catch (e) {
-      console.warn(`Failed to import scheduled task ${oldId}:`, e);
-    }
-  }
-
-  // 5. Upload media files
-  if (bundle.media && bundle.media.length > 0) {
-    onProgress?.("Nahrávam fotografie…", 75);
-    let mediaDone = 0;
-    const mediaTotal = bundle.media.length;
-
-    for (const entry of bundle.media) {
-      const newRecordId = idMap[entry.recordId];
-      if (!newRecordId) {
-        console.warn(`Skipping media for missing record ${entry.recordId}`);
-        mediaDone++;
-        continue;
-      }
-
-      try {
-        // Convert base64 to blob
-        const binary = atob(entry.data);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) {
-          bytes[i] = binary.charCodeAt(i);
-        }
-        // Determine mime type from extension
-        const ext = entry.filename.split(".").pop()?.toLowerCase() ?? "";
-        const mimeMap: Record<string, string> = {
-          jpg: "image/jpeg",
-          jpeg: "image/jpeg",
-          png: "image/png",
-          webp: "image/webp",
-        };
-        const mime = mimeMap[ext] || "application/octet-stream";
-        const blob = new Blob([bytes], { type: mime });
-        const file = new File([blob], entry.filename, { type: mime });
-
-        const fd = new FormData();
-        fd.append(entry.field, file);
-        await pb.collection(entry.collection).update(newRecordId, fd);
-      } catch (e) {
-        console.warn(`Failed to upload media ${entry.filename}:`, e);
-      }
-      mediaDone++;
-      const pct = 75 + Math.round((mediaDone / mediaTotal) * 20);
-      onProgress?.(`Nahrávam fotografie (${mediaDone}/${mediaTotal})…`, pct);
-    }
-  }
+  const importResult = await window.electronAPI.db.importData(bundle);
 
   onProgress?.("Import dokončený!", 100);
-  return { imported: totalImported };
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-async function getAppVersion(): Promise<string> {
-  if (typeof window !== "undefined" && window.electronAPI) {
-    try {
-      return await window.electronAPI.getAppVersion();
-    } catch {
-      return "unknown";
-    }
-  }
-  return "unknown";
+  return importResult as { imported: number };
 }

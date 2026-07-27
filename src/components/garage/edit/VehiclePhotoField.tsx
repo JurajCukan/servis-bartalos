@@ -2,7 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import { Car, Upload, X, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { VEHICLE_PHOTO_MIME, validateVehiclePhoto } from "@/lib/vehiclePhoto";
+
+const VEHICLE_PHOTO_MIME = ["image/jpeg", "image/png", "image/webp"];
+const MAX_VEHICLE_PHOTO_SIZE = 10 * 1024 * 1024; // 10 MB
+
+function validateVehiclePhoto(file: File): string | null {
+  if (!VEHICLE_PHOTO_MIME.includes(file.type)) {
+    return `Typ súboru "${file.type}" nie je povolený. Povolené sú JPG, PNG a WEBP.`;
+  }
+  if (file.size > MAX_VEHICLE_PHOTO_SIZE) {
+    return `Súbor "${file.name}" je príliš veľký (max 10 MB).`;
+  }
+  return null;
+}
 
 export type PhotoAction = "keep" | "replace" | "remove";
 

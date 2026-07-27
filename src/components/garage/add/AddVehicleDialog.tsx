@@ -2,12 +2,10 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import type { ClientResponseError, RecordModel } from "pocketbase";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
-import pb from "@/lib/pocketbase";
 
 import { StepIndicator } from "./StepIndicator";
 import { CustomerStep, type CustomerResolution } from "./CustomerStep";
@@ -57,7 +55,7 @@ export function AddVehicleDialog({
       if (customer.kind === "existing") {
         customerId = customer.customer.id;
       } else {
-        const created = await pb.collection("customers").create<RecordModel>({
+        const created = await window.electronAPI.db.createCustomer({
           first_name: customer.customer.first_name,
           last_name: customer.customer.last_name,
           phone: customer.customer.phone,
@@ -70,41 +68,29 @@ export function AddVehicleDialog({
       const plate = vehicle.license_plate.trim().toUpperCase();
 
       // duplicate check
-      try {
-        const existing = await pb
-          .collection("vehicles")
-          .getFirstListItem<RecordModel>(pb.filter("license_plate = {:plate}", { plate }));
-        if (existing) throw new DuplicatePlateError(existing.id);
-      } catch (err) {
-        const e = err as ClientResponseError;
-        if (e?.status !== 404 && !(err instanceof DuplicatePlateError)) {
-          // Real network/server error
-          if (err instanceof DuplicatePlateError) throw err;
-          // 404 here means "not found" from getFirstListItem - acceptable
-        }
-        if (err instanceof DuplicatePlateError) throw err;
-      }
+      const existing = await window.electronAPI.db.checkDuplicatePlate(plate);
+      if (existing) throw new DuplicatePlateError(existing.id);
 
-      const form = new FormData();
-      form.append("customer", customerId);
-      form.append("brand", vehicle.brand.trim());
-      form.append("model", vehicle.model.trim());
-      form.append("year", vehicle.year === "" || vehicle.year == null ? "" : String(vehicle.year));
-      form.append("vin", emptyToNull(vehicle.vin as string | undefined) ?? "");
-      form.append("license_plate", plate);
-      form.append("current_mileage", String(vehicle.current_mileage));
-      form.append("engine", emptyToNull(vehicle.engine as string | undefined) ?? "");
-      form.append("transmission", emptyToNull(vehicle.transmission as string | undefined) ?? "");
-      form.append("drive", emptyToNull(vehicle.drive as string | undefined) ?? "");
-      form.append("power", emptyToNull(vehicle.power as string | undefined) ?? "");
-      form.append("oil_volume", emptyToNull(vehicle.oil_volume as string | undefined) ?? "");
-      form.append("tire_size", emptyToNull(vehicle.tire_size as string | undefined) ?? "");
-      form.append("fuel_type", emptyToNull(vehicle.fuel_type as string | undefined) ?? "");
-      form.append("notes", emptyToNull(vehicle.notes as string | undefined) ?? "");
-      form.append("status", "OK");
-
-      const inserted = await pb.collection("vehicles").create<RecordModel>(form);
-      return inserted.id as string;
+      const insertedId = await window.electronAPI.db.createVehicle({
+        customer: customerId,
+        brand: vehicle.brand.trim(),
+        model: vehicle.model.trim(),
+        year: vehicle.year === "" || vehicle.year == null ? null : Number(vehicle.year),
+        vin: emptyToNull(vehicle.vin as string | undefined) ?? "",
+        license_plate: plate,
+        current_mileage: Number(vehicle.current_mileage),
+        engine: emptyToNull(vehicle.engine as string | undefined) ?? "",
+        transmission: emptyToNull(vehicle.transmission as string | undefined) ?? "",
+        drive: emptyToNull(vehicle.drive as string | undefined) ?? "",
+        power: emptyToNull(vehicle.power as string | undefined) ?? "",
+        oil_volume: emptyToNull(vehicle.oil_volume as string | undefined) ?? "",
+        tire_size: emptyToNull(vehicle.tire_size as string | undefined) ?? "",
+        fuel_type: emptyToNull(vehicle.fuel_type as string | undefined) ?? "",
+        notes: emptyToNull(vehicle.notes as string | undefined) ?? "",
+        status: "OK",
+      });
+      
+      return insertedId;
     },
     onSuccess: (vehicleId) => {
       queryClient.invalidateQueries({ queryKey: ["vehicles", "with-customers"] });

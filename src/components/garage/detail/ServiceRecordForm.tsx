@@ -5,7 +5,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
 
-import pb from "@/lib/pocketbase";
 import { compressImages } from "@/lib/imageCompression";
 import { ServiceRecordPhotoPicker, type ExistingPhoto } from "./photos/ServiceRecordPhotoPicker";
 import { Button } from "@/components/ui/button";
@@ -165,6 +164,19 @@ function roundPrice(v: number | null): number | null {
   return Math.round(v * 100) / 100;
 }
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const base64 = dataUrl.split(",")[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 type Mode = "create" | "edit";
 
 export function ServiceRecordForm({
@@ -248,42 +260,37 @@ export function ServiceRecordForm({
         next_service_date: nextDate,
       };
 
-      let recordId: string;
       const originalFilenames = isEdit && record ? record.photos : [];
 
-      if (isEdit && record) {
-        await pb.collection("service_records").update(record.id, payload);
-        recordId = record.id;
-      } else {
-        const created = await pb
-          .collection("service_records")
-          .create({ vehicle: vehicleId, ...payload });
-        recordId = created.id;
-      }
-
-      // Photo management via FormData
       const keptFilenames = new Set(existing.map((e) => e.filename));
       const removed = originalFilenames.filter((f) => !keptFilenames.has(f));
-      const hasPhotoChanges = removed.length > 0 || pendingFiles.length > 0;
-
+      
       let photoFailedCount = 0;
-      if (hasPhotoChanges) {
+      let newPhotosData: { name: string, base64: string }[] | undefined = undefined;
+
+      if (pendingFiles.length > 0) {
         try {
           const compressedFiles = await compressImages(pendingFiles);
-          const fd = new FormData();
-          for (const f of removed) fd.append("photos-", f);
-          for (const file of compressedFiles) fd.append("photos", file);
-          await pb.collection("service_records").update(recordId, fd);
+          newPhotosData = await Promise.all(compressedFiles.map(async f => ({
+            name: f.name,
+            base64: await fileToBase64(f)
+          })));
         } catch (e) {
-          console.warn("Photo update failed", e);
+          console.warn("Photo compression failed", e);
           photoFailedCount = pendingFiles.length;
         }
+      }
+
+      if (isEdit && record) {
+        await window.electronAPI.db.updateServiceRecord(record.id, payload, newPhotosData, removed);
+      } else {
+        await window.electronAPI.db.createServiceRecord({ vehicle: vehicleId, ...payload }, newPhotosData);
       }
 
       let mileageUpdated = false;
       if (newMileage > currentMileage) {
         try {
-          await pb.collection("vehicles").update(vehicleId, { current_mileage: newMileage });
+          await window.electronAPI.db.updateVehicle(vehicleId, { current_mileage: newMileage });
           mileageUpdated = true;
         } catch (e) {
           console.warn("Mileage update failed", e);
@@ -293,7 +300,7 @@ export function ServiceRecordForm({
       // Auto-create scheduled task only on create flow
       if (!isEdit && (nextKm != null || nextDate != null)) {
         try {
-          await pb.collection("scheduled_tasks").create({
+          await window.electronAPI.db.createScheduledTask({
             vehicle: vehicleId,
             planned_date: nextDate ?? today(),
             planned_mileage: nextKm,

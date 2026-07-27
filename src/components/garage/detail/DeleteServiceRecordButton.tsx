@@ -14,7 +14,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import pb from "@/lib/pocketbase";
 import type { ServiceRecord } from "@/lib/queries/vehicles";
 
 export function DeleteServiceRecordButton({
@@ -31,8 +30,7 @@ export function DeleteServiceRecordButton({
 
   const mutation = useMutation({
     mutationFn: async () => {
-      // PocketBase auto-deletes attached files when the record is deleted.
-      await pb.collection("service_records").delete(record.id);
+      await window.electronAPI.db.deleteServiceRecord(record.id);
     },
     onSuccess: () => {
       toast.success("Servisný záznam bol odstránený");

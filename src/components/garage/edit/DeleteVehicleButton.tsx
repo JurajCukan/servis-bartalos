@@ -3,7 +3,6 @@ import { Trash2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import type { RecordModel } from "pocketbase";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +15,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import pb from "@/lib/pocketbase";
 import type { VehicleDetail } from "@/lib/queries/vehicles";
 
 export function DeleteVehicleButton({
@@ -32,22 +30,7 @@ export function DeleteVehicleButton({
 
   const mutation = useMutation({
     mutationFn: async () => {
-      // Best-effort: PocketBase will auto-delete attached files when records are deleted.
-      const scheduled = await pb.collection("scheduled_tasks").getFullList<RecordModel>({
-        filter: pb.filter("vehicle = {:vid}", { vid: vehicle.id }),
-      });
-      for (const t of scheduled) {
-        await pb.collection("scheduled_tasks").delete(t.id);
-      }
-
-      const records = await pb.collection("service_records").getFullList<RecordModel>({
-        filter: pb.filter("vehicle = {:vid}", { vid: vehicle.id }),
-      });
-      for (const r of records) {
-        await pb.collection("service_records").delete(r.id);
-      }
-
-      await pb.collection("vehicles").delete(vehicle.id);
+      await window.electronAPI.db.deleteVehicle(vehicle.id);
     },
     onSuccess: () => {
       toast.success("Vozidlo bolo odstránené");

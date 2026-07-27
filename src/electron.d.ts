@@ -1,4 +1,27 @@
 export interface IElectronAPI {
+  db: {
+    searchCustomers: (query: string) => Promise<any[]>;
+    createCustomer: (data: any) => Promise<any>;
+    updateCustomer: (id: string, data: any) => Promise<boolean>;
+    getVehiclesWithCustomers: () => Promise<any[]>;
+    getVehicleDetail: (vehicleId: string) => Promise<any | null>;
+    checkDuplicatePlate: (plate: string, excludeId?: string) => Promise<{id: string} | null>;
+    createVehicle: (data: any, photoBase64?: string, photoName?: string) => Promise<string>;
+    updateVehicle: (vehicleId: string, data: any, photoBase64?: string, photoName?: string, removePhoto?: boolean) => Promise<boolean>;
+    deleteVehicle: (vehicleId: string) => Promise<boolean>;
+    getServiceRecords: (vehicleId: string) => Promise<any[]>;
+    getAllServiceRecords: () => Promise<any[]>;
+    createServiceRecord: (data: any, photosData?: any[]) => Promise<string>;
+    updateServiceRecord: (recordId: string, data: any, newPhotosData?: any[], removedPhotos?: string[]) => Promise<boolean>;
+    deleteServiceRecord: (recordId: string) => Promise<boolean>;
+    getScheduledTasks: (vehicleId: string) => Promise<any[]>;
+    getAllActiveTasks: () => Promise<any[]>;
+    createScheduledTask: (data: any) => Promise<string>;
+    updateTaskStatus: (id: string, status: string) => Promise<boolean>;
+    exportAllData: () => Promise<any>;
+    importData: (bundle: any) => Promise<boolean>;
+  };
+
   // Updates
   checkForUpdates: () => void;
   installUpdate: () => void;

@@ -2,7 +2,27 @@ import { useEffect, useMemo, useRef } from "react";
 import { Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { ALLOWED_MIME, MAX_PHOTOS_PER_RECORD, validateFiles } from "@/lib/photos";
+
+const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const MAX_PHOTOS_PER_RECORD = 10;
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
+
+function validateFiles(files: File[], currentCount: number) {
+  const accepted: File[] = [];
+  const errors: { file: File; reason: string }[] = [];
+  for (const file of files) {
+    if (!ALLOWED_MIME.includes(file.type)) {
+      errors.push({ file, reason: `Typ súboru "${file.type}" nie je povolený.` });
+    } else if (file.size > MAX_FILE_SIZE) {
+      errors.push({ file, reason: `Súbor "${file.name}" je príliš veľký (max 20 MB).` });
+    } else if (currentCount + accepted.length >= MAX_PHOTOS_PER_RECORD) {
+      errors.push({ file, reason: `Maximálny počet fotiek je ${MAX_PHOTOS_PER_RECORD}.` });
+    } else {
+      accepted.push(file);
+    }
+  }
+  return { accepted, errors };
+}
 
 export type ExistingPhoto = { filename: string; url: string };
 

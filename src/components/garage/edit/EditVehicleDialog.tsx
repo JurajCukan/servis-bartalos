@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
-import pb from "@/lib/pocketbase";
 import { compressImage } from "@/lib/imageCompression";
 import type { VehicleDetail } from "@/lib/queries/vehicles";
 
@@ -41,6 +40,19 @@ function buildDefaults(vehicle: VehicleDetail): EditFormInput {
     fuel_type: vehicle.fuel_type ?? "",
     vehicle_notes: vehicle.notes ?? "",
   };
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const base64 = dataUrl.split(",")[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 export function EditVehicleDialog({
@@ -80,31 +92,18 @@ export function EditVehicleDialog({
       const plate = values.license_plate.trim().toUpperCase();
 
       if (plate !== vehicle.license_plate) {
-        try {
-          const dup = await pb.collection("vehicles").getFirstListItem(
-            pb.filter("license_plate = {:p} && id != {:id}", {
-              p: plate,
-              id: vehicle.id,
-            }),
-          );
-          if (dup) {
-            form.setError("license_plate", {
-              type: "manual",
-              message: "Vozidlo s touto ŠPZ už existuje",
-            });
-            throw new Error("DUPLICATE_PLATE");
-          }
-        } catch (e) {
-          const status = (e as { status?: number }).status;
-          if (status !== 404 && (e as Error).message !== "DUPLICATE_PLATE") {
-            // ignore "not found" => no duplicate
-          }
-          if ((e as Error).message === "DUPLICATE_PLATE") throw e;
+        const dup = await window.electronAPI.db.checkDuplicatePlate(plate, vehicle.id);
+        if (dup) {
+          form.setError("license_plate", {
+            type: "manual",
+            message: "Vozidlo s touto ŠPZ už existuje",
+          });
+          throw new Error("DUPLICATE_PLATE");
         }
       }
 
       if (vehicle.customer) {
-        await pb.collection("customers").update(vehicle.customer.id, {
+        await window.electronAPI.db.updateCustomer(vehicle.customer.id, {
           first_name: values.first_name.trim(),
           last_name: values.last_name.trim(),
           phone: values.phone.trim(),
@@ -130,28 +129,25 @@ export function EditVehicleDialog({
         notes: emptyToNull(values.vehicle_notes as string),
       };
 
-      await pb.collection("vehicles").update(vehicle.id, vehiclePayload);
-
-      // Handle photo as a separate update so a failure doesn't roll back text data.
       let photoWarning: string | null = null;
+      let photoBase64: string | undefined = undefined;
+      let photoName: string | undefined = undefined;
+      let removePhoto = false;
+
       if (photoAction === "replace" && pendingPhoto) {
         try {
           const compressed = await compressImage(pendingPhoto);
-          const fd = new FormData();
-          fd.append("photo", compressed);
-          await pb.collection("vehicles").update(vehicle.id, fd);
+          photoBase64 = await fileToBase64(compressed);
+          photoName = compressed.name;
         } catch (e) {
           console.warn("Vehicle photo replace failed", e);
           photoWarning = "Fotku sa nepodarilo uložiť";
         }
       } else if (photoAction === "remove") {
-        try {
-          await pb.collection("vehicles").update(vehicle.id, { photo: null });
-        } catch (e) {
-          console.warn("Vehicle photo remove failed", e);
-          photoWarning = "Fotku sa nepodarilo odstrániť";
-        }
+        removePhoto = true;
       }
+
+      await window.electronAPI.db.updateVehicle(vehicle.id, vehiclePayload, photoBase64, photoName, removePhoto);
 
       return { photoWarning };
     },

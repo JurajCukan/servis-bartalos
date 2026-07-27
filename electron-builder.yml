@@ -5,12 +5,9 @@ directories:
 files:
   - dist/**
   - electron/dist/**
-  - pocketbase/pocketbase.exe
-  - pocketbase/initial_pb_data/**
 asar: true
 asarUnpack:
-  - "pocketbase/pocketbase.exe"
-  - "pocketbase/initial_pb_data/**"
+  - "**/*.node"
 win:
   target: nsis
   icon: build/icon.png

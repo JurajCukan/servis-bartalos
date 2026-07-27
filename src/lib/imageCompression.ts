@@ -9,7 +9,7 @@ const COMPRESSION_OPTIONS = {
 };
 
 /**
- * Compress an image file before uploading to PocketBase.
+ * Compress an image file before storing.
  * Outputs WebP at max 1920px and ~80% quality.
  * If compression fails, returns the original file unchanged.
  */

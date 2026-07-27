@@ -3,7 +3,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Calendar, Gauge, CheckCircle2, X } from "lucide-react";
 
-import pb from "@/lib/pocketbase";
 import { formatDateLong, formatKm } from "@/lib/format";
 import type { PlannedTask, TaskPriority, TaskStatus } from "@/lib/queries/scheduledTasks";
 
@@ -24,7 +23,7 @@ export function PlannedTaskCard({ task }: { task: PlannedTask }) {
 
   const updateStatus = useMutation({
     mutationFn: async (status: TaskStatus) => {
-      await pb.collection("scheduled_tasks").update(task.id, { status });
+      await window.electronAPI.db.updateTaskStatus(task.id, status);
       return status;
     },
     onSuccess: (status) => {

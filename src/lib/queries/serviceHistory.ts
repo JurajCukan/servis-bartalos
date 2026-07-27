@@ -1,7 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import type { RecordModel } from "pocketbase";
-import pb from "@/lib/pocketbase";
-import { mapServiceRecord, type ServiceRecord } from "./vehicles";
+import { type ServiceRecord } from "./vehicles";
 
 export type ServiceHistoryItem = ServiceRecord & {
   vehicle: {
@@ -16,32 +14,7 @@ export type ServiceHistoryItem = ServiceRecord & {
 export const serviceHistoryQuery = queryOptions({
   queryKey: ["service-history", "all"],
   queryFn: async (): Promise<ServiceHistoryItem[]> => {
-    const list = await pb.collection("service_records").getFullList<RecordModel>({
-      expand: "vehicle,vehicle.customer",
-      sort: "-date,-created",
-    });
-    return list.map((r) => {
-      const base = mapServiceRecord(r);
-      const veh = r.expand?.vehicle as RecordModel | undefined;
-      const cust = veh?.expand?.customer as RecordModel | undefined;
-      return {
-        ...base,
-        vehicle: veh
-          ? {
-              id: veh.id,
-              brand: veh.brand ?? "",
-              model: veh.model ?? "",
-              license_plate: veh.license_plate ?? "",
-              customer: cust
-                ? {
-                    first_name: cust.first_name ?? "",
-                    last_name: cust.last_name ?? "",
-                  }
-                : null,
-            }
-          : null,
-      };
-    });
+    return window.electronAPI.db.getAllServiceRecords();
   },
 });
 

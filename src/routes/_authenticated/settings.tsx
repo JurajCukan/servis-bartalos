@@ -6,7 +6,6 @@ import { UpdateSettingCard } from "@/components/settings/UpdateSettingCard";
 import { ThemeSettingCard } from "@/components/settings/ThemeSettingCard";
 import { AppInfoCard } from "@/components/settings/AppInfoCard";
 import { DataSafetyCard } from "@/components/settings/DataSafetyCard";
-import { PocketBaseStatusCard } from "@/components/settings/PocketBaseStatusCard";
 import { ExportImportCard } from "@/components/settings/ExportImportCard";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -29,7 +28,6 @@ function SettingsPage() {
         <SettingsPageHeader />
         <UpdateSettingCard />
         <ExportImportCard />
-        <PocketBaseStatusCard />
         <ThemeSettingCard />
         <AppInfoCard />
         <DataSafetyCard />

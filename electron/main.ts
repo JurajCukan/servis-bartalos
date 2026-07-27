@@ -1,182 +1,29 @@
-import { app, BrowserWindow, ipcMain, dialog, session } from "electron";
+import { app, BrowserWindow, ipcMain, dialog, protocol, net } from "electron";
 import path from "path";
 import fs from "fs";
-import { spawn, ChildProcess } from "child_process";
-import http from "http";
+import { pathToFileURL } from "url";
 import { initializeAutoUpdater } from "./updater.js";
 import { autoUpdater } from "electron-updater";
+import {
+  initDatabase, closeDatabase,
+  searchCustomers, createCustomer, updateCustomer,
+  getVehiclesWithCustomers, getVehicleDetail, checkDuplicatePlate,
+  createVehicle, updateVehicle, deleteVehicleCascade,
+  getServiceRecords, getAllServiceRecords, getServiceRecordById,
+  createServiceRecord, updateServiceRecord, deleteServiceRecord,
+  getScheduledTasks, getAllActiveTasks, createScheduledTask, updateTaskStatus,
+  exportAllData, importData,
+} from "./database.js";
+import {
+  initPhotos, savePhoto, deletePhoto, deleteAllPhotosForRecord,
+  getPhotoPath, readPhotoAsBase64, getPhotosDir,
+} from "./photos.js";
 
-let pbProcess: ChildProcess | null = null;
 let mainWindow: BrowserWindow | null = null;
-
 const isDev = !app.isPackaged;
 
-function getPocketBasePath(): string {
-  return app.isPackaged
-    ? path.join(process.resourcesPath, "app.asar.unpacked", "pocketbase", "pocketbase.exe")
-    : path.join(app.getAppPath(), "pocketbase", "pocketbase.exe");
-}
-
-function getDataDir(): string {
-  return path.join(app.getPath("userData"), "pocketbase_data");
-}
-
-function getInitialDataDir(): string {
-  return app.isPackaged
-    ? path.join(process.resourcesPath, "app.asar.unpacked", "pocketbase", "initial_pb_data")
-    : path.join(app.getAppPath(), "pocketbase", "initial_pb_data");
-}
-
-function copyFolderRecursiveSync(src: string, dest: string) {
-  if (!fs.existsSync(src)) return;
-  fs.mkdirSync(dest, { recursive: true });
-  const entries = fs.readdirSync(src, { withFileTypes: true });
-  for (const entry of entries) {
-    const srcPath = path.join(src, entry.name);
-    const destPath = path.join(dest, entry.name);
-    if (entry.isDirectory()) {
-      copyFolderRecursiveSync(srcPath, destPath);
-    } else {
-      fs.copyFileSync(srcPath, destPath);
-    }
-  }
-}
-
-function seedDatabaseIfNeeded(dataDir: string) {
-  try {
-    const dbFile = path.join(dataDir, "data.db");
-    if (!fs.existsSync(dbFile)) {
-      const initialDataDir = getInitialDataDir();
-      if (fs.existsSync(initialDataDir)) {
-        console.log(`[main] Copying initial_pb_data seed from ${initialDataDir} to ${dataDir}...`);
-        fs.mkdirSync(dataDir, { recursive: true });
-        copyFolderRecursiveSync(initialDataDir, dataDir);
-      }
-    }
-  } catch (err) {
-    console.error("[main] Failed to seed database:", err);
-  }
-}
-
-function startPocketBase() {
-  const pocketbasePath = getPocketBasePath();
-  const dataDir = getDataDir();
-
-  seedDatabaseIfNeeded(dataDir);
-
-  console.log(`[main] Spawning PocketBase from: ${pocketbasePath}`);
-  console.log(`[main] Storing data in: ${dataDir}`);
-
-  pbProcess = spawn(
-    pocketbasePath,
-    ["serve", "--http=127.0.0.1:8090", `--dir=${dataDir}`],
-    { stdio: "ignore" },
-  );
-
-  pbProcess.on("error", (err) => {
-    console.error("[main] Failed to start PocketBase process:", err);
-  });
-
-  pbProcess.on("exit", (code) => {
-    console.log(`[main] PocketBase process exited with code ${code}`);
-  });
-}
-
-function stopPocketBase() {
-  if (pbProcess) {
-    console.log("[main] Terminating PocketBase child process...");
-    pbProcess.kill();
-    pbProcess = null;
-  }
-}
-
-function checkPocketBaseReady(callback: () => void, checkCollections = true) {
-  const checkUrl = "http://127.0.0.1:8090/api/health";
-  const interval = 100;
-  const maxRetries = 100; // 10s max wait
-  let retries = 0;
-
-  const check = () => {
-    http
-      .get(checkUrl, (res) => {
-        if (res.statusCode === 200) {
-          console.log("[main] PocketBase is healthy and ready!");
-          if (checkCollections) {
-            verifyAndRepairCollections(callback);
-          } else {
-            callback();
-          }
-        } else {
-          retry();
-        }
-      })
-      .on("error", () => {
-        retry();
-      });
-  };
-
-  const retry = () => {
-    retries++;
-    if (retries > maxRetries) {
-      console.error("[main] PocketBase health check timed out after 10 seconds.");
-      dialog.showErrorBox(
-        "Chyba spustenia databázy",
-        "Aplikácia nemohla nadviazať spojenie s lokálnou databázou PocketBase (http://127.0.0.1:8090).\nSkontrolujte, či port 8090 neblokuje iný spustený program.",
-      );
-      callback();
-    } else {
-      setTimeout(check, interval);
-    }
-  };
-
-  check();
-}
-
-function verifyAndRepairCollections(callback: () => void) {
-  const checkCollUrl = "http://127.0.0.1:8090/api/collections/customers/records";
-  http
-    .get(checkCollUrl, (res) => {
-      if (res.statusCode === 404) {
-        console.warn("[main] Collection 'customers' returned 404 — data.db is unseeded. Auto-repairing...");
-        stopPocketBase();
-        const dataDir = getDataDir();
-        try {
-          fs.rmSync(dataDir, { recursive: true, force: true });
-        } catch (e) {
-          console.error("[main] Failed to clear dataDir:", e);
-        }
-        seedDatabaseIfNeeded(dataDir);
-        startPocketBase();
-        checkPocketBaseReady(callback, false);
-      } else {
-        console.log("[main] Database collections verified successfully.");
-        callback();
-      }
-    })
-    .on("error", (err) => {
-      console.error("[main] Error checking collection health:", err);
-      callback();
-    });
-}
-
-/**
- * In production mode, block requests to the PocketBase admin UI (/_/ paths).
- * Dev mode keeps admin accessible for debugging.
- */
-function blockAdminUIInProduction() {
-  if (isDev) {
-    console.log("[main] Dev mode — PocketBase admin UI accessible at http://127.0.0.1:8090/_/");
-    return;
-  }
-
-  session.defaultSession.webRequest.onBeforeRequest(
-    { urls: ["http://127.0.0.1:8090/_/*"] },
-    (details, callback) => {
-      console.log(`[main] Blocked admin UI request: ${details.url}`);
-      callback({ cancel: true });
-    },
-  );
-  console.log("[main] Production mode — PocketBase admin UI blocked.");
+function getUserDataDir(): string {
+  return app.getPath("userData");
 }
 
 function createWindow() {
@@ -192,7 +39,6 @@ function createWindow() {
     },
   });
 
-  // Remove the standard window menu bar
   mainWindow.removeMenu();
 
   if (isDev) {
@@ -206,11 +52,22 @@ function createWindow() {
     mainWindow = null;
   });
 
-  // Setup auto-updater once window is ready
   initializeAutoUpdater(mainWindow);
 }
 
-// Ensure single instance lock
+// ─── Custom Protocol for Photos ───────────────────────────────────────────────
+
+function registerPhotoProtocol() {
+  protocol.handle("app-photo", (request) => {
+    const relativePath = decodeURIComponent(request.url.slice("app-photo://".length));
+    const fullPath = path.join(getPhotosDir(), relativePath);
+    return net.fetch(pathToFileURL(fullPath).toString());
+  });
+  console.log("[main] Registered app-photo:// protocol handler.");
+}
+
+// ─── App Lifecycle ────────────────────────────────────────────────────────────
+
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
@@ -223,16 +80,19 @@ if (!gotTheLock) {
     }
   });
 
-  app.whenReady().then(async () => {
-    blockAdminUIInProduction();
-    startPocketBase();
-    checkPocketBaseReady(() => {
-      createWindow();
-    });
+  app.whenReady().then(() => {
+    const userDataDir = getUserDataDir();
+    console.log(`[main] User data directory: ${userDataDir}`);
+
+    // Initialize database and photos
+    initDatabase(userDataDir);
+    initPhotos(userDataDir);
+    registerPhotoProtocol();
+
+    createWindow();
   });
 }
 
-// Kill PocketBase when app quits
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
@@ -240,10 +100,274 @@ app.on("window-all-closed", () => {
 });
 
 app.on("will-quit", () => {
-  stopPocketBase();
+  closeDatabase();
 });
 
-// ─── IPC: Updates ────────────────────────────────────────────────────────────
+// ─── IPC: Database — Customers ────────────────────────────────────────────────
+
+ipcMain.handle("db:search-customers", (_event, query: string) => {
+  return searchCustomers(query);
+});
+
+ipcMain.handle("db:create-customer", (_event, data) => {
+  return createCustomer(data);
+});
+
+ipcMain.handle("db:update-customer", (_event, id: string, data) => {
+  updateCustomer(id, data);
+  return true;
+});
+
+// ─── IPC: Database — Vehicles ─────────────────────────────────────────────────
+
+ipcMain.handle("db:get-vehicles-with-customers", () => {
+  const vehicles = getVehiclesWithCustomers();
+  return vehicles.map((v) => ({
+    ...v,
+    photo_url: v.photo ? `app-photo://vehicles/${v.photo}` : null,
+  }));
+});
+
+ipcMain.handle("db:get-vehicle-detail", (_event, vehicleId: string) => {
+  const detail = getVehicleDetail(vehicleId);
+  if (!detail) return null;
+  return {
+    ...detail,
+    photo_url: detail.photo ? `app-photo://vehicles/${detail.photo}` : null,
+  };
+});
+
+ipcMain.handle("db:check-duplicate-plate", (_event, plate: string, excludeId?: string) => {
+  return checkDuplicatePlate(plate, excludeId) ?? null;
+});
+
+ipcMain.handle(
+  "db:create-vehicle",
+  (_event, data: Record<string, unknown>, photoBase64?: string, photoName?: string) => {
+    let photoFilename: string | null = null;
+    const vehicleId = createVehicle({ ...data, photo: null } as Parameters<typeof createVehicle>[0]);
+
+    if (photoBase64 && photoName) {
+      photoFilename = savePhoto("vehicles", vehicleId, photoName, photoBase64);
+      updateVehicle(vehicleId, { photo: photoFilename });
+    }
+
+    return vehicleId;
+  }
+);
+
+ipcMain.handle(
+  "db:update-vehicle",
+  (
+    _event,
+    vehicleId: string,
+    data: Record<string, unknown>,
+    photoBase64?: string | null,
+    photoName?: string | null,
+    removePhoto?: boolean
+  ) => {
+    // Handle photo changes
+    if (removePhoto) {
+      const existing = getVehicleDetail(vehicleId);
+      if (existing?.photo) {
+        deletePhoto("vehicles", existing.photo);
+      }
+      data.photo = null;
+    } else if (photoBase64 && photoName) {
+      // Delete old photo first
+      const existing = getVehicleDetail(vehicleId);
+      if (existing?.photo) {
+        deletePhoto("vehicles", existing.photo);
+      }
+      const newFilename = savePhoto("vehicles", vehicleId, photoName, photoBase64);
+      data.photo = newFilename;
+    }
+
+    updateVehicle(vehicleId, data);
+    return true;
+  }
+);
+
+ipcMain.handle("db:delete-vehicle", (_event, vehicleId: string) => {
+  // Get all service records to delete their photos
+  const records = getServiceRecords(vehicleId);
+  for (const r of records) {
+    for (const photo of r.photos) {
+      deletePhoto("service_records", photo);
+    }
+  }
+  // Delete vehicle photo
+  const vehicle = getVehicleDetail(vehicleId);
+  if (vehicle?.photo) {
+    deletePhoto("vehicles", vehicle.photo);
+  }
+  deleteVehicleCascade(vehicleId);
+  return true;
+});
+
+// ─── IPC: Database — Service Records ──────────────────────────────────────────
+
+ipcMain.handle("db:get-service-records", (_event, vehicleId: string) => {
+  const records = getServiceRecords(vehicleId);
+  return records.map((r) => ({
+    ...r,
+    photo_urls: r.photos.map((p: string) => `app-photo://service_records/${p}`),
+  }));
+});
+
+ipcMain.handle("db:get-all-service-records", () => {
+  const records = getAllServiceRecords();
+  return records.map((r) => ({
+    ...r,
+    photo_urls: r.photos.map((p: string) => `app-photo://service_records/${p}`),
+  }));
+});
+
+ipcMain.handle(
+  "db:create-service-record",
+  (
+    _event,
+    data: Record<string, unknown>,
+    photosData?: Array<{ name: string; base64: string }>
+  ) => {
+    const recordId = createServiceRecord(data as Parameters<typeof createServiceRecord>[0]);
+
+    if (photosData && photosData.length > 0) {
+      const savedNames: string[] = [];
+      for (const p of photosData) {
+        const name = savePhoto("service_records", recordId, p.name, p.base64);
+        savedNames.push(name);
+      }
+      updateServiceRecord(recordId, { photos: savedNames });
+    }
+
+    return recordId;
+  }
+);
+
+ipcMain.handle(
+  "db:update-service-record",
+  (
+    _event,
+    recordId: string,
+    data: Record<string, unknown>,
+    newPhotosData?: Array<{ name: string; base64: string }>,
+    removedPhotos?: string[]
+  ) => {
+    // Get current photos
+    const existing = getServiceRecordById(recordId);
+    let currentPhotos = existing?.photos ?? [];
+
+    // Remove specified photos
+    if (removedPhotos && removedPhotos.length > 0) {
+      for (const filename of removedPhotos) {
+        deletePhoto("service_records", filename);
+      }
+      currentPhotos = currentPhotos.filter((p: string) => !removedPhotos.includes(p));
+    }
+
+    // Add new photos
+    if (newPhotosData && newPhotosData.length > 0) {
+      for (const p of newPhotosData) {
+        const name = savePhoto("service_records", recordId, p.name, p.base64);
+        currentPhotos.push(name);
+      }
+    }
+
+    // Update photos list in data
+    data.photos = currentPhotos;
+    updateServiceRecord(recordId, data);
+    return true;
+  }
+);
+
+ipcMain.handle("db:delete-service-record", (_event, recordId: string) => {
+  const existing = getServiceRecordById(recordId);
+  if (existing) {
+    for (const photo of existing.photos) {
+      deletePhoto("service_records", photo);
+    }
+  }
+  deleteServiceRecord(recordId);
+  return true;
+});
+
+// ─── IPC: Database — Scheduled Tasks ──────────────────────────────────────────
+
+ipcMain.handle("db:get-scheduled-tasks", (_event, vehicleId: string) => {
+  return getScheduledTasks(vehicleId);
+});
+
+ipcMain.handle("db:get-all-active-tasks", () => {
+  return getAllActiveTasks();
+});
+
+ipcMain.handle("db:create-scheduled-task", (_event, data) => {
+  return createScheduledTask(data);
+});
+
+ipcMain.handle("db:update-task-status", (_event, id: string, status: string) => {
+  updateTaskStatus(id, status);
+  return true;
+});
+
+// ─── IPC: Database — Export / Import ──────────────────────────────────────────
+
+ipcMain.handle("db:export-all-data", () => {
+  const data = exportAllData();
+  // Include photo base64 data for export
+  const vehiclesWithPhotos = (data.vehicles as Array<Record<string, unknown>>).map((v) => {
+    const photoData = v.photo ? readPhotoAsBase64("vehicles", v.photo as string) : null;
+    return { ...v, photo_base64: photoData };
+  });
+  const recordsWithPhotos = data.service_records.map((sr) => {
+    const photosBase64: Record<string, string> = {};
+    for (const filename of sr.photos) {
+      const b64 = readPhotoAsBase64("service_records", filename);
+      if (b64) photosBase64[filename] = b64;
+    }
+    return { ...sr, photos_base64: photosBase64 };
+  });
+  return {
+    ...data,
+    vehicles: vehiclesWithPhotos,
+    service_records: recordsWithPhotos,
+  };
+});
+
+ipcMain.handle("db:import-data", (_event, bundle) => {
+  const idMap = importData(bundle);
+
+  // Restore vehicle photos
+  if (bundle.vehicles) {
+    for (const v of bundle.vehicles) {
+      if (v.photo_base64 && v.photo) {
+        const newVehicleId = idMap[v.id as string] || (v.id as string);
+        const savedName = savePhoto("vehicles", newVehicleId, v.photo as string, v.photo_base64 as string);
+        updateVehicle(newVehicleId, { photo: savedName });
+      }
+    }
+  }
+
+  // Restore service record photos
+  if (bundle.service_records) {
+    for (const sr of bundle.service_records) {
+      if (sr.photos_base64) {
+        const newRecordId = idMap[sr.id as string] || (sr.id as string);
+        const restoredPhotos: string[] = [];
+        for (const [origName, b64] of Object.entries(sr.photos_base64 as Record<string, string>)) {
+          const savedName = savePhoto("service_records", newRecordId, origName, b64);
+          restoredPhotos.push(savedName);
+        }
+        updateServiceRecord(newRecordId, { photos: restoredPhotos });
+      }
+    }
+  }
+
+  return true;
+});
+
+// ─── IPC: Updates ─────────────────────────────────────────────────────────────
 
 ipcMain.on("check-for-updates", () => {
   console.log("[main] Manual check for updates requested.");
@@ -254,7 +378,7 @@ ipcMain.on("check-for-updates", () => {
 
 ipcMain.on("install-update", () => {
   console.log("[main] Installing update and quitting...");
-  stopPocketBase();
+  closeDatabase();
   setTimeout(() => {
     autoUpdater.quitAndInstall();
   }, 500);
@@ -264,7 +388,7 @@ ipcMain.handle("get-app-version", () => {
   return app.getVersion();
 });
 
-// ─── IPC: File dialogs for Export/Import ─────────────────────────────────────
+// ─── IPC: File dialogs for Export/Import ──────────────────────────────────────
 
 ipcMain.handle("show-save-dialog", async (_event, options: Electron.SaveDialogOptions) => {
   if (!mainWindow) return { canceled: true, filePath: undefined };

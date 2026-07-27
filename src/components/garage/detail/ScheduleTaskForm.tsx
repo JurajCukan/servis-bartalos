@@ -4,7 +4,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
 
-import pb from "@/lib/pocketbase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -84,7 +83,7 @@ export function ScheduleTaskForm({
         raw.planned_mileage === "" || raw.planned_mileage == null
           ? null
           : Number(raw.planned_mileage);
-      await pb.collection("scheduled_tasks").create({
+      await window.electronAPI.db.createScheduledTask({
         vehicle: vehicleId,
         planned_date: raw.planned_date,
         planned_mileage: mileage,
