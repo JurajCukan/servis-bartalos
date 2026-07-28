@@ -1,7 +1,12 @@
-import Database from "better-sqlite3";
+import type Database from "better-sqlite3";
 import path from "path";
 import crypto from "crypto";
+import fs from "fs";
 
+// Lazy-loaded reference — must not be imported at module level
+// because better-sqlite3 immediately resolves its native binding
+// which fails inside an ASAR archive.
+let BetterSqlite3: typeof import("better-sqlite3");
 let db: Database.Database;
 
 function generateId(): string {
@@ -19,7 +24,7 @@ export function initDatabase(userDataPath: string): void {
   console.log(`[database] Opening SQLite database at: ${dbPath}`);
 
   // Resolve native binding path explicitly when packaged to avoid ASAR crash
-  let nativeBinding;
+  let nativeBinding: string | undefined;
   if (process.versions.electron) {
     const { app } = require("electron");
     if (app.isPackaged) {
@@ -32,10 +37,22 @@ export function initDatabase(userDataPath: string): void {
         "better_sqlite3.node"
       );
       console.log(`[database] Using native binding: ${nativeBinding}`);
+
+      // Verify the native binding file actually exists
+      if (!fs.existsSync(nativeBinding)) {
+        throw new Error(
+          `Native SQLite binding not found at: ${nativeBinding}\n` +
+          `This usually means the native module was not properly unpacked during installation.`
+        );
+      }
     }
   }
 
-  db = new Database(dbPath, nativeBinding ? { nativeBinding } : undefined);
+  // Lazy-require better-sqlite3 AFTER we know the native binding path.
+  // This prevents the module from trying to find the .node file inside app.asar.
+  BetterSqlite3 = require("better-sqlite3");
+
+  db = new BetterSqlite3(dbPath, nativeBinding ? { nativeBinding } : undefined);
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");
 

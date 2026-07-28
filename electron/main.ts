@@ -4,8 +4,10 @@ import fs from "fs";
 import { pathToFileURL } from "url";
 import { exec } from "child_process";
 
-const logFile = "C:\\projekty\\servis-bartalos\\debug_startup.log";
+// Use userData for debug log so it works on any machine
+const logFile = path.join(app.getPath("userData"), "debug_startup.log");
 try {
+  fs.mkdirSync(app.getPath("userData"), { recursive: true });
   fs.appendFileSync(logFile, `\n=== STARTUP ${new Date().toISOString()} ===\n`);
   fs.appendFileSync(logFile, `app.getPath("userData") = ${app.getPath("userData")}\n`);
 } catch (e: any) {
@@ -17,8 +19,9 @@ process.on("uncaughtException", (err) => {
   dialog.showErrorBox("Chyba aplikácie", `Aplikácia spadla pri spúšťaní:\n${err?.message || err}`);
 });
 
-process.on("unhandledRejection", (reason) => {
-  try { fs.appendFileSync(logFile, `[REJECTION] ${reason}\n`); } catch (_) {}
+process.on("unhandledRejection", (reason: any) => {
+  try { fs.appendFileSync(logFile, `[REJECTION] ${reason?.stack || reason}\n`); } catch (_) {}
+  dialog.showErrorBox("Chyba aplikácie", `Neočakávaná chyba:\n${reason?.message || reason}`);
 });
 
 import { initializeAutoUpdater } from "./updater.js";
@@ -110,8 +113,17 @@ if (!gotTheLock) {
     const userDataDir = getUserDataDir();
     console.log(`[main] User data directory: ${userDataDir}`);
 
-    // Initialize database and photos
-    initDatabase(userDataDir);
+    // Initialize database and photos with error handling
+    try {
+      initDatabase(userDataDir);
+    } catch (err: any) {
+      const msg = `Nepodarilo sa inicializovať databázu:\n${err?.message || err}`;
+      try { fs.appendFileSync(logFile, `[DB_INIT_ERROR] ${err?.stack || err}\n`); } catch (_) {}
+      dialog.showErrorBox("Chyba databázy", msg);
+      app.quit();
+      return;
+    }
+
     initPhotos(userDataDir);
     registerPhotoProtocol();
 
