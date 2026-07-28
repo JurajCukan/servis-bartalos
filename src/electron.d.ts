@@ -24,6 +24,7 @@ export interface IElectronAPI {
 
   // Updates
   checkForUpdates: () => void;
+  downloadUpdate: () => void;
   installUpdate: () => void;
   getAppVersion: () => Promise<string>;
   onUpdateChecking: (callback: () => void) => () => void;

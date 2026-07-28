@@ -470,6 +470,11 @@ ipcMain.on("check-for-updates", () => {
   });
 });
 
+ipcMain.on("download-update", () => {
+  console.log("[main] Manual download for update requested.");
+  autoUpdater.downloadUpdate();
+});
+
 ipcMain.on("install-update", () => {
   console.log("[main] Installing update and quitting...");
   closeDatabase();

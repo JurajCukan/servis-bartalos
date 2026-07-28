@@ -33,7 +33,7 @@ export function UpdateSettingCard() {
 
     const unsubAvailable = window.electronAPI.onUpdateAvailable((info) => {
       setState({ status: "available", version: info.version });
-      toast.info(`Nájdená nová verzia v${info.version}! Sťahujem aktualizáciu…`);
+      toast.info(`Je dostupná nová verzia v${info.version}! Kliknite na "Stiahnuť aktualizáciu".`);
     });
 
     const unsubNotAvailable = window.electronAPI.onUpdateNotAvailable(() => {
@@ -68,6 +68,11 @@ export function UpdateSettingCard() {
     if (!isElectron) return;
     setState({ status: "checking" });
     window.electronAPI.checkForUpdates();
+  };
+
+  const handleDownloadUpdate = () => {
+    if (!isElectron) return;
+    window.electronAPI.downloadUpdate();
   };
 
   const handleInstallUpdate = () => {
@@ -121,6 +126,22 @@ export function UpdateSettingCard() {
           </div>
         )}
 
+        {state.status === "available" && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-sm text-blue-400">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 shrink-0" />
+              <span>Nová verzia {state.version} je pripravená na stiahnutie!</span>
+            </div>
+            <Button
+              onClick={handleDownloadUpdate}
+              className="bg-blue-600 hover:bg-blue-700 text-white gap-2 font-semibold"
+            >
+              <Download className="h-4 w-4" />
+              Stiahnuť aktualizáciu
+            </Button>
+          </div>
+        )}
+
         {state.status === "ready" && (
           <div className="flex items-center justify-between gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-400">
             <div className="flex items-center gap-2">
@@ -166,7 +187,7 @@ export function UpdateSettingCard() {
         )}
 
         {/* Main Action Buttons */}
-        {state.status !== "ready" && (
+        {state.status !== "ready" && state.status !== "available" && (
           <div className="flex flex-col sm:flex-row gap-2">
             <Button
               variant="outline"

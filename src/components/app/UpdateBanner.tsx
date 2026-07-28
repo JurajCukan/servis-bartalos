@@ -25,7 +25,8 @@ export function UpdateBanner() {
 
   const handleUpdate = () => {
     if (window.electronAPI) {
-      window.electronAPI.installUpdate();
+      window.electronAPI.downloadUpdate();
+      setDismissed(true);
     }
   };
 
@@ -41,7 +42,7 @@ export function UpdateBanner() {
           onClick={handleUpdate}
           className="bg-white text-brand-accent font-semibold px-3 py-1 rounded hover:bg-neutral-100 transition text-xs cursor-pointer shadow-sm"
         >
-          Aktualizovať teraz
+          Stiahnuť a aktualizovať
         </button>
         <button
           type="button"

@@ -2,7 +2,7 @@ import { autoUpdater } from "electron-updater";
 import { BrowserWindow } from "electron";
 
 export function initializeAutoUpdater(mainWindow: BrowserWindow) {
-  autoUpdater.autoDownload = true;
+  autoUpdater.autoDownload = false;
 
   autoUpdater.on("checking-for-update", () => {
     console.log("[Updater] Checking for update...");
