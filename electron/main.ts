@@ -92,23 +92,22 @@ function createWindow() {
 // ─── Custom Protocol for Photos ───────────────────────────────────────────────
 
 function registerPhotoProtocol() {
-  protocol.handle("app-photo", async (request) => {
+  protocol.registerBufferProtocol("app-photo", (request, callback) => {
     const relativePath = decodeURIComponent(request.url.slice("app-photo://".length));
     const fullPath = path.join(getPhotosDir(), relativePath);
     
-    try {
-      const data = await fs.promises.readFile(fullPath);
-      let mimeType = "image/jpeg";
-      if (fullPath.toLowerCase().endsWith(".png")) mimeType = "image/png";
-      else if (fullPath.toLowerCase().endsWith(".webp")) mimeType = "image/webp";
-      
-      return new Response(data, {
-        headers: { "Content-Type": mimeType }
-      });
-    } catch (err) {
-      console.error(`[protocol] Failed to load photo: ${fullPath}`, err);
-      return new Response("Not Found", { status: 404 });
-    }
+    fs.readFile(fullPath, (error, data) => {
+      if (error) {
+        console.error(`[protocol] Failed to load photo: ${fullPath}`, error);
+        callback({ error: -6 /* net::ERR_FILE_NOT_FOUND */ });
+      } else {
+        let mimeType = "image/jpeg";
+        if (fullPath.toLowerCase().endsWith(".png")) mimeType = "image/png";
+        else if (fullPath.toLowerCase().endsWith(".webp")) mimeType = "image/webp";
+        
+        callback({ mimeType, data });
+      }
+    });
   });
   console.log("[main] Registered app-photo:// protocol handler.");
 }
@@ -129,28 +128,27 @@ if (!gotTheLock) {
 
   app.whenReady().then(() => {
     // Setup local app:// protocol to serve Vite bundle without CORS issues
-    protocol.handle("app", async (request) => {
+    protocol.registerBufferProtocol("app", (request, callback) => {
       const url = new URL(request.url);
       const relativePath = decodeURIComponent(url.pathname.substring(1)); // remove leading slash
       const fullPath = path.join(app.getAppPath(), "dist", relativePath);
       
-      try {
-        const data = await fs.promises.readFile(fullPath);
-        let mimeType = "text/plain";
-        if (fullPath.endsWith(".html")) mimeType = "text/html";
-        else if (fullPath.endsWith(".js")) mimeType = "application/javascript";
-        else if (fullPath.endsWith(".css")) mimeType = "text/css";
-        else if (fullPath.endsWith(".png")) mimeType = "image/png";
-        else if (fullPath.endsWith(".svg")) mimeType = "image/svg+xml";
-        else if (fullPath.endsWith(".json")) mimeType = "application/json";
+      fs.readFile(fullPath, (error, data) => {
+        if (error) {
+          console.error(`[protocol] Failed to load: ${fullPath}`, error);
+          callback({ error: -6 /* net::ERR_FILE_NOT_FOUND */ });
+        } else {
+          let mimeType = "text/plain";
+          if (fullPath.endsWith(".html")) mimeType = "text/html";
+          else if (fullPath.endsWith(".js")) mimeType = "application/javascript";
+          else if (fullPath.endsWith(".css")) mimeType = "text/css";
+          else if (fullPath.endsWith(".png")) mimeType = "image/png";
+          else if (fullPath.endsWith(".svg")) mimeType = "image/svg+xml";
+          else if (fullPath.endsWith(".json")) mimeType = "application/json";
 
-        return new Response(data, {
-          headers: { "Content-Type": mimeType },
-        });
-      } catch (err) {
-        console.error(`[protocol] Failed to load: ${fullPath}`, err);
-        return new Response("Not Found", { status: 404 });
-      }
+          callback({ mimeType, data });
+        }
+      });
     });
 
     const userDataDir = getUserDataDir();
