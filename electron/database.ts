@@ -153,7 +153,7 @@ export function getVehiclesWithCustomers() {
   return (db
     .prepare(
       `SELECT v.*, c.first_name AS c_first_name, c.last_name AS c_last_name, c.phone AS c_phone,
-              (SELECT COUNT(id) FROM scheduled_tasks st WHERE st.vehicle_id = v.id AND st.status != 'Zrušené') as pending_tasks
+              (SELECT COUNT(id) FROM scheduled_tasks st WHERE st.vehicle_id = v.id AND st.status = 'Čakajúce') as pending_tasks
        FROM vehicles v LEFT JOIN customers c ON v.customer_id = c.id
        ORDER BY v.created_at DESC`
     )
@@ -185,7 +185,7 @@ export function getVehicleDetail(vehicleId: string) {
     .prepare(
       `SELECT v.*, c.id AS c_id, c.first_name AS c_first_name, c.last_name AS c_last_name,
               c.phone AS c_phone, c.email AS c_email, c.notes AS c_notes,
-              (SELECT COUNT(id) FROM scheduled_tasks st WHERE st.vehicle_id = v.id AND st.status != 'Zrušené') as pending_tasks
+              (SELECT COUNT(id) FROM scheduled_tasks st WHERE st.vehicle_id = v.id AND st.status = 'Čakajúce') as pending_tasks
        FROM vehicles v LEFT JOIN customers c ON v.customer_id = c.id
        WHERE v.id = ?`
     )
