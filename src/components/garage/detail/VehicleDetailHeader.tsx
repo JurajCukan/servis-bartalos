@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Car } from "lucide-react";
-import { StatusBadge } from "../StatusBadge";
+
 import { formatKm as formatMileage } from "@/lib/format";
 import type { VehicleDetail } from "@/lib/queries/vehicles";
 
@@ -67,7 +67,7 @@ export function VehicleDetailHeader({
               <span className="text-sm">Bez fotky</span>
             </div>
           )}
-          <StatusBadge status={vehicle.status} className="absolute left-4 top-4" />
+
         </div>
 
         <div className="flex flex-col gap-4 p-5">

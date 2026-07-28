@@ -1,5 +1,5 @@
 import { Car } from "lucide-react";
-import { StatusBadge } from "./StatusBadge";
+
 import { formatKm as formatMileage } from "@/lib/format";
 import type { VehicleWithCustomer } from "@/lib/queries/vehicles";
 
@@ -36,7 +36,7 @@ export function VehicleCard({
             <span className="text-xs">Bez fotky</span>
           </div>
         )}
-        <StatusBadge status={vehicle.status} className="absolute left-3 top-3" />
+
       </div>
 
       <div className="flex flex-1 flex-col gap-3 p-4">

@@ -152,7 +152,8 @@ export function updateCustomer(
 export function getVehiclesWithCustomers() {
   return (db
     .prepare(
-      `SELECT v.*, c.first_name AS c_first_name, c.last_name AS c_last_name, c.phone AS c_phone
+      `SELECT v.*, c.first_name AS c_first_name, c.last_name AS c_last_name, c.phone AS c_phone,
+              (SELECT COUNT(id) FROM scheduled_tasks st WHERE st.vehicle_id = v.id AND st.status != 'Zrušené') as pending_tasks
        FROM vehicles v LEFT JOIN customers c ON v.customer_id = c.id
        ORDER BY v.created_at DESC`
     )
@@ -167,7 +168,7 @@ export function getVehiclesWithCustomers() {
       current_mileage: (row.current_mileage as number) || 0,
       fuel_type: row.fuel_type as string | null,
       photo: row.photo as string | null,
-      status: (row.status as string) || "OK",
+      status: (row.pending_tasks as number) > 0 ? "NAPLÁNOVANÉ" : "OK",
       created_at: row.created_at as string,
       customer: row.c_first_name
         ? {
@@ -183,7 +184,8 @@ export function getVehicleDetail(vehicleId: string) {
   const row = db
     .prepare(
       `SELECT v.*, c.id AS c_id, c.first_name AS c_first_name, c.last_name AS c_last_name,
-              c.phone AS c_phone, c.email AS c_email, c.notes AS c_notes
+              c.phone AS c_phone, c.email AS c_email, c.notes AS c_notes,
+              (SELECT COUNT(id) FROM scheduled_tasks st WHERE st.vehicle_id = v.id AND st.status != 'Zrušené') as pending_tasks
        FROM vehicles v LEFT JOIN customers c ON v.customer_id = c.id
        WHERE v.id = ?`
     )
@@ -199,7 +201,7 @@ export function getVehicleDetail(vehicleId: string) {
     vin: row.vin as string | null,
     license_plate: (row.license_plate as string) || "",
     current_mileage: (row.current_mileage as number) || 0,
-    status: (row.status as string) || "OK",
+    status: (row.pending_tasks as number) > 0 ? "NAPLÁNOVANÉ" : "OK",
     photo: row.photo as string | null,
     notes: row.notes as string | null,
     engine: row.engine as string | null,
