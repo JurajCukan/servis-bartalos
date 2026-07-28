@@ -72,10 +72,8 @@ function createWindow() {
 
   if (isDev) {
     mainWindow.loadURL("http://127.0.0.1:5173");
-    mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadURL("app://-/index.html");
-    mainWindow.webContents.openDevTools();
   }
 
   mainWindow.on("closed", () => {

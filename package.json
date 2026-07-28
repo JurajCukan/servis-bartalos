@@ -2,7 +2,7 @@
   "name": "servis-bartalos",
   "productName": "Servisná knižka Bartalos",
   "private": true,
-  "version": "2.0.8",
+  "version": "2.0.9",
   "author": "Juraj Cukan",
   "description": "Servisná knižka Bartalos",
   "main": "electron/dist/main.js",
