@@ -9,10 +9,7 @@ import type { VehicleWithCustomer } from "@/lib/queries/vehicles";
 
 export const STATUS_OPTIONS = [
   { value: "all", label: "VŠETKY" },
-  { value: "OK", label: "OK" },
-  { value: "SERVIS NUTNÝ", label: "SERVIS NUTNÝ" },
   { value: "NAPLÁNOVANÉ", label: "NAPLÁNOVANÉ" },
-  { value: "ARCHÍV", label: "ARCHÍV" },
 ] as const;
 
 export const FUEL_OPTIONS = [

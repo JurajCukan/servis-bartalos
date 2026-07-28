@@ -20,9 +20,9 @@ export type CustomerResolution =
   | { kind: "new"; customer: NewCustomer };
 
 const newCustomerSchema = z.object({
-  first_name: z.string().trim().min(1, "Toto pole je povinné").max(120),
-  last_name: z.string().trim().min(1, "Toto pole je povinné").max(120),
-  phone: z.string().trim().min(1, "Toto pole je povinné").max(40),
+  first_name: z.string().trim().max(120).optional().or(z.literal("")),
+  last_name: z.string().trim().max(120).optional().or(z.literal("")),
+  phone: z.string().trim().max(40).optional().or(z.literal("")),
   email: z.string().trim().max(255).email("Zadajte platný email").optional().or(z.literal("")),
   notes: z.string().trim().max(1000).optional().or(z.literal("")),
 });
@@ -79,9 +79,9 @@ export function CustomerStep({
     onContinue({
       kind: "new",
       customer: {
-        first_name: v.first_name,
-        last_name: v.last_name,
-        phone: v.phone,
+        first_name: v.first_name || "",
+        last_name: v.last_name || "",
+        phone: v.phone || "",
         email: v.email ? v.email : null,
         notes: v.notes ? v.notes : null,
       },
@@ -112,21 +112,21 @@ export function CustomerStep({
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Meno" error={errors.first_name} required>
+          <Field label="Meno" error={errors.first_name}>
             <Input
               className={inputCls}
               value={form.first_name}
               onChange={(e) => setForm({ ...form, first_name: e.target.value })}
             />
           </Field>
-          <Field label="Priezvisko" error={errors.last_name} required>
+          <Field label="Priezvisko" error={errors.last_name}>
             <Input
               className={inputCls}
               value={form.last_name}
               onChange={(e) => setForm({ ...form, last_name: e.target.value })}
             />
           </Field>
-          <Field label="Telefón" error={errors.phone} required>
+          <Field label="Telefón" error={errors.phone}>
             <Input
               className={inputCls}
               value={form.phone}

@@ -55,7 +55,7 @@ function GaragePage() {
     const list = vehicles.filter(
       (v) =>
         (status === "all" || v.status === status) &&
-        (fuel === "all" || v.fuel_type === fuel) &&
+        (fuel === "all" || v.fuel_type?.toLowerCase() === fuel.toLowerCase()) &&
         matchesSearch(v, debouncedSearch),
     );
     const sorted = [...list];

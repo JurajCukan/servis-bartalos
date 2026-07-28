@@ -65,7 +65,7 @@ export function AddVehicleDialog({
         customerId = created.id;
       }
 
-      const plate = vehicle.license_plate.trim().toUpperCase();
+      const plate = (vehicle.license_plate || "").trim().toUpperCase();
 
       // duplicate check
       const existing = await window.electronAPI.db.checkDuplicatePlate(plate);
@@ -73,8 +73,8 @@ export function AddVehicleDialog({
 
       const insertedId = await window.electronAPI.db.createVehicle({
         customer_id: customerId,
-        brand: vehicle.brand.trim(),
-        model: vehicle.model.trim(),
+        brand: (vehicle.brand || "").trim(),
+        model: (vehicle.model || "").trim(),
         year: vehicle.year === "" || vehicle.year == null ? null : Number(vehicle.year),
         vin: emptyToNull(vehicle.vin as string | undefined) ?? "",
         license_plate: plate,

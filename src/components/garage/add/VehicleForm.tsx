@@ -21,8 +21,8 @@ const MAX_YEAR = new Date().getFullYear() + 1;
 const optionalStr = z.string().trim().max(120).optional().or(z.literal(""));
 
 const schema = z.object({
-  brand: z.string().trim().min(1, "Toto pole je povinné").max(60),
-  model: z.string().trim().min(1, "Toto pole je povinné").max(60),
+  brand: z.string().trim().max(60).optional().or(z.literal("")),
+  model: z.string().trim().max(60).optional().or(z.literal("")),
   year: z
     .union([
       z.literal(""),
@@ -33,12 +33,17 @@ const schema = z.object({
         .max(MAX_YEAR, "Zadajte platný rok"),
     ])
     .optional(),
-  license_plate: z.string().trim().min(1, "Toto pole je povinné").max(20),
+  license_plate: z.string().trim().max(20).optional().or(z.literal("")),
   vin: z.string().trim().max(32).optional().or(z.literal("")),
-  current_mileage: z.coerce
-    .number({ invalid_type_error: "Zadajte platný nájazd" })
-    .int("Zadajte platný nájazd")
-    .nonnegative("Zadajte platný nájazd"),
+  current_mileage: z
+    .union([
+      z.literal(""),
+      z.coerce
+        .number({ invalid_type_error: "Zadajte platný nájazd" })
+        .int("Zadajte platný nájazd")
+        .nonnegative("Zadajte platný nájazd"),
+    ])
+    .optional(),
   engine: optionalStr,
   transmission: optionalStr,
   drive: optionalStr,
@@ -93,13 +98,13 @@ export function VehicleForm({
   return (
     <form onSubmit={form.handleSubmit(handler)} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Značka" error={errors.brand?.message} required>
+        <Field label="Značka" error={errors.brand?.message}>
           <Input className={inputCls} {...form.register("brand")} />
         </Field>
-        <Field label="Model" error={errors.model?.message} required>
+        <Field label="Model" error={errors.model?.message}>
           <Input className={inputCls} {...form.register("model")} />
         </Field>
-        <Field label="ŠPZ" error={errors.license_plate?.message} required>
+        <Field label="ŠPZ" error={errors.license_plate?.message}>
           <Input className={`${inputCls} uppercase`} {...form.register("license_plate")} />
         </Field>
         <Field label="Rok výroby" error={errors.year?.message}>
@@ -115,7 +120,7 @@ export function VehicleForm({
         <Field label="VIN" error={errors.vin?.message}>
           <Input className={inputCls} {...form.register("vin")} />
         </Field>
-        <Field label="Aktuálny nájazd (km)" error={errors.current_mileage?.message} required>
+        <Field label="Aktuálny nájazd (km)" error={errors.current_mileage?.message}>
           <Input
             type="number"
             inputMode="numeric"
