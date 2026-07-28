@@ -284,7 +284,7 @@ export function ServiceRecordForm({
       if (isEdit && record) {
         await window.electronAPI.db.updateServiceRecord(record.id, payload, newPhotosData, removed);
       } else {
-        await window.electronAPI.db.createServiceRecord({ vehicle: vehicleId, ...payload }, newPhotosData);
+        await window.electronAPI.db.createServiceRecord({ vehicle_id: vehicleId, ...payload }, newPhotosData);
       }
 
       let mileageUpdated = false;
@@ -301,7 +301,7 @@ export function ServiceRecordForm({
       if (!isEdit && (nextKm != null || nextDate != null)) {
         try {
           await window.electronAPI.db.createScheduledTask({
-            vehicle: vehicleId,
+            vehicle_id: vehicleId,
             planned_date: nextDate ?? today(),
             planned_mileage: nextKm,
             task_type: raw.service_type,

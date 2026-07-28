@@ -84,7 +84,7 @@ export function ScheduleTaskForm({
           ? null
           : Number(raw.planned_mileage);
       await window.electronAPI.db.createScheduledTask({
-        vehicle: vehicleId,
+        vehicle_id: vehicleId,
         planned_date: raw.planned_date,
         planned_mileage: mileage,
         task_type: raw.task_type,
