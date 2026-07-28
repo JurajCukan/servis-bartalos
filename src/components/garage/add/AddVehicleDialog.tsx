@@ -72,7 +72,7 @@ export function AddVehicleDialog({
       if (existing) throw new DuplicatePlateError(existing.id);
 
       const insertedId = await window.electronAPI.db.createVehicle({
-        customer: customerId,
+        customer_id: customerId,
         brand: vehicle.brand.trim(),
         model: vehicle.model.trim(),
         year: vehicle.year === "" || vehicle.year == null ? null : Number(vehicle.year),

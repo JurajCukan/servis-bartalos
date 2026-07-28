@@ -54,19 +54,21 @@ export function VehicleFilters({
               className={
                 "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition " +
                 (active
-                  ? "border-brand-accent bg-brand-accent text-white"
-                  : "border-brand-border bg-brand-surface text-brand-fg hover:bg-brand-bg")
+                  ? "border-brand-accent bg-brand-accent/10 text-brand-accent"
+                  : "border-brand-border bg-brand-surface text-brand-fg hover:bg-brand-bg hover:text-brand-accent/80")
               }
             >
               {o.label}
-              <span
-                className={
-                  "rounded-full px-1.5 py-0.5 text-[10px] " +
-                  (active ? "bg-white/20 text-white" : "bg-brand-bg text-brand-fg-muted")
-                }
-              >
-                {count}
-              </span>
+              {count > 0 && (
+                <span
+                  className={
+                    "rounded-full px-1.5 py-0.5 text-[10px] leading-none flex items-center justify-center " +
+                    (active ? "bg-brand-accent text-white" : "bg-brand-border text-brand-fg-muted")
+                  }
+                >
+                  {count}
+                </span>
+              )}
             </button>
           );
         })}

@@ -98,18 +98,20 @@ function GaragePage() {
           <EmptyState title="Nepodarilo sa načítať vozidlá" description="Skúste obnoviť stránku." />
         ) : (
           <>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="flex-1">
+            <div className="flex flex-col gap-4">
+              <div className="w-full">
                 <VehicleSearchBar value={search} onChange={setSearch} />
               </div>
-              <VehicleFilters
-                status={status}
-                fuel={fuel}
-                vehicles={vehicles ?? []}
-                onStatusChange={setStatus}
-                onFuelChange={setFuel}
-              />
-              <VehicleSort value={sort} onChange={setSort} />
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <VehicleFilters
+                  status={status}
+                  fuel={fuel}
+                  vehicles={vehicles ?? []}
+                  onStatusChange={setStatus}
+                  onFuelChange={setFuel}
+                />
+                <VehicleSort value={sort} onChange={setSort} />
+              </div>
             </div>
 
             {vehicles && vehicles.length === 0 ? (
