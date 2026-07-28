@@ -23,36 +23,8 @@ export function initDatabase(userDataPath: string): void {
   const dbPath = path.join(userDataPath, "servis.db");
   console.log(`[database] Opening SQLite database at: ${dbPath}`);
 
-  // Resolve native binding path explicitly when packaged to avoid ASAR crash
-  let nativeBinding: string | undefined;
-  if (process.versions.electron) {
-    const { app } = require("electron");
-    if (app.isPackaged) {
-      nativeBinding = path.join(
-        app.getAppPath().replace("app.asar", "app.asar.unpacked"),
-        "node_modules",
-        "better-sqlite3",
-        "build",
-        "Release",
-        "better_sqlite3.node"
-      );
-      console.log(`[database] Using native binding: ${nativeBinding}`);
-
-      // Verify the native binding file actually exists
-      if (!fs.existsSync(nativeBinding)) {
-        throw new Error(
-          `Native SQLite binding not found at: ${nativeBinding}\n` +
-          `This usually means the native module was not properly unpacked during installation.`
-        );
-      }
-    }
-  }
-
-  // Lazy-require better-sqlite3 AFTER we know the native binding path.
-  // This prevents the module from trying to find the .node file inside app.asar.
   BetterSqlite3 = require("better-sqlite3");
-
-  db = new BetterSqlite3(dbPath, nativeBinding ? { nativeBinding } : undefined);
+  db = new BetterSqlite3(dbPath);
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");
 

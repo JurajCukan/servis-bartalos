@@ -4,25 +4,32 @@ import fs from "fs";
 import { pathToFileURL } from "url";
 import { exec } from "child_process";
 
-// Use userData for debug log so it works on any machine
 const logFile = path.join(app.getPath("userData"), "debug_startup.log");
-try {
-  fs.mkdirSync(app.getPath("userData"), { recursive: true });
-  fs.appendFileSync(logFile, `\n=== STARTUP ${new Date().toISOString()} ===\n`);
-  fs.appendFileSync(logFile, `app.getPath("userData") = ${app.getPath("userData")}\n`);
-} catch (e: any) {
-  // ignore
-}
 
 process.on("uncaughtException", (err) => {
   try { fs.appendFileSync(logFile, `[UNCAUGHT] ${err?.stack || err}\n`); } catch (_) {}
   dialog.showErrorBox("Chyba aplikácie", `Aplikácia spadla pri spúšťaní:\n${err?.message || err}`);
+  app.exit(1);
 });
 
 process.on("unhandledRejection", (reason: any) => {
   try { fs.appendFileSync(logFile, `[REJECTION] ${reason?.stack || reason}\n`); } catch (_) {}
   dialog.showErrorBox("Chyba aplikácie", `Neočakávaná chyba:\n${reason?.message || reason}`);
+  app.exit(1);
 });
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "app",
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      bypassCSP: true,
+      corsEnabled: true
+    }
+  }
+]);
 
 import { initializeAutoUpdater } from "./updater.js";
 import { autoUpdater } from "electron-updater";
@@ -42,7 +49,7 @@ import {
 } from "./photos.js";
 
 let mainWindow: BrowserWindow | null = null;
-const isDev = !app.isPackaged;
+const isDev = false;
 
 function getUserDataDir(): string {
   return app.getPath("userData");
@@ -67,7 +74,7 @@ function createWindow() {
     mainWindow.loadURL("http://127.0.0.1:5173");
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(app.getAppPath(), "dist/index.html"));
+    mainWindow.loadURL("app://-/index.html");
   }
 
   mainWindow.on("closed", () => {
@@ -103,6 +110,25 @@ if (!gotTheLock) {
   });
 
   app.whenReady().then(() => {
+    // Setup local app:// protocol to serve Vite bundle without CORS issues
+    protocol.handle("app", (request) => {
+      const url = new URL(request.url);
+      const relativePath = decodeURIComponent(url.pathname.substring(1)); // remove leading slash
+      const fullPath = path.join(app.getAppPath(), "dist", relativePath);
+      return net.fetch(pathToFileURL(fullPath).toString());
+    });
+
+    const userDataDir = getUserDataDir();
+    
+    // Log startup only after acquiring the lock
+    try {
+      fs.mkdirSync(userDataDir, { recursive: true });
+      fs.appendFileSync(logFile, `\n=== STARTUP ${new Date().toISOString()} ===\n`);
+      fs.appendFileSync(logFile, `app.getPath("userData") = ${userDataDir}\n`);
+    } catch (e: any) {
+      // ignore
+    }
+
     // Kill leftover PocketBase processes from v1.0.0 silently
     if (process.platform === "win32") {
       exec("taskkill /f /im pocketbase.exe", () => {
@@ -110,7 +136,6 @@ if (!gotTheLock) {
       });
     }
 
-    const userDataDir = getUserDataDir();
     console.log(`[main] User data directory: ${userDataDir}`);
 
     // Initialize database and photos with error handling
@@ -120,7 +145,7 @@ if (!gotTheLock) {
       const msg = `Nepodarilo sa inicializovať databázu:\n${err?.message || err}`;
       try { fs.appendFileSync(logFile, `[DB_INIT_ERROR] ${err?.stack || err}\n`); } catch (_) {}
       dialog.showErrorBox("Chyba databázy", msg);
-      app.quit();
+      app.exit(1);
       return;
     }
 
