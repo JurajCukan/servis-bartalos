@@ -464,69 +464,28 @@ ipcMain.handle("db:import-data", (_event, bundle) => {
 // ─── IPC: PDF Export ──────────────────────────────────────────────────────────
 
 ipcMain.handle("export-vehicle-pdf", async (event, vehicleId: string) => {
-  return new Promise(async (resolve) => {
-    try {
-      const { filePath, canceled } = await dialog.showSaveDialog({
-        title: "Uložiť servisnú knižku ako PDF",
-        defaultPath: `servisna-knizka-${vehicleId}.pdf`,
-        filters: [{ name: "PDF dokumenty", extensions: ["pdf"] }],
-      });
+  try {
+    const { filePath, canceled } = await dialog.showSaveDialog({
+      title: "Uložiť servisnú knižku ako PDF",
+      defaultPath: `servisna-knizka-${vehicleId}.pdf`,
+      filters: [{ name: "PDF dokumenty", extensions: ["pdf"] }],
+    });
 
-      if (canceled || !filePath) {
-        return resolve({ success: false, error: "Ukladanie bolo zrušené." });
-      }
-
-      const printWindow = new BrowserWindow({
-        show: false,
-        width: 1240,
-        height: 1754,
-        webPreferences: {
-          preload: path.join(__dirname, "preload.js"),
-          nodeIntegration: false,
-          contextIsolation: true,
-        },
-      });
-
-      const url = isDev 
-        ? `http://localhost:5173/#/export/${vehicleId}`
-        : `app://./index.html#/export/${vehicleId}`;
-
-      const onReady = async (e: Electron.IpcMainEvent) => {
-        if (e.sender.id !== printWindow.webContents.id) return;
-        
-        try {
-          const pdfBuffer = await printWindow.webContents.printToPDF({
-            pageSize: "A4",
-            printBackground: true,
-          });
-
-          fs.writeFileSync(filePath, pdfBuffer);
-          resolve({ success: true, filePath });
-        } catch (error: any) {
-          console.error("Chyba pri generovaní PDF:", error);
-          resolve({ success: false, error: "Nepodarilo sa vygenerovať PDF." });
-        } finally {
-          ipcMain.removeListener("notify-pdf-ready", onReady);
-          if (!printWindow.isDestroyed()) printWindow.destroy();
-        }
-      };
-
-      ipcMain.on("notify-pdf-ready", onReady);
-      printWindow.loadURL(url);
-
-      setTimeout(() => {
-        if (!printWindow.isDestroyed()) {
-          ipcMain.removeListener("notify-pdf-ready", onReady);
-          printWindow.destroy();
-          resolve({ success: false, error: "Časový limit pre vygenerovanie PDF vypršal." });
-        }
-      }, 15000);
-
-    } catch (error: any) {
-      console.error("Chyba pri PDF exporte:", error);
-      resolve({ success: false, error: "Vyskytla sa neočakávaná chyba." });
+    if (canceled || !filePath) {
+      return { success: false, error: "Ukladanie bolo zrušené." };
     }
-  });
+
+    const pdfBuffer = await event.sender.printToPDF({
+      pageSize: "A4",
+      printBackground: true,
+    });
+
+    fs.writeFileSync(filePath, pdfBuffer);
+    return { success: true, filePath };
+  } catch (error: any) {
+    console.error("Chyba pri generovaní PDF z aktuálneho okna:", error);
+    return { success: false, error: "Nepodarilo sa vygenerovať PDF." };
+  }
 });
 
 // ─── IPC: Updates ─────────────────────────────────────────────────────────────

@@ -18,6 +18,8 @@ import {
   type ServiceRecord,
 } from "@/lib/queries/vehicles";
 
+import { PdfTemplate } from "@/components/garage/detail/PdfTemplate";
+
 export const Route = createFileRoute("/_authenticated/garage/$vehicleId")({
   head: () => ({ meta: [{ title: "Detail vozidla — Servisná knižka Bartalos" }] }),
   loader: async ({ params, context }) => {
@@ -79,46 +81,53 @@ function VehicleDetailPage() {
   const openEdit = () => setEditOpen(true);
 
   return (
-    <AppShell>
-      <div className="mx-auto flex max-w-7xl flex-col gap-6">
-        <VehicleDetailHeader
-          vehicle={vehicle}
-          onAction={openEdit}
-          onSchedule={openSchedule}
-          onAddRecord={openAdd}
-        />
-        <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
-          <div className="flex flex-col gap-6">
-            <CustomerInfoCard customer={vehicle.customer} />
-            <VehicleSpecsCard vehicle={vehicle} />
+    <>
+      <div className="print:hidden">
+        <AppShell>
+          <div className="mx-auto flex max-w-7xl flex-col gap-6">
+            <VehicleDetailHeader
+              vehicle={vehicle}
+              onAction={openEdit}
+              onSchedule={openSchedule}
+              onAddRecord={openAdd}
+            />
+            <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+              <div className="flex flex-col gap-6">
+                <CustomerInfoCard customer={vehicle.customer} />
+                <VehicleSpecsCard vehicle={vehicle} />
+              </div>
+              <ServiceHistorySection
+                records={history.data}
+                loading={history.isLoading}
+                onAdd={openAdd}
+                onEdit={setEditingRecord}
+              />
+            </div>
           </div>
-          <ServiceHistorySection
-            records={history.data}
-            loading={history.isLoading}
-            onAdd={openAdd}
-            onEdit={setEditingRecord}
+          <AddServiceRecordDialog
+            open={addOpen}
+            onOpenChange={setAddOpen}
+            vehicleId={vehicleId}
+            currentMileage={vehicle.current_mileage}
           />
-        </div>
+          <ScheduleServiceDialog
+            open={scheduleOpen}
+            onOpenChange={setScheduleOpen}
+            vehicleId={vehicleId}
+          />
+          <EditVehicleDialog open={editOpen} onOpenChange={setEditOpen} vehicle={vehicle} />
+          <EditServiceRecordDialog
+            open={!!editingRecord}
+            onOpenChange={(o) => !o && setEditingRecord(null)}
+            vehicleId={vehicleId}
+            currentMileage={vehicle.current_mileage}
+            record={editingRecord}
+          />
+        </AppShell>
       </div>
-      <AddServiceRecordDialog
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        vehicleId={vehicleId}
-        currentMileage={vehicle.current_mileage}
-      />
-      <ScheduleServiceDialog
-        open={scheduleOpen}
-        onOpenChange={setScheduleOpen}
-        vehicleId={vehicleId}
-      />
-      <EditVehicleDialog open={editOpen} onOpenChange={setEditOpen} vehicle={vehicle} />
-      <EditServiceRecordDialog
-        open={!!editingRecord}
-        onOpenChange={(o) => !o && setEditingRecord(null)}
-        vehicleId={vehicleId}
-        currentMileage={vehicle.current_mileage}
-        record={editingRecord}
-      />
-    </AppShell>
+      <div className="hidden print:block">
+        <PdfTemplate vehicle={vehicle} records={history.data || []} />
+      </div>
+    </>
   );
 }

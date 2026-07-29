@@ -1,40 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
-import { vehicleDetailQuery, serviceHistoryQuery, type ServiceRecord } from "@/lib/queries/vehicles";
+import type { Vehicle, ServiceRecord } from "@/lib/queries/vehicles";
 
-export const Route = createFileRoute("/export/$vehicleId")({
-  loader: async ({ params, context }) => {
-    await context.queryClient.ensureQueryData(vehicleDetailQuery(params.vehicleId));
-    await context.queryClient.ensureQueryData(serviceHistoryQuery(params.vehicleId));
-  },
-  component: ExportPdfPage,
-});
+interface PdfTemplateProps {
+  vehicle: Vehicle;
+  records: ServiceRecord[];
+}
 
-function ExportPdfPage() {
-  const { vehicleId } = Route.useParams();
-  const { data: vehicle } = useSuspenseQuery(vehicleDetailQuery(vehicleId));
-  const { data: records = [] } = useSuspenseQuery(serviceHistoryQuery(vehicleId));
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.electronAPI && window.electronAPI.notifyPdfReady) {
-      // Delay slightly to allow fonts and images to render
-      const t = setTimeout(() => {
-        window.electronAPI.notifyPdfReady();
-      }, 500);
-      return () => clearTimeout(t);
-    }
-  }, []);
-
-  if (!vehicle) return null;
-
+export function PdfTemplate({ vehicle, records }: PdfTemplateProps) {
   const today = new Date().toLocaleDateString("sk-SK");
   const totalCost = records.reduce((sum, r) => sum + (r.price || 0), 0);
   const lastServiceDate = records.length > 0 ? new Date(records[0].date).toLocaleDateString("sk-SK") : "Žiadny";
-  const docNumber = `SK-${new Date().getFullYear()}-${vehicleId.toString().slice(-4).padStart(4, "0")}`;
+  const docNumber = `SK-${new Date().getFullYear()}-${vehicle.id.toString().slice(-4).padStart(4, "0")}`;
 
   return (
-    <div className="bg-white text-black min-h-screen font-sans">
+    <div className="bg-white text-black font-sans w-full">
       <style>{`
         @page {
           size: A4;
