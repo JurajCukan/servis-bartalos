@@ -2,7 +2,7 @@
   "name": "servis-bartalos",
   "productName": "Servisná knižka Bartalos",
   "private": true,
-  "version": "2.1.5",
+  "version": "2.2.0",
   "author": "Juraj Cukan",
   "description": "Servisná knižka Bartalos",
   "main": "electron/dist/main.js",
@@ -17,6 +17,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@fileslim/compress": "git+https://github.com/JurajCukan/fileslim-sdk.git",
     "@hookform/resolvers": "^5.4.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -49,7 +50,6 @@
     "@tanstack/react-router": "^1.168.25",
     "@tanstack/zod-adapter": "^1.167.0",
     "better-sqlite3": "^11.3.0",
-    "browser-image-compression": "^2.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

@@ -1,16 +1,8 @@
-import imageCompression from "browser-image-compression";
-
-const COMPRESSION_OPTIONS = {
-  maxSizeMB: 1,
-  maxWidthOrHeight: 1920,
-  useWebWorker: true,
-  fileType: "image/webp" as const,
-  initialQuality: 0.8,
-};
+import { compress } from "@fileslim/compress";
 
 /**
  * Compress an image file before storing.
- * Outputs WebP at max 1920px and ~80% quality.
+ * Uses @fileslim/compress with 'web' preset and 'best' mode.
  * If compression fails, returns the original file unchanged.
  */
 export async function compressImage(file: File): Promise<File> {
@@ -20,18 +12,22 @@ export async function compressImage(file: File): Promise<File> {
   }
 
   try {
-    const compressed = await imageCompression(file, COMPRESSION_OPTIONS);
+    const result = await compress(file, { preset: "web", mode: "best" });
 
-    // Build a File with the correct name (swap extension to .webp)
+    // Build a File with the correct name (swap extension if format changed)
     const baseName = file.name.replace(/\.[^.]+$/, "");
-    const compressedFile = new File([compressed], `${baseName}.webp`, {
-      type: "image/webp",
+    let newExt = ".jpg";
+    if (result.format === "image/webp") newExt = ".webp";
+    if (result.format === "image/avif") newExt = ".avif";
+    if (result.format === "image/png") newExt = ".png";
+
+    const compressedFile = new File([result.blob], `${baseName}${newExt}`, {
+      type: result.format,
       lastModified: Date.now(),
     });
 
-    const ratio = ((1 - compressedFile.size / file.size) * 100).toFixed(0);
     console.log(
-      `[compress] ${file.name} (${(file.size / 1024).toFixed(0)} KB) → ${compressedFile.name} (${(compressedFile.size / 1024).toFixed(0)} KB) — ${ratio}% smaller`,
+      `[compress] ${file.name} (${(file.size / 1024).toFixed(0)} KB) → ${compressedFile.name} (${(compressedFile.size / 1024).toFixed(0)} KB) — ${result.savings}% smaller`,
     );
 
     return compressedFile;
