@@ -488,8 +488,8 @@ ipcMain.handle("export-vehicle-pdf", async (event, vehicleId: string) => {
       });
 
       const url = isDev 
-        ? `http://localhost:5173/#/_authenticated/garage/${vehicleId}/export`
-        : `app://./index.html#/_authenticated/garage/${vehicleId}/export`;
+        ? `http://localhost:5173/#/export/${vehicleId}`
+        : `app://./index.html#/export/${vehicleId}`;
 
       const onReady = async (e: Electron.IpcMainEvent) => {
         if (e.sender.id !== printWindow.webContents.id) return;
