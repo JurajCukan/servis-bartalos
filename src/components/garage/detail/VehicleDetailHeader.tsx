@@ -11,37 +11,16 @@ export function VehicleDetailHeader({
   onAction,
   onSchedule,
   onAddRecord,
+  onExportClick,
 }: {
   vehicle: VehicleDetail;
   onAction: () => void;
   onSchedule: () => void;
   onAddRecord: () => void;
+  onExportClick: () => void;
 }) {
-  const [isExporting, setIsExporting] = useState(false);
   const title = [vehicle.year, vehicle.brand, vehicle.model].filter(Boolean).join(" ");
   const imageUrl = vehicle.photo_url;
-
-  const handleExport = async () => {
-    if (!window.electronAPI || !window.electronAPI.exportVehiclePdf) {
-      toast.error("Export do PDF nie je v tejto verzii podporovaný.");
-      return;
-    }
-    
-    setIsExporting(true);
-    try {
-      const result = await window.electronAPI.exportVehiclePdf(vehicle.id);
-      if (result.success) {
-        toast.success("Servisná knižka bola úspešne uložená.");
-      } else if (result.error !== "Ukladanie bolo zrušené.") {
-        toast.error(result.error || "Nepodarilo sa exportovať PDF.");
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("Nastala neočakávaná chyba pri exporte.");
-    } finally {
-      setIsExporting(false);
-    }
-  };
 
   return (
     <header className="flex flex-col gap-5">
@@ -56,12 +35,11 @@ export function VehicleDetailHeader({
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={handleExport}
-            disabled={isExporting}
+            onClick={onExportClick}
             className="inline-flex items-center gap-2 rounded-md border border-brand-border bg-brand-surface px-3 py-2 text-sm font-medium text-brand-fg transition hover:border-brand-accent hover:text-brand-accent disabled:opacity-50"
           >
-            {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-            {isExporting ? "Generujem PDF..." : "Export do PDF"}
+            <FileDown className="h-4 w-4" />
+            Export do PDF
           </button>
           <button
             type="button"

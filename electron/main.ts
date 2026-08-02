@@ -463,11 +463,25 @@ ipcMain.handle("db:import-data", (_event, bundle) => {
 
 // ─── IPC: PDF Export ──────────────────────────────────────────────────────────
 
-ipcMain.handle("export-vehicle-pdf", async (event, vehicleId: string) => {
+ipcMain.handle("export-vehicle-pdf", async (event, type: string, vehicleId: string, recordId?: string) => {
   try {
+    let title = "Uložiť PDF";
+    let defaultPath = `export-${vehicleId}.pdf`;
+    
+    if (type === "book") {
+      title = "Uložiť servisnú knižku ako PDF";
+      defaultPath = `servisna-knizka-${vehicleId}.pdf`;
+    } else if (type === "protocol") {
+      title = "Uložiť servisný protokol ako PDF";
+      defaultPath = `servisny-protokol-${recordId}.pdf`;
+    } else if (type === "invoice") {
+      title = "Uložiť fakturačný podklad ako PDF";
+      defaultPath = `fakturacny-podklad-${recordId}.pdf`;
+    }
+
     const { filePath, canceled } = await dialog.showSaveDialog({
-      title: "Uložiť servisnú knižku ako PDF",
-      defaultPath: `servisna-knizka-${vehicleId}.pdf`,
+      title,
+      defaultPath,
       filters: [{ name: "PDF dokumenty", extensions: ["pdf"] }],
     });
 
@@ -475,16 +489,48 @@ ipcMain.handle("export-vehicle-pdf", async (event, vehicleId: string) => {
       return { success: false, error: "Ukladanie bolo zrušené." };
     }
 
-    const pdfBuffer = await event.sender.printToPDF({
-      pageSize: "A4",
-      printBackground: true,
+    const printWindow = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        preload: path.join(__dirname, "preload.js"),
+      }
     });
 
-    fs.writeFileSync(filePath, pdfBuffer);
-    return { success: true, filePath };
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        printWindow.destroy();
+        resolve({ success: false, error: "Časový limit pre vygenerovanie PDF vypršal." });
+      }, 15000); // 15s timeout
+
+      ipcMain.once("notify-pdf-ready", async () => {
+        clearTimeout(timeout);
+        try {
+          const pdfBuffer = await printWindow.webContents.printToPDF({
+            pageSize: "A4",
+            printBackground: true,
+          });
+          fs.writeFileSync(filePath, pdfBuffer);
+          printWindow.destroy();
+          resolve({ success: true, filePath });
+        } catch (error: any) {
+          console.error("Chyba pri generovaní PDF:", error);
+          printWindow.destroy();
+          resolve({ success: false, error: "Nepodarilo sa vygenerovať PDF." });
+        }
+      });
+
+      const queryStr = recordId ? `?recordId=${recordId}` : "";
+      const url = isDev 
+        ? `http://127.0.0.1:5173/#/print/${type}/${vehicleId}${queryStr}`
+        : `app://-/index.html#/print/${type}/${vehicleId}${queryStr}`;
+
+      printWindow.loadURL(url);
+    });
   } catch (error: any) {
-    console.error("Chyba pri generovaní PDF z aktuálneho okna:", error);
-    return { success: false, error: "Nepodarilo sa vygenerovať PDF." };
+    console.error("Chyba pri exporte PDF:", error);
+    return { success: false, error: "Nastala neočakávaná chyba." };
   }
 });
 

@@ -1,7 +1,7 @@
-import type { Vehicle, ServiceRecord } from "@/lib/queries/vehicles";
+import type { VehicleDetail, ServiceRecord } from "@/lib/queries/vehicles";
 
 interface PdfTemplateProps {
-  vehicle: Vehicle;
+  vehicle: VehicleDetail;
   records: ServiceRecord[];
 }
 
@@ -9,7 +9,7 @@ export function PdfTemplate({ vehicle, records }: PdfTemplateProps) {
   const today = new Date().toLocaleDateString("sk-SK");
   const totalCost = records.reduce((sum, r) => sum + (r.price || 0), 0);
   const lastServiceDate = records.length > 0 ? new Date(records[0].date).toLocaleDateString("sk-SK") : "Žiadny";
-  const docNumber = `SK-${new Date().getFullYear()}-${vehicle.id.toString().slice(-4).padStart(4, "0")}`;
+  const docNumber = `SK-${new Date().getFullYear()}-${vehicle.id.slice(0,4).toUpperCase()}`;
 
   return (
     <div className="bg-white text-black font-sans w-full">
@@ -80,12 +80,12 @@ export function PdfTemplate({ vehicle, records }: PdfTemplateProps) {
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-8">
-          <InfoBox label="ZNAČKA A MODEL" value={`${vehicle.make} ${vehicle.model}`} className="col-span-1" />
-          <InfoBox label="EČV" value={vehicle.plate} />
+          <InfoBox label="ZNAČKA A MODEL" value={`${vehicle.brand} ${vehicle.model}`} className="col-span-1" />
+          <InfoBox label="EČV" value={vehicle.license_plate} />
           <InfoBox label="VIN" value={vehicle.vin || "-"} />
           <InfoBox label="ROK VÝROBY" value={vehicle.year?.toString() || "-"} />
           <InfoBox label="PALIVO" value={vehicle.fuel_type || "-"} />
-          <InfoBox label="OBJEM MOTORA" value={vehicle.engine_capacity ? `${vehicle.engine_capacity} cm³` : "-"} />
+          <InfoBox label="MOTOR" value={vehicle.engine || "-"} />
           <InfoBox label="AKTUÁLNY STAV KM" value={`${vehicle.current_mileage.toLocaleString("sk-SK")} km`} />
         </div>
 
@@ -188,7 +188,7 @@ export function PdfTemplate({ vehicle, records }: PdfTemplateProps) {
           )}
 
           <div className="absolute bottom-[15mm] left-[20mm] right-[20mm] flex justify-between items-center text-xs text-gray-400 border-t border-gray-200 pt-4">
-            <span>{vehicle.make} {vehicle.model} · {vehicle.plate}</span>
+            <span>{vehicle.brand} {vehicle.model} · {vehicle.license_plate}</span>
             <span>{index + 2} / {records.length + 1}</span>
           </div>
         </div>

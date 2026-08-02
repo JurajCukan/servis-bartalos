@@ -18,8 +18,7 @@ import {
   type ServiceRecord,
 } from "@/lib/queries/vehicles";
 
-import { PdfTemplate } from "@/components/garage/detail/PdfTemplate";
-
+import { ExportPdfDialog } from "@/components/garage/detail/ExportPdfDialog";
 export const Route = createFileRoute("/_authenticated/garage/$vehicleId")({
   head: () => ({ meta: [{ title: "Detail vozidla — Servisná knižka Bartalos" }] }),
   loader: async ({ params, context }) => {
@@ -73,6 +72,7 @@ function VehicleDetailPage() {
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<ServiceRecord | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
 
   if (!vehicle) return null;
 
@@ -81,15 +81,14 @@ function VehicleDetailPage() {
   const openEdit = () => setEditOpen(true);
 
   return (
-    <>
-      <div className="print:hidden">
-        <AppShell>
-          <div className="mx-auto flex max-w-7xl flex-col gap-6">
+    <AppShell>
+      <div className="mx-auto flex max-w-7xl flex-col gap-6">
             <VehicleDetailHeader
               vehicle={vehicle}
               onAction={openEdit}
               onSchedule={openSchedule}
               onAddRecord={openAdd}
+              onExportClick={() => setExportOpen(true)}
             />
             <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
               <div className="flex flex-col gap-6">
@@ -123,11 +122,12 @@ function VehicleDetailPage() {
             currentMileage={vehicle.current_mileage}
             record={editingRecord}
           />
+          <ExportPdfDialog
+            open={exportOpen}
+            onOpenChange={setExportOpen}
+            vehicleId={vehicleId}
+            records={history.data || []}
+          />
         </AppShell>
-      </div>
-      <div className="hidden print:block">
-        <PdfTemplate vehicle={vehicle} records={history.data || []} />
-      </div>
-    </>
   );
 }

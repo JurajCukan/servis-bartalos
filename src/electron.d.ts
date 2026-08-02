@@ -27,7 +27,7 @@ export interface IElectronAPI {
   downloadUpdate: () => void;
   installUpdate: () => void;
 
-  exportVehiclePdf: (vehicleId: string) => Promise<{ success: boolean; filePath?: string; error?: string }>;
+  exportVehiclePdf: (type: string, vehicleId: string, recordId?: string) => Promise<{ success: boolean; filePath?: string; error?: string }>;
   notifyPdfReady: () => void;
   getAppVersion: () => Promise<string>;
   onUpdateChecking: (callback: () => void) => () => void;

@@ -16,6 +16,7 @@ import { Route as AuthenticatedServiceHistoryRouteImport } from './routes/_authe
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedGarageIndexRouteImport } from './routes/_authenticated/garage.index'
 import { Route as AuthenticatedGarageVehicleIdRouteImport } from './routes/_authenticated/garage.$vehicleId'
+import { Route as PrintTypeVehicleIdRouteImport } from './routes/print.$type.$vehicleId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -54,6 +55,11 @@ const AuthenticatedGarageVehicleIdRoute =
     path: '/garage/$vehicleId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const PrintTypeVehicleIdRoute = PrintTypeVehicleIdRouteImport.update({
+  id: '/print/$type/$vehicleId',
+  path: '/print/$type/$vehicleId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/service-history': typeof AuthenticatedServiceHistoryRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/garage/$vehicleId': typeof AuthenticatedGarageVehicleIdRoute
+  '/print/$type/$vehicleId': typeof PrintTypeVehicleIdRoute
   '/garage/': typeof AuthenticatedGarageIndexRoute
 }
 export interface FileRoutesByTo {
@@ -69,6 +76,7 @@ export interface FileRoutesByTo {
   '/service-history': typeof AuthenticatedServiceHistoryRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/garage/$vehicleId': typeof AuthenticatedGarageVehicleIdRoute
+  '/print/$type/$vehicleId': typeof PrintTypeVehicleIdRoute
   '/garage': typeof AuthenticatedGarageIndexRoute
 }
 export interface FileRoutesById {
@@ -79,6 +87,7 @@ export interface FileRoutesById {
   '/_authenticated/service-history': typeof AuthenticatedServiceHistoryRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/garage/$vehicleId': typeof AuthenticatedGarageVehicleIdRoute
+  '/print/$type/$vehicleId': typeof PrintTypeVehicleIdRoute
   '/_authenticated/garage/': typeof AuthenticatedGarageIndexRoute
 }
 export interface FileRouteTypes {
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/service-history'
     | '/settings'
     | '/garage/$vehicleId'
+    | '/print/$type/$vehicleId'
     | '/garage/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/service-history'
     | '/settings'
     | '/garage/$vehicleId'
+    | '/print/$type/$vehicleId'
     | '/garage'
   id:
     | '__root__'
@@ -106,12 +117,14 @@ export interface FileRouteTypes {
     | '/_authenticated/service-history'
     | '/_authenticated/settings'
     | '/_authenticated/garage/$vehicleId'
+    | '/print/$type/$vehicleId'
     | '/_authenticated/garage/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  PrintTypeVehicleIdRoute: typeof PrintTypeVehicleIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -165,6 +178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGarageVehicleIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/print/$type/$vehicleId': {
+      id: '/print/$type/$vehicleId'
+      path: '/print/$type/$vehicleId'
+      fullPath: '/print/$type/$vehicleId'
+      preLoaderRoute: typeof PrintTypeVehicleIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -190,17 +210,8 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  PrintTypeVehicleIdRoute: PrintTypeVehicleIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

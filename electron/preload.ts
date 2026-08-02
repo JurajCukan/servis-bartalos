@@ -30,7 +30,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   downloadUpdate: () => ipcRenderer.send("download-update"),
   installUpdate: () => ipcRenderer.send("install-update"),
 
-  exportVehiclePdf: (vehicleId: string) => ipcRenderer.invoke("export-vehicle-pdf", vehicleId),
+  exportVehiclePdf: (type: string, vehicleId: string, recordId?: string) => ipcRenderer.invoke("export-vehicle-pdf", type, vehicleId, recordId),
   notifyPdfReady: () => ipcRenderer.send("notify-pdf-ready"),
   getAppVersion: () => ipcRenderer.invoke("get-app-version") as Promise<string>,
 
