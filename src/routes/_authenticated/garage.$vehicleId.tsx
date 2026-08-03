@@ -126,6 +126,7 @@ function VehicleDetailPage() {
             open={exportOpen}
             onOpenChange={setExportOpen}
             vehicleId={vehicleId}
+            vehicle={vehicle}
             records={history.data || []}
           />
         </AppShell>

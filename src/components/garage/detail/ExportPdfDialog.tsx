@@ -8,21 +8,41 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { toast } from "sonner";
+import type { VehicleDetail } from "@/lib/queries/vehicles";
 
 interface ExportPdfDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   vehicleId: string;
+  vehicle?: VehicleDetail;
   defaultRecordId?: string;
   records: any[];
 }
 
-export function ExportPdfDialog({ open, onOpenChange, vehicleId, defaultRecordId, records }: ExportPdfDialogProps) {
+export function ExportPdfDialog({ open, onOpenChange, vehicleId, vehicle, defaultRecordId, records }: ExportPdfDialogProps) {
   const [docType, setDocType] = useState<"book" | "protocol" | "invoice">("book");
   const [selectedRecordId, setSelectedRecordId] = useState<string>(defaultRecordId || (records.length > 0 ? records[0].id : ""));
 
   const handleExport = async () => {
     if (!window.electronAPI) return;
+
+    if (vehicle) {
+      const c = vehicle.customer;
+      if (
+        !vehicle.brand ||
+        !vehicle.model ||
+        !vehicle.license_plate ||
+        !c?.first_name ||
+        !c?.last_name ||
+        !c?.phone
+      ) {
+        toast.error("Chýbajú údaje o vozidle alebo zákazníkovi. Pre export je nutné mať vyplnené Meno, Priezvisko, Telefón, Značku, Model a ŠPZ.", {
+          duration: 6000
+        });
+        return;
+      }
+    }
     
     try {
       const recordId = (docType === "protocol" || docType === "invoice") ? selectedRecordId : undefined;

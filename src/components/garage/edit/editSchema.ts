@@ -5,15 +5,15 @@ const optionalStr = z.string().trim().max(200).optional().or(z.literal(""));
 
 export const editSchema = z.object({
   // customer
-  first_name: z.string().trim().min(1, "Toto pole je povinné").max(60),
-  last_name: z.string().trim().min(1, "Toto pole je povinné").max(60),
-  phone: z.string().trim().min(1, "Toto pole je povinné").max(40),
+  first_name: optionalStr,
+  last_name: optionalStr,
+  phone: optionalStr,
   email: z.string().trim().max(120).email("Zadajte platný e-mail").optional().or(z.literal("")),
   customer_notes: z.string().trim().max(2000).optional().or(z.literal("")),
 
   // vehicle
-  brand: z.string().trim().min(1, "Toto pole je povinné").max(60),
-  model: z.string().trim().min(1, "Toto pole je povinné").max(60),
+  brand: optionalStr,
+  model: optionalStr,
   year: z
     .union([
       z.literal(""),
@@ -24,7 +24,7 @@ export const editSchema = z.object({
         .max(MAX_YEAR, "Zadajte platný rok"),
     ])
     .optional(),
-  license_plate: z.string().trim().min(1, "Toto pole je povinné").max(20),
+  license_plate: optionalStr,
   vin: z.string().trim().max(32).optional().or(z.literal("")),
   current_mileage: z.coerce
     .number({ invalid_type_error: "Zadajte platný nájazd" })
