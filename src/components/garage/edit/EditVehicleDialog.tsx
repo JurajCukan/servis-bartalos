@@ -5,9 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { compressImage } from "@/lib/imageCompression";
 import type { VehicleDetail } from "@/lib/queries/vehicles";
 
@@ -64,7 +62,6 @@ export function EditVehicleDialog({
   onOpenChange: (open: boolean) => void;
   vehicle: VehicleDetail;
 }) {
-  const isMobile = useIsMobile();
   const queryClient = useQueryClient();
 
   const form = useForm<EditFormInput>({
@@ -208,25 +205,9 @@ export function EditVehicleDialog({
     </form>
   );
 
-  if (isMobile) {
-    return (
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent
-          side="bottom"
-          className="h-[95vh] overflow-y-auto border-brand-border bg-brand-surface text-brand-fg"
-        >
-          <SheetHeader>
-            <SheetTitle className="text-brand-fg">Upraviť údaje</SheetTitle>
-          </SheetHeader>
-          <div className="mt-4">{body}</div>
-        </SheetContent>
-      </Sheet>
-    );
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto border-brand-border bg-brand-surface text-brand-fg sm:max-w-2xl">
+      <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto border-brand-border bg-brand-surface text-brand-fg sm:w-full sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-brand-fg">Upraviť údaje</DialogTitle>
         </DialogHeader>

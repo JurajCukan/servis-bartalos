@@ -1,6 +1,4 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { ServiceRecordForm } from "./ServiceRecordForm";
 import { DeleteServiceRecordButton } from "./DeleteServiceRecordButton";
 import type { ServiceRecord } from "@/lib/queries/vehicles";
@@ -18,7 +16,6 @@ export function EditServiceRecordDialog({
   currentMileage: number;
   record: ServiceRecord | null;
 }) {
-  const isMobile = useIsMobile();
   const close = () => onOpenChange(false);
 
   if (!record) return null;
@@ -38,25 +35,9 @@ export function EditServiceRecordDialog({
     </div>
   );
 
-  if (isMobile) {
-    return (
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent
-          side="bottom"
-          className="h-[95vh] overflow-y-auto border-brand-border bg-brand-surface text-brand-fg"
-        >
-          <SheetHeader>
-            <SheetTitle className="text-brand-fg">Upraviť servisný záznam</SheetTitle>
-          </SheetHeader>
-          <div className="mt-4">{body}</div>
-        </SheetContent>
-      </Sheet>
-    );
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto border-brand-border bg-brand-surface text-brand-fg">
+      <DialogContent className="max-h-[90vh] w-[95vw] max-w-2xl overflow-y-auto border-brand-border bg-brand-surface text-brand-fg sm:w-full">
         <DialogHeader>
           <DialogTitle className="text-brand-fg">Upraviť servisný záznam</DialogTitle>
         </DialogHeader>

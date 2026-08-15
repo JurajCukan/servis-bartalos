@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+import pkg from "../../../package.json";
+
 export function AppInfoCard() {
   const [appVersion, setAppVersion] = useState<string>("Načítavam...");
 
@@ -27,6 +29,10 @@ export function AppInfoCard() {
           <div className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
             <dt className="text-sm text-brand-fg-muted">Verzia aplikácie</dt>
             <dd className="text-sm font-medium text-brand-fg">{appVersion}</dd>
+          </div>
+          <div className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
+            <dt className="text-sm text-brand-fg-muted">Názov release</dt>
+            <dd className="text-sm font-medium text-brand-fg">{pkg.releaseName || "Neznámy"}</dd>
           </div>
         </dl>
       </CardContent>
