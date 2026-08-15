@@ -86,7 +86,7 @@ export function EditVehicleDialog({
 
   const mutation = useMutation({
     mutationFn: async (values: EditFormValues) => {
-      const plate = values.license_plate.trim().toUpperCase();
+      const plate = (values.license_plate || "").trim().toUpperCase();
 
       if (plate !== vehicle.license_plate) {
         const dup = await window.electronAPI.db.checkDuplicatePlate(plate, vehicle.id);
@@ -101,17 +101,17 @@ export function EditVehicleDialog({
 
       if (vehicle.customer) {
         await window.electronAPI.db.updateCustomer(vehicle.customer.id, {
-          first_name: values.first_name.trim(),
-          last_name: values.last_name.trim(),
-          phone: values.phone.trim(),
+          first_name: (values.first_name || "").trim(),
+          last_name: (values.last_name || "").trim(),
+          phone: (values.phone || "").trim(),
           email: emptyToNull(values.email as string),
           notes: emptyToNull(values.customer_notes as string),
         });
       }
 
       const vehiclePayload: Record<string, unknown> = {
-        brand: values.brand.trim(),
-        model: values.model.trim(),
+        brand: (values.brand || "").trim(),
+        model: (values.model || "").trim(),
         year: values.year === "" || values.year == null ? null : Number(values.year),
         license_plate: plate,
         vin: emptyToNull(values.vin as string),

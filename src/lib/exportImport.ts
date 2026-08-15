@@ -151,8 +151,14 @@ export async function importData(onProgress?: ProgressCallback): Promise<{ impor
 
   onProgress?.("Importujem dáta a fotografie…", 50);
 
-  const importResult = await window.electronAPI.db.importData(bundle);
+  await window.electronAPI.db.importData(bundle);
 
   onProgress?.("Import dokončený!", 100);
-  return importResult as { imported: number };
+  return { 
+    imported: 
+      (bundle.customers?.length || 0) + 
+      (bundle.vehicles?.length || 0) + 
+      (bundle.service_records?.length || 0) + 
+      (bundle.scheduled_tasks?.length || 0)
+  };
 }
