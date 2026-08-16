@@ -11,10 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthenticatedInvoicesRouteImport } from './routes/_authenticated/invoices'
 import { Route as AuthenticatedPlanRouteImport } from './routes/_authenticated/plan'
 import { Route as AuthenticatedServiceHistoryRouteImport } from './routes/_authenticated/service-history'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
-import { Route as InvoicesIndexRouteImport } from './routes/invoices/index'
 import { Route as AuthenticatedGarageIndexRouteImport } from './routes/_authenticated/garage.index'
 import { Route as AuthenticatedGarageVehicleIdRouteImport } from './routes/_authenticated/garage.$vehicleId'
 import { Route as PrintInvoiceInvoiceIdRouteImport } from './routes/print/invoice.$invoiceId'
@@ -29,6 +29,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedInvoicesRoute = AuthenticatedInvoicesRouteImport.update({
+  id: '/invoices',
+  path: '/invoices',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPlanRoute = AuthenticatedPlanRouteImport.update({
   id: '/plan',
@@ -45,11 +50,6 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const InvoicesIndexRoute = InvoicesIndexRouteImport.update({
-  id: '/invoices/',
-  path: '/invoices/',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedGarageIndexRoute =
   AuthenticatedGarageIndexRouteImport.update({
@@ -83,10 +83,10 @@ const PrintServiceProtocolServiceRecordIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/invoices': typeof AuthenticatedInvoicesRoute
   '/plan': typeof AuthenticatedPlanRoute
   '/service-history': typeof AuthenticatedServiceHistoryRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/invoices/': typeof InvoicesIndexRoute
   '/garage/$vehicleId': typeof AuthenticatedGarageVehicleIdRoute
   '/print/invoice/$invoiceId': typeof PrintInvoiceInvoiceIdRoute
   '/print/service-book/$vehicleId': typeof PrintServiceBookVehicleIdRoute
@@ -95,10 +95,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/invoices': typeof AuthenticatedInvoicesRoute
   '/plan': typeof AuthenticatedPlanRoute
   '/service-history': typeof AuthenticatedServiceHistoryRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/invoices': typeof InvoicesIndexRoute
   '/garage/$vehicleId': typeof AuthenticatedGarageVehicleIdRoute
   '/print/invoice/$invoiceId': typeof PrintInvoiceInvoiceIdRoute
   '/print/service-book/$vehicleId': typeof PrintServiceBookVehicleIdRoute
@@ -109,10 +109,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/_authenticated/invoices': typeof AuthenticatedInvoicesRoute
   '/_authenticated/plan': typeof AuthenticatedPlanRoute
   '/_authenticated/service-history': typeof AuthenticatedServiceHistoryRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
-  '/invoices/': typeof InvoicesIndexRoute
   '/_authenticated/garage/$vehicleId': typeof AuthenticatedGarageVehicleIdRoute
   '/print/invoice/$invoiceId': typeof PrintInvoiceInvoiceIdRoute
   '/print/service-book/$vehicleId': typeof PrintServiceBookVehicleIdRoute
@@ -123,10 +123,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/invoices'
     | '/plan'
     | '/service-history'
     | '/settings'
-    | '/invoices/'
     | '/garage/$vehicleId'
     | '/print/invoice/$invoiceId'
     | '/print/service-book/$vehicleId'
@@ -135,10 +135,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/invoices'
     | '/plan'
     | '/service-history'
     | '/settings'
-    | '/invoices'
     | '/garage/$vehicleId'
     | '/print/invoice/$invoiceId'
     | '/print/service-book/$vehicleId'
@@ -148,10 +148,10 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/_authenticated/invoices'
     | '/_authenticated/plan'
     | '/_authenticated/service-history'
     | '/_authenticated/settings'
-    | '/invoices/'
     | '/_authenticated/garage/$vehicleId'
     | '/print/invoice/$invoiceId'
     | '/print/service-book/$vehicleId'
@@ -162,7 +162,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  InvoicesIndexRoute: typeof InvoicesIndexRoute
   PrintInvoiceInvoiceIdRoute: typeof PrintInvoiceInvoiceIdRoute
   PrintServiceBookVehicleIdRoute: typeof PrintServiceBookVehicleIdRoute
   PrintServiceProtocolServiceRecordIdRoute: typeof PrintServiceProtocolServiceRecordIdRoute
@@ -184,6 +183,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/invoices': {
+      id: '/_authenticated/invoices'
+      path: '/invoices'
+      fullPath: '/invoices'
+      preLoaderRoute: typeof AuthenticatedInvoicesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/plan': {
       id: '/_authenticated/plan'
       path: '/plan'
@@ -204,13 +210,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/invoices/': {
-      id: '/invoices/'
-      path: '/invoices'
-      fullPath: '/invoices/'
-      preLoaderRoute: typeof InvoicesIndexRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/garage/': {
       id: '/_authenticated/garage/'
@@ -251,6 +250,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedInvoicesRoute: typeof AuthenticatedInvoicesRoute
   AuthenticatedPlanRoute: typeof AuthenticatedPlanRoute
   AuthenticatedServiceHistoryRoute: typeof AuthenticatedServiceHistoryRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -259,6 +259,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedInvoicesRoute: AuthenticatedInvoicesRoute,
   AuthenticatedPlanRoute: AuthenticatedPlanRoute,
   AuthenticatedServiceHistoryRoute: AuthenticatedServiceHistoryRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
@@ -272,7 +273,6 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  InvoicesIndexRoute: InvoicesIndexRoute,
   PrintInvoiceInvoiceIdRoute: PrintInvoiceInvoiceIdRoute,
   PrintServiceBookVehicleIdRoute: PrintServiceBookVehicleIdRoute,
   PrintServiceProtocolServiceRecordIdRoute:

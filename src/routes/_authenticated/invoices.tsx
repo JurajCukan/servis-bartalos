@@ -3,9 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { DashboardHeader } from "@/components/garage/DashboardHeader";
 import { FileText, Plus } from "lucide-react";
 import { formatCurrency, formatDate } from "@/features/documents/documentFormatters";
+import { AppShell } from "@/components/app/AppShell";
 import { Link } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/invoices/")({
+export const Route = createFileRoute("/_authenticated/invoices")({
   component: InvoicesPage,
 });
 
@@ -21,19 +22,20 @@ function InvoicesPage() {
   const { data: invoices, isLoading } = useQuery(invoicesQuery());
 
   return (
-    <div className="flex h-full flex-col">
-      <DashboardHeader title="Faktúry">
-        <button
-          className="inline-flex items-center gap-2 rounded-md bg-brand-accent px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-accent-hover"
-          onClick={() => alert("Pridávanie faktúr bude implementované v ďalšom kroku.")}
-        >
-          <Plus className="h-4 w-4" />
-          Nová faktúra
-        </button>
-      </DashboardHeader>
+    <AppShell>
+      <div className="flex h-full flex-col">
+        <DashboardHeader title="Faktúry">
+          <button
+            className="inline-flex items-center gap-2 rounded-md bg-brand-accent px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-accent-hover"
+            onClick={() => alert("Pridávanie faktúr bude implementované v ďalšom kroku.")}
+          >
+            <Plus className="h-4 w-4" />
+            Nová faktúra
+          </button>
+        </DashboardHeader>
 
-      <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
-        <div className="mx-auto w-full max-w-6xl">
+        <div className="flex-1 overflow-auto pt-6">
+          <div className="mx-auto w-full max-w-6xl">
           <div className="mb-6 rounded-xl border border-brand-border bg-brand-surface shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left text-brand-fg">
@@ -113,6 +115,7 @@ function InvoicesPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </AppShell>
   );
 }
