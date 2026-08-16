@@ -13,6 +13,7 @@ npmRebuild: true
 win:
   target: nsis
   icon: build/icon.png
+  artifactName: ${name}-setup-${version}.${ext}
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: false
