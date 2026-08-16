@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ImageIcon, Pencil } from "lucide-react";
+import { ChevronDown, ImageIcon, Pencil, FileDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDate, formatKm, formatPrice } from "@/lib/format";
 import { ServiceTypeBadge } from "./ServiceTypeBadge";
@@ -57,6 +57,29 @@ export function ServiceRecordCard({
           </div>
         </button>
         <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                if (!window.electronAPI) return;
+                const result = await window.electronAPI.documents.generatePdf({
+                  route: `/print/service-protocol/${record.id}`,
+                  filename: `servisny-protokol-${record.id.substring(0, 8)}`
+                });
+                if (!result.canceled && result.filePath) {
+                  window.electronAPI.documents.revealPdf(result.filePath);
+                }
+              } catch (error) {
+                console.error("Chyba pri generovaní PDF:", error);
+              }
+            }}
+            className="inline-flex items-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-xs font-medium text-brand-fg-muted transition hover:border-brand-border hover:bg-brand-bg hover:text-brand-fg"
+            aria-label="Tlačiť protokol"
+          >
+            <FileDown className="h-3.5 w-3.5" aria-hidden />
+            Protokol
+          </button>
           {onEdit && (
             <button
               type="button"

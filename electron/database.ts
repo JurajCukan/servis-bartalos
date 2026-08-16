@@ -89,6 +89,94 @@ export function initDatabase(userDataPath: string): void {
       status TEXT NOT NULL DEFAULT 'Čakajúce',
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS company_settings (
+      id TEXT PRIMARY KEY,
+      company_name TEXT NOT NULL,
+      street TEXT,
+      city TEXT,
+      postal_code TEXT,
+      country TEXT DEFAULT 'Slovensko',
+      ico TEXT,
+      dic TEXT,
+      ic_dph TEXT,
+      bank_name TEXT,
+      iban TEXT,
+      bic_swift TEXT,
+      phone TEXT,
+      email TEXT,
+      website TEXT,
+      logo_path TEXT,
+      invoice_prefix TEXT NOT NULL DEFAULT 'FA',
+      invoice_next_number INTEGER NOT NULL DEFAULT 1,
+      vat_payer INTEGER NOT NULL DEFAULT 0,
+      default_vat_rate REAL NOT NULL DEFAULT 20,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS invoices (
+      id TEXT PRIMARY KEY,
+      invoice_number TEXT NOT NULL UNIQUE,
+      invoice_date TEXT NOT NULL,
+      due_date TEXT,
+      service_record_id TEXT,
+      vehicle_id TEXT NOT NULL,
+      customer_id TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'draft',
+      currency TEXT NOT NULL DEFAULT 'EUR',
+      payment_method TEXT NOT NULL DEFAULT 'bank_transfer',
+      subtotal REAL NOT NULL DEFAULT 0,
+      vat_rate REAL NOT NULL DEFAULT 0,
+      vat_amount REAL NOT NULL DEFAULT 0,
+      total_amount REAL NOT NULL DEFAULT 0,
+      notes TEXT,
+      internal_note TEXT,
+      issued_at TEXT,
+      paid_at TEXT,
+      snapshot_json TEXT NOT NULL,
+      pdf_path TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (service_record_id) REFERENCES service_records(id) ON DELETE SET NULL,
+      FOREIGN KEY (vehicle_id) REFERENCES vehicles(id),
+      FOREIGN KEY (customer_id) REFERENCES customers(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS invoice_items (
+      id TEXT PRIMARY KEY,
+      invoice_id TEXT NOT NULL,
+      position INTEGER NOT NULL,
+      item_type TEXT NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT,
+      quantity REAL NOT NULL DEFAULT 1,
+      unit TEXT NOT NULL DEFAULT 'ks',
+      unit_price_without_vat REAL NOT NULL DEFAULT 0,
+      vat_rate REAL NOT NULL DEFAULT 0,
+      line_total_without_vat REAL NOT NULL DEFAULT 0,
+      line_vat_amount REAL NOT NULL DEFAULT 0,
+      line_total_with_vat REAL NOT NULL DEFAULT 0,
+      FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS service_record_items (
+      id TEXT PRIMARY KEY,
+      service_record_id TEXT NOT NULL,
+      position INTEGER NOT NULL,
+      item_type TEXT NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT,
+      quantity REAL NOT NULL DEFAULT 1,
+      unit TEXT NOT NULL DEFAULT 'ks',
+      unit_price REAL NOT NULL DEFAULT 0,
+      total_price REAL NOT NULL DEFAULT 0,
+      FOREIGN KEY (service_record_id) REFERENCES service_records(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_invoices_customer_id ON invoices(customer_id);
+    CREATE INDEX IF NOT EXISTS idx_invoices_vehicle_id ON invoices(vehicle_id);
+    CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice_id ON invoice_items(invoice_id);
+    CREATE INDEX IF NOT EXISTS idx_service_record_items_record ON service_record_items(service_record_id);
   `);
 
   console.log("[database] Schema initialized successfully.");
@@ -542,4 +630,226 @@ export function importData(bundle: {
 
   importAll();
   return idMap;
+}
+
+// ─── Company Settings ───────────────────────────────────────────────────────
+
+export function getCompanySettings() {
+  const row = db.prepare("SELECT * FROM company_settings LIMIT 1").get() as Record<string, unknown> | undefined;
+  if (!row) {
+    // Return default empty struct
+    return {
+      id: "default",
+      company_name: "",
+      street: "",
+      city: "",
+      postal_code: "",
+      country: "Slovensko",
+      ico: "",
+      dic: "",
+      ic_dph: "",
+      bank_name: "",
+      iban: "",
+      bic_swift: "",
+      phone: "",
+      email: "",
+      website: "",
+      logo_path: "",
+      invoice_prefix: "FA",
+      invoice_next_number: 1,
+      vat_payer: 0,
+      default_vat_rate: 20,
+    };
+  }
+  return row;
+}
+
+export function updateCompanySettings(data: Record<string, unknown>) {
+  const row = db.prepare("SELECT id FROM company_settings LIMIT 1").get() as { id: string } | undefined;
+  
+  const fields: string[] = [];
+  const values: unknown[] = [];
+  
+  for (const [key, val] of Object.entries(data)) {
+    fields.push(`${key} = ?`);
+    values.push(val === undefined ? null : val);
+  }
+  
+  fields.push("updated_at = ?");
+  values.push(new Date().toISOString());
+  
+  if (row) {
+    values.push(row.id);
+    db.prepare(`UPDATE company_settings SET ${fields.join(", ")} WHERE id = ?`).run(...values);
+  } else {
+    const cols = Object.keys(data);
+    const placeholders = cols.map(() => "?");
+    
+    cols.push("id", "updated_at");
+    placeholders.push("?", "?");
+    
+    const insertValues = Object.values(data).map(v => v === undefined ? null : v);
+    insertValues.push("default", new Date().toISOString());
+    
+    db.prepare(`INSERT INTO company_settings (${cols.join(", ")}) VALUES (${placeholders.join(", ")})`).run(...insertValues);
+  }
+}
+
+// ─── Invoices ───────────────────────────────────────────────────────────────
+
+export function getAllInvoices() {
+  return db.prepare(`
+    SELECT i.*, 
+           c.first_name AS c_first_name, c.last_name AS c_last_name, 
+           v.brand AS v_brand, v.model AS v_model, v.license_plate AS v_license_plate
+    FROM invoices i
+    LEFT JOIN customers c ON i.customer_id = c.id
+    LEFT JOIN vehicles v ON i.vehicle_id = v.id
+    ORDER BY i.created_at DESC
+  `).all();
+}
+
+export function getInvoiceById(id: string) {
+  const invoice = db.prepare("SELECT * FROM invoices WHERE id = ?").get(id) as any;
+  if (!invoice) return null;
+  
+  const items = db.prepare("SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY position ASC").all(id);
+  return { ...invoice, items };
+}
+
+export function createInvoiceDraft(data: Record<string, unknown>, items: Record<string, unknown>[]) {
+  const id = generateId();
+  
+  const createInTransaction = db.transaction(() => {
+    // Generate dummy invoice number for draft (won't be shown, but UNIQUE constraint requires it)
+    const draftNumber = `DRAFT-${id.substring(0, 8)}`;
+    
+    db.prepare(`
+      INSERT INTO invoices (
+        id, invoice_number, invoice_date, due_date, service_record_id, vehicle_id, customer_id, 
+        status, currency, payment_method, subtotal, vat_rate, vat_amount, total_amount, 
+        notes, internal_note, snapshot_json, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id, draftNumber, data.invoice_date, data.due_date ?? null, data.service_record_id ?? null,
+      data.vehicle_id, data.customer_id, 'draft', data.currency ?? 'EUR', data.payment_method ?? 'bank_transfer',
+      data.subtotal ?? 0, data.vat_rate ?? 0, data.vat_amount ?? 0, data.total_amount ?? 0,
+      data.notes ?? null, data.internal_note ?? null, data.snapshot_json ?? '{}',
+      new Date().toISOString(), new Date().toISOString()
+    );
+    
+    const insertItem = db.prepare(`
+      INSERT INTO invoice_items (
+        id, invoice_id, position, item_type, name, description, quantity, unit, 
+        unit_price_without_vat, vat_rate, line_total_without_vat, line_vat_amount, line_total_with_vat
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    for (const [index, item] of items.entries()) {
+      insertItem.run(
+        generateId(), id, index + 1, item.item_type, item.name, item.description ?? null,
+        item.quantity ?? 1, item.unit ?? 'ks', item.unit_price_without_vat ?? 0, item.vat_rate ?? 0,
+        item.line_total_without_vat ?? 0, item.line_vat_amount ?? 0, item.line_total_with_vat ?? 0
+      );
+    }
+  });
+  
+  createInTransaction();
+  return id;
+}
+
+export function issueInvoice(id: string, snapshotJson: string) {
+  const issueInTransaction = db.transaction(() => {
+    const settings = db.prepare("SELECT invoice_prefix, invoice_next_number FROM company_settings LIMIT 1").get() as any;
+    if (!settings) throw new Error("Firemné údaje nie sú nastavené.");
+    
+    const year = new Date().getFullYear();
+    const number = String(settings.invoice_next_number).padStart(5, "0");
+    const invoiceNumber = `${settings.invoice_prefix}-${year}-${number}`;
+    
+    db.prepare("UPDATE company_settings SET invoice_next_number = invoice_next_number + 1, updated_at = ?").run(new Date().toISOString());
+    
+    db.prepare(`
+      UPDATE invoices 
+      SET invoice_number = ?, status = 'issued', issued_at = ?, snapshot_json = ?, updated_at = ? 
+      WHERE id = ?
+    `).run(invoiceNumber, new Date().toISOString(), snapshotJson, new Date().toISOString(), id);
+    
+    return invoiceNumber;
+  });
+  
+  return issueInTransaction();
+}
+
+export function updateInvoice(id: string, data: Record<string, unknown>, items?: Record<string, unknown>[]) {
+  const updateInTransaction = db.transaction(() => {
+    const fields: string[] = [];
+    const values: unknown[] = [];
+    
+    for (const [key, val] of Object.entries(data)) {
+      fields.push(`${key} = ?`);
+      values.push(val === undefined ? null : val);
+    }
+    
+    if (fields.length > 0) {
+      fields.push("updated_at = ?");
+      values.push(new Date().toISOString());
+      values.push(id);
+      db.prepare(`UPDATE invoices SET ${fields.join(", ")} WHERE id = ?`).run(...values);
+    }
+    
+    if (items) {
+      db.prepare("DELETE FROM invoice_items WHERE invoice_id = ?").run(id);
+      
+      const insertItem = db.prepare(`
+        INSERT INTO invoice_items (
+          id, invoice_id, position, item_type, name, description, quantity, unit, 
+          unit_price_without_vat, vat_rate, line_total_without_vat, line_vat_amount, line_total_with_vat
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      
+      for (const [index, item] of items.entries()) {
+        insertItem.run(
+          generateId(), id, index + 1, item.item_type, item.name, item.description ?? null,
+          item.quantity ?? 1, item.unit ?? 'ks', item.unit_price_without_vat ?? 0, item.vat_rate ?? 0,
+          item.line_total_without_vat ?? 0, item.line_vat_amount ?? 0, item.line_total_with_vat ?? 0
+        );
+      }
+    }
+  });
+  
+  updateInTransaction();
+}
+
+export function deleteInvoice(id: string) {
+  db.prepare("DELETE FROM invoices WHERE id = ?").run(id);
+}
+
+// ─── Service Record Items ───────────────────────────────────────────────────
+
+export function getServiceRecordItems(recordId: string) {
+  return db.prepare("SELECT * FROM service_record_items WHERE service_record_id = ? ORDER BY position ASC").all(recordId);
+}
+
+export function saveServiceRecordItems(recordId: string, items: Record<string, unknown>[]) {
+  const saveInTransaction = db.transaction(() => {
+    db.prepare("DELETE FROM service_record_items WHERE service_record_id = ?").run(recordId);
+    
+    if (!items || items.length === 0) return;
+    
+    const insertItem = db.prepare(`
+      INSERT INTO service_record_items (
+        id, service_record_id, position, item_type, name, description, quantity, unit, unit_price, total_price
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    for (const [index, item] of items.entries()) {
+      insertItem.run(
+        generateId(), recordId, index + 1, item.item_type, item.name, item.description ?? null,
+        item.quantity ?? 1, item.unit ?? 'ks', item.unit_price ?? 0, item.total_price ?? 0
+      );
+    }
+  });
+  
+  saveInTransaction();
 }

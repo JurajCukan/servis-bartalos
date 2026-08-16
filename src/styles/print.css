@@ -1,0 +1,49 @@
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
+@media print {
+  html,
+  body {
+    width: 210mm;
+    margin: 0;
+    padding: 0;
+    background: white;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Schová UI prvky aplikácie (menu, tlačidlá) */
+  .no-print {
+    display: none !important;
+  }
+
+  /* A4 kontajner */
+  .document-page {
+    width: 186mm; /* 210 - 2*12 */
+    min-height: 273mm;
+    color: #111827;
+    font-family: Arial, sans-serif;
+    font-size: 10pt;
+  }
+
+  .avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .page-break-before {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

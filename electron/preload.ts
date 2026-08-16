@@ -23,15 +23,31 @@ contextBridge.exposeInMainWorld("electronAPI", {
     updateTaskStatus: (id: string, status: string) => ipcRenderer.invoke("db:update-task-status", id, status),
     exportAllData: () => ipcRenderer.invoke("db:export-all-data"),
     importData: (bundle: any) => ipcRenderer.invoke("db:import-data", bundle),
+    
+    // Nové funkcie pre nastavenia firmy, faktúry a položky
+    getCompanySettings: () => ipcRenderer.invoke("db:get-company-settings"),
+    updateCompanySettings: (data: any) => ipcRenderer.invoke("db:update-company-settings", data),
+    
+    getAllInvoices: () => ipcRenderer.invoke("db:get-all-invoices"),
+    getInvoiceById: (id: string) => ipcRenderer.invoke("db:get-invoice-by-id", id),
+    createInvoiceDraft: (data: any, items: any[]) => ipcRenderer.invoke("db:create-invoice-draft", data, items),
+    issueInvoice: (id: string, snapshotJson: string) => ipcRenderer.invoke("db:issue-invoice", id, snapshotJson),
+    updateInvoice: (id: string, data: any, items?: any[]) => ipcRenderer.invoke("db:update-invoice", id, data, items),
+    deleteInvoice: (id: string) => ipcRenderer.invoke("db:delete-invoice", id),
+    
+    getServiceRecordItems: (recordId: string) => ipcRenderer.invoke("db:get-service-record-items", recordId),
+    saveServiceRecordItems: (recordId: string, items: any[]) => ipcRenderer.invoke("db:save-service-record-items", recordId, items),
+  },
+
+  documents: {
+    generatePdf: (input: { route: string; filename: string }) => ipcRenderer.invoke("documents:generate-pdf", input),
+    revealPdf: (filePath: string) => ipcRenderer.invoke("documents:reveal-pdf", filePath),
   },
 
   // ─── Updates ───────────────────────────────────────────────────────────────
   checkForUpdates: () => ipcRenderer.send("check-for-updates"),
   downloadUpdate: () => ipcRenderer.send("download-update"),
   installUpdate: () => ipcRenderer.send("install-update"),
-
-  exportVehiclePdf: (type: string, vehicleId: string, recordId?: string) => ipcRenderer.invoke("export-vehicle-pdf", type, vehicleId, recordId),
-  notifyPdfReady: () => ipcRenderer.send("notify-pdf-ready"),
   getAppVersion: () => ipcRenderer.invoke("get-app-version") as Promise<string>,
 
   onUpdateChecking: (callback: () => void) => {

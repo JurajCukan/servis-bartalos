@@ -42,11 +42,15 @@ import {
   createServiceRecord, updateServiceRecord, deleteServiceRecord,
   getScheduledTasks, getAllActiveTasks, createScheduledTask, updateTaskStatus,
   exportAllData, importData,
+  getCompanySettings, updateCompanySettings,
+  getAllInvoices, getInvoiceById, createInvoiceDraft, issueInvoice, updateInvoice, deleteInvoice,
+  getServiceRecordItems, saveServiceRecordItems
 } from "./database.js";
 import {
   initPhotos, savePhoto, deletePhoto, deleteAllPhotosForRecord,
   getPhotoPath, readPhotoAsBase64, getPhotosDir,
 } from "./photos.js";
+import { generateDocumentPdf, revealPdf } from "./documents.js";
 
 let mainWindow: BrowserWindow | null = null;
 const isDev = false;
@@ -405,6 +409,56 @@ ipcMain.handle("db:update-task-status", (_event, id: string, status: string) => 
   return true;
 });
 
+// ─── IPC: Database — Company Settings ───────────────────────────────────────
+
+ipcMain.handle("db:get-company-settings", () => {
+  return getCompanySettings();
+});
+
+ipcMain.handle("db:update-company-settings", (_event, data) => {
+  updateCompanySettings(data);
+  return true;
+});
+
+// ─── IPC: Database — Invoices ───────────────────────────────────────────────
+
+ipcMain.handle("db:get-all-invoices", () => {
+  return getAllInvoices();
+});
+
+ipcMain.handle("db:get-invoice-by-id", (_event, id: string) => {
+  return getInvoiceById(id);
+});
+
+ipcMain.handle("db:create-invoice-draft", (_event, data, items) => {
+  return createInvoiceDraft(data, items);
+});
+
+ipcMain.handle("db:issue-invoice", (_event, id: string, snapshotJson: string) => {
+  return issueInvoice(id, snapshotJson);
+});
+
+ipcMain.handle("db:update-invoice", (_event, id: string, data, items) => {
+  updateInvoice(id, data, items);
+  return true;
+});
+
+ipcMain.handle("db:delete-invoice", (_event, id: string) => {
+  deleteInvoice(id);
+  return true;
+});
+
+// ─── IPC: Database — Service Record Items ───────────────────────────────────
+
+ipcMain.handle("db:get-service-record-items", (_event, recordId: string) => {
+  return getServiceRecordItems(recordId);
+});
+
+ipcMain.handle("db:save-service-record-items", (_event, recordId: string, items) => {
+  saveServiceRecordItems(recordId, items);
+  return true;
+});
+
 // ─── IPC: Database — Export / Import ──────────────────────────────────────────
 
 ipcMain.handle("db:export-all-data", () => {
@@ -463,75 +517,14 @@ ipcMain.handle("db:import-data", (_event, bundle) => {
 
 // ─── IPC: PDF Export ──────────────────────────────────────────────────────────
 
-ipcMain.handle("export-vehicle-pdf", async (event, type: string, vehicleId: string, recordId?: string) => {
-  try {
-    let title = "Uložiť PDF";
-    let defaultPath = `export-${vehicleId}.pdf`;
-    
-    if (type === "book") {
-      title = "Uložiť servisnú knižku ako PDF";
-      defaultPath = `servisna-knizka-${vehicleId}.pdf`;
-    } else if (type === "protocol") {
-      title = "Uložiť servisný protokol ako PDF";
-      defaultPath = `servisny-protokol-${recordId}.pdf`;
-    } else if (type === "invoice") {
-      title = "Uložiť fakturačný podklad ako PDF";
-      defaultPath = `fakturacny-podklad-${recordId}.pdf`;
-    }
+ipcMain.handle("documents:generate-pdf", async (event, input: { route: string; filename: string }) => {
+  const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
+  const appUrl = isDev ? "http://127.0.0.1:5173/#" : "app://-/index.html#";
+  return generateDocumentPdf({ ...input, appUrl });
+});
 
-    const { filePath, canceled } = await dialog.showSaveDialog({
-      title,
-      defaultPath,
-      filters: [{ name: "PDF dokumenty", extensions: ["pdf"] }],
-    });
-
-    if (canceled || !filePath) {
-      return { success: false, error: "Ukladanie bolo zrušené." };
-    }
-
-    const printWindow = new BrowserWindow({
-      show: false,
-      webPreferences: {
-        nodeIntegration: false,
-        contextIsolation: true,
-        preload: path.join(__dirname, "preload.js"),
-      }
-    });
-
-    return new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        printWindow.destroy();
-        resolve({ success: false, error: "Časový limit pre vygenerovanie PDF vypršal." });
-      }, 15000); // 15s timeout
-
-      ipcMain.once("notify-pdf-ready", async () => {
-        clearTimeout(timeout);
-        try {
-          const pdfBuffer = await printWindow.webContents.printToPDF({
-            pageSize: "A4",
-            printBackground: true,
-          });
-          fs.writeFileSync(filePath, pdfBuffer);
-          printWindow.destroy();
-          resolve({ success: true, filePath });
-        } catch (error: any) {
-          console.error("Chyba pri generovaní PDF:", error);
-          printWindow.destroy();
-          resolve({ success: false, error: "Nepodarilo sa vygenerovať PDF." });
-        }
-      });
-
-      const queryStr = recordId ? `?recordId=${recordId}` : "";
-      const url = isDev 
-        ? `http://127.0.0.1:5173/#/print/${type}/${vehicleId}${queryStr}`
-        : `app://-/index.html#/print/${type}/${vehicleId}${queryStr}`;
-
-      printWindow.loadURL(url);
-    });
-  } catch (error: any) {
-    console.error("Chyba pri exporte PDF:", error);
-    return { success: false, error: "Nastala neočakávaná chyba." };
-  }
+ipcMain.handle("documents:reveal-pdf", async (event, filePath: string) => {
+  return revealPdf(filePath);
 });
 
 // ─── IPC: Updates ─────────────────────────────────────────────────────────────

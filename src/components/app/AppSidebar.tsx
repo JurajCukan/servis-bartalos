@@ -1,4 +1,4 @@
-import { Car, CalendarDays, History, Settings } from "lucide-react";
+import { Car, CalendarDays, History, Settings, FileText } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
 
 import logoAsset from "@/assets/autoservis-logo.png";
@@ -20,7 +20,7 @@ type NavItem = {
   key: string;
   label: string;
   icon: typeof Car;
-  to: "/garage" | "/plan" | "/service-history" | "/settings";
+  to: "/garage" | "/plan" | "/service-history" | "/invoices" | "/settings";
   match: string;
 };
 
@@ -34,6 +34,7 @@ const NAV_ITEMS: NavItem[] = [
     to: "/service-history",
     match: "/service-history",
   },
+  { key: "invoices", label: "Faktúry", icon: FileText, to: "/invoices", match: "/invoices" },
   { key: "settings", label: "Nastavenia", icon: Settings, to: "/settings", match: "/settings" },
 ];
 

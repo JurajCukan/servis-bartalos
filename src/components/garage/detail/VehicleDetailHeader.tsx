@@ -35,11 +35,24 @@ export function VehicleDetailHeader({
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={onExportClick}
+            onClick={async () => {
+              try {
+                if (!window.electronAPI) return;
+                const result = await window.electronAPI.documents.generatePdf({
+                  route: `/print/service-book/${vehicle.id}`,
+                  filename: `servisna-knizka-${vehicle.license_plate}`
+                });
+                if (!result.canceled && result.filePath) {
+                  window.electronAPI.documents.revealPdf(result.filePath);
+                }
+              } catch (error) {
+                console.error("Chyba pri generovaní PDF:", error);
+              }
+            }}
             className="inline-flex items-center gap-2 rounded-md border border-brand-border bg-brand-surface px-3 py-2 text-sm font-medium text-brand-fg transition hover:border-brand-accent hover:text-brand-accent disabled:opacity-50"
           >
             <FileDown className="h-4 w-4" />
-            Export do PDF
+            Servisná knižka PDF
           </button>
           <button
             type="button"

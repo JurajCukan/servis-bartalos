@@ -6,6 +6,7 @@ import { UpdateSettingCard } from "@/components/settings/UpdateSettingCard";
 import { ThemeSettingCard } from "@/components/settings/ThemeSettingCard";
 import { AppInfoCard } from "@/components/settings/AppInfoCard";
 import { ExportImportCard } from "@/components/settings/ExportImportCard";
+import { CompanySettingsForm } from "@/components/settings/CompanySettingsForm";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -23,8 +24,9 @@ export const Route = createFileRoute("/_authenticated/settings")({
 function SettingsPage() {
   return (
     <AppShell>
-      <div className="mx-auto flex max-w-3xl flex-col gap-6">
+      <div className="mx-auto flex max-w-3xl flex-col gap-6 pb-20">
         <SettingsPageHeader />
+        <CompanySettingsForm />
         <UpdateSettingCard />
         <ExportImportCard />
         <ThemeSettingCard />
