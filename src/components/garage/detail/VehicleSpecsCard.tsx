@@ -5,7 +5,7 @@ const FIELDS: { label: string; key: keyof VehicleDetail }[] = [
   { label: "Prevodovka", key: "transmission" },
   { label: "Pohon", key: "drive" },
   { label: "Výkon", key: "power" },
-  { label: "Objem oleja", key: "oil_volume" },
+  { label: "Info o oleji", key: "oil_volume" },
   { label: "Rozmer pneu", key: "tire_size" },
   { label: "Typ paliva", key: "fuel_type" },
 ];

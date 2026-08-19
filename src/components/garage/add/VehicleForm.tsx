@@ -141,7 +141,7 @@ export function VehicleForm({
         <Field label="Výkon" error={errors.power?.message}>
           <Input className={inputCls} {...form.register("power")} />
         </Field>
-        <Field label="Objem oleja" error={errors.oil_volume?.message}>
+        <Field label="Info o oleji" error={errors.oil_volume?.message}>
           <Input className={inputCls} {...form.register("oil_volume")} />
         </Field>
         <Field label="Rozmer pneu" error={errors.tire_size?.message}>

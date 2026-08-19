@@ -62,7 +62,7 @@ export function VehicleEditFormSection({ form }: { form: UseFormReturn<EditFormI
         <FormField label="Výkon" error={errors.power?.message}>
           <Input className={inputCls} {...form.register("power")} />
         </FormField>
-        <FormField label="Objem oleja" error={errors.oil_volume?.message}>
+        <FormField label="Info o oleji" error={errors.oil_volume?.message}>
           <Input className={inputCls} {...form.register("oil_volume")} />
         </FormField>
         <FormField label="Rozmer pneu" error={errors.tire_size?.message}>
